@@ -372,10 +372,11 @@
                             <thead>
                                 <tr>
                                     <th>Producto</th>
-                                    <th class="text-center" width="15%">Precio</th>
-                                    <th class="text-center" width="20%">Cantidad</th>
-                                    <th class="text-center" width="15%">Subtotal</th>
-                                    <th class="text-center" width="10%">Accion</th>
+                                    <th class="text-center" width="22%">U. Med.</th>
+                                    <th class="text-center" width="14%">Precio</th>
+                                    <th class="text-center" width="18%">Cantidad</th>
+                                    <th class="text-center" width="14%">Subtotal</th>
+                                    <th class="text-center" width="8%">Accion</th>
                                 </tr>
                             </thead>
                             <tbody id="tbody_pos"></tbody>

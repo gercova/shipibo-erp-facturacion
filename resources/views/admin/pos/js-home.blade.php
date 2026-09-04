@@ -575,6 +575,10 @@
             stockHtml = `<span class="badge ${stockColor} px-2 py-1 rounded-pill ms-1" style="font-size: 0.7rem;">Stock: ${item.stock}</span>`;
         }
 
+        const presHtml = (item.presentations_count && item.presentations_count > 0)
+            ? `<span class="badge bg-primary-soft text-primary px-2 py-1 rounded-pill ms-1" style="font-size: 0.7rem;"><i class="ri-stack-line me-1"></i>${item.presentations_count + 1} pres.</span>`
+            : '';
+
         const content = `
             <div class="pos-autocomplete-item d-flex justify-content-between align-items-center py-2 px-3 border-bottom" style="cursor: pointer; transition: all 0.2s;">
                 <div class="d-flex flex-column text-truncate" style="width: 75%;">
@@ -584,6 +588,7 @@
                     <div class="d-flex align-items-center mt-1">
                         ${codeHtml}
                         ${stockHtml}
+                        ${presHtml}
                     </div>
                 </div>
                 <div class="text-end" style="width: 25%;">
@@ -665,6 +670,43 @@
         });
     });
 
+    $('body').on('change', '.select-presentation', function() {
+        const $select = $(this);
+        const id = $select.data('id');
+        const presentationId = $select.val();
+        const $selectedOption = $select.find('option:selected');
+        const precio = parseFloat($selectedOption.data('price') || 0);
+
+        // Instant visual feedback for badge and price input
+        $select.closest('td').find('.presentation-badge').text(money(precio));
+        const $row = $select.closest('tr');
+        $row.find('.input-update').val(precio.toFixed(2));
+        $row.find('.input-quantity').data('precio_venta', precio);
+        $row.find('.btn-down, .btn-up').data('precio_venta', precio);
+
+        $.ajax({
+            url: "{{ route('admin.store_product_pos') }}",
+            method: 'POST',
+            data: {
+                _token: "{{ csrf_token() }}",
+                id: id,
+                presentation_id: presentationId,
+                precio: precio
+            },
+            success: function(r) {
+                if (!r.status) {
+                    toast_msg(r.msg, r.type || 'warning');
+                }
+                load_cart();
+            },
+            error: function(xhr) {
+                toast_msg(xhr.responseJSON?.msg || 'No se pudo cambiar la presentación.', xhr.responseJSON?.type || 'error');
+                load_cart();
+            },
+            dataType: 'json'
+        });
+    });
+
     $('body').on('change', '.input-update, .input-quantity', function() {
         const $input = $(this);
         const isPrice = $input.hasClass('input-update');
@@ -674,6 +716,10 @@
 
         if (String(precio).trim() === '' || String(cantidad).trim() === '') {
             return;
+        }
+
+        if (isPrice) {
+            $input.closest('tr').find('.presentation-badge').text(money(precio));
         }
 
         $.ajax({
