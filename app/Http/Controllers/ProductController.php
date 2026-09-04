@@ -12,12 +12,14 @@ use App\Models\DetailSaleNote;
 use App\Models\DetailTransferOrder;
 use App\Models\IgvTypeAffection;
 use App\Models\Product;
+use App\Models\ProductPresentation;
 use App\Models\StockProduct;
 use App\Models\Unit;
 use App\Models\Warehouse;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -107,10 +109,10 @@ class ProductController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
-                'msg' => $validator->errors()->first(),
-                'errors' => $validator->errors(),
-                'type' => 'warning',
+                'status'    => false,
+                'msg'       => $validator->errors()->first(),
+                'errors'    => $validator->errors(),
+                'type'      => 'warning',
             ], 422);
         }
 
@@ -133,25 +135,25 @@ class ProductController extends Controller
             ], 422);
         }
 
-        $isService = (int) $data['opcion'] === 2;
-        $stockActual = $isService ? null : (int) $data['stock_actual'];
-        $precioCompra = round((float) $data['precio_compra'], 2);
-        $precioVenta = round((float) $data['precio_venta'], 2);
-        $igvPercent = $this->resolveIgvPercentByAffectionId((int) $data['idcodigo_igv']);
+        $isService      = (int) $data['opcion'] === 2;
+        $stockActual    = $isService ? null : (int) $data['stock_actual'];
+        $precioCompra   = round((float) $data['precio_compra'], 2);
+        $precioVenta    = round((float) $data['precio_venta'], 2);
+        $igvPercent     = $this->resolveIgvPercentByAffectionId((int) $data['idcodigo_igv']);
 
         $product = Product::create([
-            'codigo_interno' => $this->normalizeNullableText($data['codigo_interno'] ?? null),
-            'codigo_barras' => $this->normalizeNullableText($data['codigo_barras'] ?? null),
-            'codigo_sunat' => $this->normalizeNullableText($data['codigo_sunat'] ?? null),
-            'descripcion' => mb_strtoupper(trim((string) $data['descripcion'])),
-            'idunidad' => (int) $data['idunidad'],
-            'idcategoria' => (int) $data['idcategoria'],
-            'igv' => $igvPercent,
-            'idcodigo_igv' => (int) $data['idcodigo_igv'],
-            'precio_compra' => $precioCompra,
-            'precio_venta' => $precioVenta,
-            'opcion' => (int) $data['opcion'],
-            'stock_actual' => $stockActual,
+            'codigo_interno'    => $this->normalizeNullableText($data['codigo_interno'] ?? null),
+            'codigo_barras'     => $this->normalizeNullableText($data['codigo_barras'] ?? null),
+            'codigo_sunat'      => $this->normalizeNullableText($data['codigo_sunat'] ?? null),
+            'descripcion'       => mb_strtoupper(trim((string) $data['descripcion'])),
+            'idunidad'          => (int) $data['idunidad'],
+            'idcategoria'       => (int) $data['idcategoria'],
+            'igv'               => $igvPercent,
+            'idcodigo_igv'      => (int) $data['idcodigo_igv'],
+            'precio_compra'     => $precioCompra,
+            'precio_venta'      => $precioVenta,
+            'opcion'            => (int) $data['opcion'],
+            'stock_actual'      => $stockActual,
         ]);
 
         StockProduct::create([
@@ -166,9 +168,10 @@ class ProductController extends Controller
         ]);
 
         return response()->json([
-            'status' => true,
-            'msg' => 'Datos guardados correctamente',
-            'type' => 'success',
+            'status'     => true,
+            'msg'        => 'Datos guardados correctamente',
+            'type'       => 'success',
+            'product_id' => $product->id,
         ]);
     }
 
@@ -201,9 +204,17 @@ class ProductController extends Controller
             $product->idcodigo_igv = $this->resolveIgvAffectionIdFromProduct($product);
         }
 
+        $presentations = ProductPresentation::query()
+            ->where('idproducto', $product->id)
+            ->where('estado', true)
+            ->with('unit:id,codigo,descripcion')
+            ->orderBy('id')
+            ->get();
+
         return response()->json([
-            'status' => true,
-            'product' => $product,
+            'status'        => true,
+            'product'       => $product,
+            'presentations' => $presentations,
         ]);
     }
 
@@ -350,14 +361,80 @@ class ProductController extends Controller
             ], 422);
         }
 
+        // Cascade: product_presentations is deleted via FK onDelete('cascade')
         StockProduct::query()->where('idproducto', $product->id)->delete();
         $product->delete();
 
         return response()->json([
             'status' => true,
             'msg' => 'Registro eliminado correctamente',
-            'title' => 'Â¡Bien!',
+            'title' => '¡Bien!',
             'type' => 'success',
+        ]);
+    }
+
+    public function savePresentations(Request $request)
+    {
+        if (! $request->ajax()) {
+            return response()->json(['status' => false, 'msg' => 'Intente de nuevo', 'type' => 'warning']);
+        }
+
+        $productId = (int) $request->input('product_id');
+        $product = Product::query()->find($productId);
+
+        if (! $product) {
+            return response()->json(['status' => false, 'msg' => 'El producto no existe.', 'type' => 'warning'], 404);
+        }
+
+        $rawRows = $request->input('presentations', []);
+
+        if (! is_array($rawRows)) {
+            return response()->json(['status' => false, 'msg' => 'Datos de presentaciones inválidos.', 'type' => 'warning'], 422);
+        }
+
+        // Validate each row
+        $validated = [];
+        foreach ($rawRows as $index => $row) {
+            $idunidad = (int) ($row['idunidad'] ?? 0);
+            $descripcion = mb_strtoupper(trim((string) ($row['descripcion'] ?? '')));
+            $factor = max(0.0001, (float) ($row['factor_conversion'] ?? 1));
+            $precioCompra = max(0, round((float) ($row['precio_compra'] ?? 0), 2));
+            $precioVenta = max(0, round((float) ($row['precio_venta'] ?? 0), 2));
+
+            if ($descripcion === '' || $idunidad < 1) {
+                return response()->json([
+                    'status' => false,
+                    'msg'    => 'La presentación #' . ($index + 1) . ' debe tener descripción y unidad válidas.',
+                    'type'   => 'warning',
+                ], 422);
+            }
+
+            $validated[] = [
+                'idproducto'       => $product->id,
+                'idunidad'         => $idunidad,
+                'descripcion'      => $descripcion,
+                'factor_conversion'=> $factor,
+                'precio_compra'    => $precioCompra,
+                'precio_venta'     => $precioVenta,
+                'estado'           => true,
+            ];
+        }
+
+        DB::transaction(function () use ($product, $validated) {
+            // Soft-delete current presentations, then insert new ones
+            ProductPresentation::query()
+                ->where('idproducto', $product->id)
+                ->delete();
+
+            foreach ($validated as $row) {
+                ProductPresentation::create($row);
+            }
+        });
+
+        return response()->json([
+            'status' => true,
+            'msg'    => 'Presentaciones guardadas correctamente.',
+            'type'   => 'success',
         ]);
     }
 
