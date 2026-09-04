@@ -19,7 +19,7 @@ class UserSeeder extends Seeder
         $superAdmin = User::updateOrCreate(
             ['user' => 'admin'],
             [
-                'nombres' => 'KROWED NAJAR',
+                'nombres' => 'SUPERADMIN',
                 'password' => 'admin123$$.',
                 'estado' => 1,
                 'idcaja' => $defaultCashId,
