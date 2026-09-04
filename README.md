@@ -1,11 +1,11 @@
-# 🌿 SHIPIBO ERP - Sistema de Gestión Comercial y Facturación Electrónica SUNAT
+# SHIPIBO ERP - Sistema de Gestión Comercial y Facturación Electrónica SUNAT
 
 > **MYTEMS E.I.R.L. | Perú**  
 > Sistema integral de gestión comercial, control de inventarios multi-almacén, punto de venta (POS), arqueo de cajas, compras, cotizaciones y facturación electrónica UBL 2.1 conforme a la normativa SUNAT.
 
 ---
 
-## 📑 Tabla de Contenidos
+## Tabla de Contenidos
 
 1. [Visión General del Sistema](#-visión-general-del-sistema)
 2. [Arquitectura Tecnológica](#-arquitectura-tecnológica)
@@ -36,7 +36,7 @@
 
 ---
 
-## 🌟 Visión General del Sistema
+## Visión General del Sistema
 
 **Shipibo ERP** es una solución monolítica optimizada para empresas peruanas (On-Premise / Single-Tenant), diseñada para eliminar redundancias operativas, garantizar la consistencia tributaria ante la SUNAT y ofrecer un control en tiempo real de inventarios, finanzas de caja y facturación.
 
@@ -63,7 +63,7 @@
 
 ---
 
-## 📋 Especificaciones de Producto (PRD)
+## Especificaciones de Producto (PRD)
 
 ### 3.1. Configuración de Empresa Emisora (`/business`)
 * **Datos Fiscales**: RUC, Razón Social (`MYTEMS E.I.R.L.`), Nombre Comercial, Dirección Fiscal, Ubigeo de 6 dígitos (Departamento, Provincia, Distrito), Teléfono, Correo.
@@ -194,7 +194,7 @@
 
 ---
 
-## 🔄 Flujos de Movimientos del Sistema
+## Flujos de Movimientos del Sistema
 
 ### 4.1. Flujo de Movimientos de Inventario (Kardex)
 
@@ -405,7 +405,7 @@ flowchart TD
 
 ---
 
-## 🚀 Instalación y Puesta en Marcha
+## Instalación y Puesta en Marcha
 
 ### 1. Requisitos del Servidor
 * PHP >= 8.2 con extensiones: `pdo_mysql`, `curl`, `soap`, `openssl`, `mbstring`, `zip`, `gd`, `xml`, `bcmath`.
@@ -461,7 +461,7 @@ php artisan serve
 
 ---
 
-## 🔐 Seguridad y Control de Accesos
+## Seguridad y Control de Accesos
 
 * **Autenticación**: Laravel Session Guard con protección CSRF en todos los formularios y llamadas AJAX.
 * **Permisos Granulares**: Control de acceso por rol (`SUPERADMIN`, `ADMIN`, `VENDEDOR`, `ALMACENERO`) administrados mediante Spatie Permissions:
