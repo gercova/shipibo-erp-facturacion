@@ -36,4 +36,9 @@ class Product extends Model
     {
         return $this->belongsTo(IgvTypeAffection::class, 'idcodigo_igv');
     }
+
+    public function presentations()
+    {
+        return $this->hasMany(ProductPresentation::class, 'idproducto')->where('estado', true)->orderBy('id');
+    }
 }
