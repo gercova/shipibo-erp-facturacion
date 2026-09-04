@@ -142,6 +142,7 @@ Route::controller(ProductController::class)->prefix('products')->middleware(['au
     Route::post('/upload-excel'       , 'upload')->name('products.upload_excel');
     Route::get('/download-excel'      , 'download')->name('products.download_excel');
     Route::post('/view-detail'        , 'view_detail')->name('products.view_detail');
+    Route::post('/save-presentations' , 'savePresentations')->name('products.save_presentations');
 });
 
 Route::controller(WarehouseController::class)->prefix('warehouses')->middleware(['auth', 'can:admin.warehouses'])->group(function() {
