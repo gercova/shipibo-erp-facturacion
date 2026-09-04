@@ -1,8 +1,152 @@
 <script>
+    const SAVE_PRESENTATIONS_URL = "{{ route('products.save_presentations') }}";
+    const CSRF_TOKEN             = "{{ csrf_token() }}";
+
+    // ═══════════════════════════════════════════════════
+    // PRESENTATIONS HELPERS (shared, used by both modals)
+    // ═══════════════════════════════════════════════════
+
+    /**
+     * Build a presentations <tr> row from an optional data object.
+     * Units list is rendered server-side in the <template>, but edit modal
+     * doesn't have the template, so we build the row directly.
+     */
+    function getUnitsOptions() {
+        const template = document.getElementById('presentation-row-template');
+        if (template && template.content) {
+            const select = template.content.querySelector('.pres-idunidad');
+            if (select) {
+                return select.innerHTML;
+            }
+        }
+        return '';
+    }
+
+    function buildEditPresentationRow(data = {}) {
+        const unitsOptions = getUnitsOptions();
+        const $row = $(`
+            <tr class="presentation-row">
+                <td><input type="text" class="form-control form-control-sm text-uppercase pres-descripcion" placeholder="Ej: DOCENA" style="min-width:120px;"></td>
+                <td><select class="form-select form-select-sm pres-idunidad">${unitsOptions}</select></td>
+                <td><input type="number" class="form-control form-control-sm text-center pres-factor" value="1" min="0.0001" step="0.0001"></td>
+                <td><input type="number" class="form-control form-control-sm text-end pres-precio-compra" value="0.00" min="0" step="0.01"></td>
+                <td><input type="number" class="form-control form-control-sm text-end pres-precio-venta" value="0.00" min="0" step="0.01"></td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove-presentation-edit" title="Eliminar fila">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </td>
+            </tr>
+        `);
+
+        if (data.descripcion)       $row.find('.pres-descripcion').val(data.descripcion);
+        if (data.idunidad)          $row.find('.pres-idunidad').val(String(data.idunidad));
+        if (data.factor_conversion) $row.find('.pres-factor').val(data.factor_conversion);
+        if (data.precio_compra !== undefined) $row.find('.pres-precio-compra').val(parseFloat(data.precio_compra).toFixed(2));
+        if (data.precio_venta  !== undefined) $row.find('.pres-precio-venta').val(parseFloat(data.precio_venta).toFixed(2));
+
+        return $row;
+    }
+
+    function loadEditPresentations(presentations) {
+        const $tbody = $('#presentations-tbody-edit');
+        $tbody.find('tr.presentation-row').remove();
+
+        if (!presentations || presentations.length === 0) {
+            $('#presentations-empty-row-edit').show();
+            return;
+        }
+
+        $('#presentations-empty-row-edit').hide();
+        presentations.forEach(function(p) {
+            $tbody.append(buildEditPresentationRow(p));
+        });
+    }
+
+    function collectPresentationsEdit() {
+        const rows = [];
+        $('#presentations-tbody-edit tr.presentation-row').each(function() {
+            rows.push({
+                descripcion:       $(this).find('.pres-descripcion').val(),
+                idunidad:          $(this).find('.pres-idunidad').val(),
+                factor_conversion: $(this).find('.pres-factor').val(),
+                precio_compra:     $(this).find('.pres-precio-compra').val(),
+                precio_venta:      $(this).find('.pres-precio-venta').val(),
+            });
+        });
+        return rows;
+    }
+
+    /**
+     * Validate presentation rows and mark invalid fields.
+     * Returns true when all rows pass, false otherwise.
+     */
+    function validatePresentationsEdit() {
+        let isValid = true;
+
+        $('#presentations-tbody-edit tr.presentation-row').each(function() {
+            const $row         = $(this);
+            const $descripcion = $row.find('.pres-descripcion');
+            const $unidad      = $row.find('.pres-idunidad');
+            const $factor      = $row.find('.pres-factor');
+            const $pCompra     = $row.find('.pres-precio-compra');
+            const $pVenta      = $row.find('.pres-precio-venta');
+
+            const descInvalid   = $descripcion.val().trim() === '';
+            const unidadInvalid = !$unidad.val();
+            const factorInvalid = $factor.val() === '' || parseFloat($factor.val()) <= 0;
+            const compraInvalid = $pCompra.val() === '' || isNaN(parseFloat($pCompra.val()));
+            const ventaInvalid  = $pVenta.val()  === '' || isNaN(parseFloat($pVenta.val()));
+
+            $descripcion.toggleClass('is-invalid', descInvalid);
+            $unidad.toggleClass('is-invalid', unidadInvalid);
+            $factor.toggleClass('is-invalid', factorInvalid);
+            $pCompra.toggleClass('is-invalid', compraInvalid);
+            $pVenta.toggleClass('is-invalid', ventaInvalid);
+
+            if (descInvalid || unidadInvalid || factorInvalid || compraInvalid || ventaInvalid) {
+                isValid = false;
+            }
+        });
+
+        return isValid;
+    }
+
+    // ─── Auto-clear is-invalid on user interaction ─────────────────────────────
+    $('body').on('input change', '#presentations-tbody-create input, #presentations-tbody-edit input', function() {
+        $(this).removeClass('is-invalid');
+    });
+
+    $('body').on('change', '#presentations-tbody-create select, #presentations-tbody-edit select', function() {
+        $(this).removeClass('is-invalid');
+    });
+    // ───────────────────────────────────────────────────────────────────────────
+
+    // Add row — EDIT modal
+    $('body').on('click', '#btn-add-presentation-edit', function() {
+        $('#presentations-empty-row-edit').hide();
+        $('#presentations-tbody-edit').append(buildEditPresentationRow());
+    });
+
+    // Remove row — EDIT modal
+    $('body').on('click', '#presentations-tbody-edit .btn-remove-presentation-edit', function() {
+        $(this).closest('tr').remove();
+        const hasRows = $('#presentations-tbody-edit tr.presentation-row').length > 0;
+        $('#presentations-empty-row-edit').toggle(!hasRows);
+    });
+
+    // ═══════════════════════════════════════════════════
+    // PRODUCT: success callback
+    // ═══════════════════════════════════════════════════
+
     function success_save_product(msg = null, type = null) {
         toast_msg(msg, type);
         reload_table();
     }
+
+    // ═══════════════════════════════════════════════════
+    // EDIT MODAL: select2 init
+    // ═══════════════════════════════════════════════════
 
     function initEditProductSelects() {
         $('#modalEditProduct .edit-product-select').each(function() {
@@ -22,6 +166,10 @@
         $('#edit_original_opcion').val(String(type || ''));
         $(`#form_edit_product input[name="opcion"][value="${type}"]`).prop('checked', true);
     }
+
+    // ═══════════════════════════════════════════════════
+    // VIEW DETAIL (offcanvas)
+    // ═══════════════════════════════════════════════════
 
     $('body').on('click', '.btn-view', function(e) {
         e.preventDefault();
@@ -63,6 +211,10 @@
         initEditProductSelects();
     });
 
+    // ═══════════════════════════════════════════════════
+    // EDIT MODAL: open + load data
+    // ═══════════════════════════════════════════════════
+
     $('body').on('click', '.btn-detail', function(e) {
         e.preventDefault();
 
@@ -94,6 +246,9 @@
                 form.find('input[name="descripcion"]').val(r.product.descripcion || '');
                 syncEditProductType(r.product.opcion);
 
+                // Load presentations
+                loadEditPresentations(r.presentations || []);
+
                 $('#modalEditProduct').modal('show');
 
                 setTimeout(function() {
@@ -124,6 +279,10 @@
         toast_msg('No se puede cambiar el tipo de item al actualizar un producto o servicio.', 'warning');
     });
 
+    // ═══════════════════════════════════════════════════
+    // EDIT MODAL: save product + presentations
+    // ═══════════════════════════════════════════════════
+
     $('body').on('click', '.btn-store-product', function(e) {
         e.preventDefault();
 
@@ -143,6 +302,14 @@
             return;
         }
 
+        const productId    = form.find('input[name="id"]').val();
+        const presentations = collectPresentationsEdit();
+
+        // Validate presentations before continuing
+        if (!validatePresentationsEdit()) {
+            toast_msg('Revisa las presentaciones: descripción y unidad son obligatorios, factor debe ser > 0 y los precios no pueden estar vacíos.', 'warning');
+            return;
+        }
         $.ajax({
             url: "{{ route('products.store') }}",
             method: 'POST',
@@ -153,18 +320,33 @@
                 $('.text-storing-product').removeClass('d-none');
             },
             success: function(r) {
-                $('.btn-store-product').prop('disabled', false);
-                $('.text-store-product').removeClass('d-none');
-                $('.text-storing-product').addClass('d-none');
-
                 if (!r.status) {
+                    $('.btn-store-product').prop('disabled', false);
+                    $('.text-store-product').removeClass('d-none');
+                    $('.text-storing-product').addClass('d-none');
                     toast_msg(r.msg, r.type || 'warning');
                     return;
                 }
 
-                $('#modalEditProduct').modal('hide');
-                toast_msg(r.msg, r.type);
-                reload_table();
+                // Save presentations (fire-and-forget style, but we wait for it)
+                $.ajax({
+                    url: SAVE_PRESENTATIONS_URL,
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        _token: CSRF_TOKEN,
+                        product_id: productId,
+                        presentations: presentations,
+                    }),
+                    complete: function() {
+                        $('.btn-store-product').prop('disabled', false);
+                        $('.text-store-product').removeClass('d-none');
+                        $('.text-storing-product').addClass('d-none');
+                        $('#modalEditProduct').modal('hide');
+                        toast_msg(r.msg, r.type);
+                        reload_table();
+                    }
+                });
             },
             error: function(xhr) {
                 $('.btn-store-product').prop('disabled', false);
@@ -175,6 +357,10 @@
             dataType: 'json'
         });
     });
+
+    // ═══════════════════════════════════════════════════
+    // DELETE
+    // ═══════════════════════════════════════════════════
 
     $('body').on('click', '.btn-confirm', function(e) {
         e.preventDefault();
@@ -225,6 +411,10 @@
             });
         });
     });
+
+    // ═══════════════════════════════════════════════════
+    // UPLOAD EXCEL
+    // ═══════════════════════════════════════════════════
 
     $('body').on('click', '.btn-upload', function(e) {
         e.preventDefault();

@@ -2,6 +2,97 @@
     $(document).ready(function() {
         let productSelectsInitialized = false;
 
+        // ───────── PRESENTATIONS HELPERS (CREATE) ─────────
+        const SAVE_PRESENTATIONS_URL = "{{ route('products.save_presentations') }}";
+        const CSRF_TOKEN             = "{{ csrf_token() }}";
+
+        function buildPresentationRowHtml(data = {}) {
+            const template  = document.getElementById('presentation-row-template');
+            const clone     = template.content.cloneNode(true);
+            const $row      = $(clone.querySelector('tr'));
+
+            if (data.descripcion)      $row.find('.pres-descripcion').val(data.descripcion);
+            if (data.idunidad)         $row.find('.pres-idunidad').val(data.idunidad);
+            if (data.factor_conversion)$row.find('.pres-factor').val(data.factor_conversion);
+            if (data.precio_compra)    $row.find('.pres-precio-compra').val(data.precio_compra);
+            if (data.precio_venta)     $row.find('.pres-precio-venta').val(data.precio_venta);
+
+            return $row;
+        }
+
+        function collectPresentations(tbodyId) {
+            const rows = [];
+            $(`#${tbodyId} tr.presentation-row`).each(function() {
+                rows.push({
+                    descripcion:       $(this).find('.pres-descripcion').val(),
+                    idunidad:          $(this).find('.pres-idunidad').val(),
+                    factor_conversion: $(this).find('.pres-factor').val(),
+                    precio_compra:     $(this).find('.pres-precio-compra').val(),
+                    precio_venta:      $(this).find('.pres-precio-venta').val(),
+                });
+            });
+            return rows;
+        }
+
+        /**
+         * Validate every presentation row in the given tbody.
+         * Marks invalid inputs with 'is-invalid' and returns true if all rows are valid.
+         */
+        function validatePresentations(tbodyId) {
+            let isValid = true;
+
+            $(`#${tbodyId} tr.presentation-row`).each(function() {
+                const $row         = $(this);
+                const $descripcion = $row.find('.pres-descripcion');
+                const $unidad      = $row.find('.pres-idunidad');
+                const $factor      = $row.find('.pres-factor');
+                const $pCompra     = $row.find('.pres-precio-compra');
+                const $pVenta      = $row.find('.pres-precio-venta');
+
+                const descInvalid   = $descripcion.val().trim() === '';
+                const unidadInvalid = !$unidad.val();
+                const factorInvalid = $factor.val() === '' || parseFloat($factor.val()) <= 0;
+                const compraInvalid = $pCompra.val() === '' || isNaN(parseFloat($pCompra.val()));
+                const ventaInvalid  = $pVenta.val()  === '' || isNaN(parseFloat($pVenta.val()));
+
+                $descripcion.toggleClass('is-invalid', descInvalid);
+                $unidad.toggleClass('is-invalid', unidadInvalid);
+                $factor.toggleClass('is-invalid', factorInvalid);
+                $pCompra.toggleClass('is-invalid', compraInvalid);
+                $pVenta.toggleClass('is-invalid', ventaInvalid);
+
+                if (descInvalid || unidadInvalid || factorInvalid || compraInvalid || ventaInvalid) {
+                    isValid = false;
+                }
+            });
+
+            return isValid;
+        }
+
+        function refreshEmptyRow(tbodyId, emptyRowId) {
+            const hasRows = $(`#${tbodyId} tr.presentation-row`).length > 0;
+            $(`#${emptyRowId}`).toggle(!hasRows);
+        }
+
+        // Add row button — CREATE modal
+        $('body').on('click', '#btn-add-presentation', function() {
+            const $row = buildPresentationRowHtml();
+            $('#presentations-empty-row-create').hide();
+            $('#presentations-tbody-create').append($row);
+        });
+
+        // Remove row — CREATE modal
+        $('body').on('click', '#presentations-tbody-create .btn-remove-presentation', function() {
+            $(this).closest('tr').remove();
+            refreshEmptyRow('presentations-tbody-create', 'presentations-empty-row-create');
+        });
+
+        function resetPresentationsCreate() {
+            $('#presentations-tbody-create tr.presentation-row').remove();
+            $('#presentations-empty-row-create').show();
+        }
+        // ───────── END PRESENTATIONS HELPERS ─────────
+
         function initProductSelects() {
             if (productSelectsInitialized) {
                 return;
@@ -28,6 +119,7 @@
             $('#precio_compra').val('0.00');
             $('#precio_venta').val('0.00');
             $('#codigo_sunat').val('');
+            resetPresentationsCreate();
         }
 
         function toggleProductStockSection() {
@@ -113,7 +205,13 @@
             }
 
             const button = this;
+            const presentations = collectPresentations('presentations-tbody-create');
 
+            // Validate presentations before continuing
+            if (!validatePresentations('presentations-tbody-create')) {
+                toast_msg('Revisa las presentaciones: descripción y unidad son obligatorios, factor debe ser > 0 y los precios no pueden estar vacíos.', 'warning');
+                return;
+            }
             $.ajax({
                 url: "{{ route('products.save') }}",
                 method: 'POST',
@@ -122,16 +220,36 @@
                     toggleButtonState(button, true);
                 },
                 success: function(r) {
-                    toggleButtonState(button, false);
-
                     if (!r.status) {
+                        toggleButtonState(button, false);
                         toast_msg(r.msg, r.type || 'warning');
                         return;
                     }
 
-                    form.trigger('reset');
-                    $('#modalAddProduct').modal('hide');
-                    success_save_product(r.msg, r.type);
+                    // If there are presentations, persist them now
+                    if (presentations.length > 0 && r.product_id) {
+                        $.ajax({
+                            url: SAVE_PRESENTATIONS_URL,
+                            method: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify({
+                                _token: CSRF_TOKEN,
+                                product_id: r.product_id,
+                                presentations: presentations,
+                            }),
+                            complete: function() {
+                                toggleButtonState(button, false);
+                                form.trigger('reset');
+                                $('#modalAddProduct').modal('hide');
+                                success_save_product(r.msg, r.type);
+                            }
+                        });
+                    } else {
+                        toggleButtonState(button, false);
+                        form.trigger('reset');
+                        $('#modalAddProduct').modal('hide');
+                        success_save_product(r.msg, r.type);
+                    }
                 },
                 error: function(xhr) {
                     toggleButtonState(button, false);

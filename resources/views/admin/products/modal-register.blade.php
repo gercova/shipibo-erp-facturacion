@@ -5,7 +5,7 @@
 @endphp
 
 <div class="modal fade" id="modalAddProduct" tabindex="-1" aria-labelledby="modalAddProductLabel" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <form id="form_save_product" class="modal-content border-0 shadow-lg" onsubmit="event.preventDefault()">
             @csrf
 
@@ -54,7 +54,7 @@
 
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
-                        <label for="idunidad" class="form-label small fw-bold text-muted text-uppercase">Unidad</label>
+                        <label for="idunidad" class="form-label small fw-bold text-muted text-uppercase">Unidad Base</label>
                         <select name="idunidad" id="idunidad" class="form-select product-select" data-default="{{ $defaultUnitId }}">
                             <option value="">Seleccione...</option>
                             @foreach ($units as $unit)
@@ -130,6 +130,74 @@
                         </div>
                     </div>
                 </div>
+
+                {{-- ===== PRESENTACIONES / VARIANTES ===== --}}
+                <hr class="text-muted opacity-25 mt-4">
+
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                        <h6 class="fw-bold mb-0"><i class="fas fa-tags text-warning me-2"></i>Presentaciones / Variantes de precio</h6>
+                        <small class="text-muted">Opcional &mdash; Define otras unidades con precios diferentes (ej: Docena, Caja, Pack).</small>
+                    </div>
+                    <button type="button" id="btn-add-presentation" class="btn btn-sm btn-outline-warning fw-bold">
+                        <i class="fas fa-plus me-1"></i> Agregar presentaci&oacute;n
+                    </button>
+                </div>
+
+                <div id="presentations-wrapper">
+                    <table class="table table-sm table-bordered align-middle mb-0" id="presentations-table-create">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-uppercase small fw-bold" style="min-width:140px;">Descripci&oacute;n</th>
+                                <th class="text-uppercase small fw-bold" style="min-width:130px;">Unidad</th>
+                                <th class="text-uppercase small fw-bold text-center" style="width:100px;">Factor conv.</th>
+                                <th class="text-uppercase small fw-bold text-center" style="width:120px;">P. Compra</th>
+                                <th class="text-uppercase small fw-bold text-center" style="width:120px;">P. Venta</th>
+                                <th class="text-center" style="width:50px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="presentations-tbody-create">
+                            <tr id="presentations-empty-row-create">
+                                <td colspan="6" class="text-center text-muted small py-3">
+                                    <i class="fas fa-inbox me-1"></i> Sin presentaciones adicionales
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                {{-- Hidden template row (cloned by JS) --}}
+                <template id="presentation-row-template">
+                    <tr class="presentation-row">
+                        <td>
+                            <input type="text" class="form-control form-control-sm text-uppercase pres-descripcion" placeholder="Ej: DOCENA" style="min-width:120px;">
+                        </td>
+                        <td>
+                            <select class="form-select form-select-sm pres-idunidad">
+                                <option value="">-- Unidad --</option>
+                                @foreach ($units as $unit)
+                                    <option value="{{ $unit->id }}">{{ $unit->descripcion }} ({{ $unit->codigo }})</option>
+                                @endforeach
+                            </select>
+                        </td>
+                        <td>
+                            <input type="number" class="form-control form-control-sm text-center pres-factor" value="1" min="0.0001" step="0.0001">
+                        </td>
+                        <td>
+                            <input type="number" class="form-control form-control-sm text-end pres-precio-compra" value="0.00" min="0" step="0.01">
+                        </td>
+                        <td>
+                            <input type="number" class="form-control form-control-sm text-end pres-precio-venta" value="0.00" min="0" step="0.01">
+                        </td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-presentation" title="Eliminar fila">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </template>
+                {{-- ===== FIN PRESENTACIONES ===== --}}
+
             </div>
 
             <div class="modal-footer border-top-0 p-4 pt-0">
@@ -142,3 +210,4 @@
         </form>
     </div>
 </div>
+

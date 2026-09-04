@@ -65,7 +65,7 @@
 </div>
 
 <div class="modal fade" id="modalEditProduct" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <form id="form_edit_product" class="modal-content border-0 shadow-lg" onsubmit="event.preventDefault()">
             @csrf
             <input type="hidden" name="id">
@@ -118,7 +118,7 @@
 
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
-                        <label class="form-label small fw-bold text-muted text-uppercase">Unidad</label>
+                        <label class="form-label small fw-bold text-muted text-uppercase">Unidad Base</label>
                         <select name="idunidad" class="form-select border-2 edit-product-select">
                             <option value="">Seleccione...</option>
                             @foreach ($units as $unit)
@@ -167,6 +167,41 @@
                         </div>
                     </div>
                 </div>
+
+                {{-- ===== PRESENTACIONES / VARIANTES (EDIT) ===== --}}
+                <hr class="text-muted opacity-25">
+
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                        <h6 class="fw-bold mb-0"><i class="fas fa-tags text-warning me-2"></i>Presentaciones / Variantes de precio</h6>
+                        <small class="text-muted">Opcional &mdash; Define otras unidades con precios diferentes (ej: Docena, Caja, Pack).</small>
+                    </div>
+                    <button type="button" id="btn-add-presentation-edit" class="btn btn-sm btn-outline-warning fw-bold">
+                        <i class="fas fa-plus me-1"></i> Agregar presentaci&oacute;n
+                    </button>
+                </div>
+
+                <table class="table table-sm table-bordered align-middle mb-0" id="presentations-table-edit">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="text-uppercase small fw-bold" style="min-width:140px;">Descripci&oacute;n</th>
+                            <th class="text-uppercase small fw-bold" style="min-width:130px;">Unidad</th>
+                            <th class="text-uppercase small fw-bold text-center" style="width:100px;">Factor conv.</th>
+                            <th class="text-uppercase small fw-bold text-center" style="width:120px;">P. Compra</th>
+                            <th class="text-uppercase small fw-bold text-center" style="width:120px;">P. Venta</th>
+                            <th class="text-center" style="width:50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="presentations-tbody-edit">
+                        <tr id="presentations-empty-row-edit">
+                            <td colspan="6" class="text-center text-muted small py-3">
+                                <i class="fas fa-inbox me-1"></i> Sin presentaciones adicionales
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                {{-- ===== FIN PRESENTACIONES (EDIT) ===== --}}
+
             </div>
 
             <div class="modal-footer border-top-0 p-4 pt-0">
@@ -184,6 +219,7 @@
         </form>
     </div>
 </div>
+
 
 <div class="modal fade" id="modalUpload" data-bs-backdrop="static" tabindex="-1">
     <div class="modal-dialog modal-lg">
