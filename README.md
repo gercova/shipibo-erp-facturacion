@@ -24,6 +24,8 @@
    - [3.12. Arqueo y Control de Cajas](#312-arqueo-y-control-de-cajas)
    - [3.13. Cotizaciones y Proformas](#313-cotizaciones-y-proformas)
    - [3.14. Reportes y Analítica](#314-reportes-y-analítica)
+   - [3.15. Contratos de Servicios con Firma Digital (`/contracts`)](#315-contratos-de-servicios-con-firma-digital-contracts)
+   - [📄 Documento PDR Completo (`docs/PDR_SISTEMA_COMPLETO.md`)](docs/PDR_SISTEMA_COMPLETO.md)
 4. [Flujos de Movimientos del Sistema](#-flujos-de-movimientos-del-sistema)
    - [4.1. Flujo de Movimientos de Inventario (Kardex)](#41-flujo-de-movimientos-de-inventario-kardex)
    - [4.2. Flujo de Ventas y Emisión de Comprobantes (POS / CPE)](#42-flujo-de-ventas-y-emisión-de-comprobantes-pos--cpe)
@@ -191,6 +193,18 @@
 * **Ventas por Producto**: Cantidades e importes vendidos por período y almacén.
 * **Ventas por Medio de Pago**: Totales recaudados en Efectivo, Billeteras Digitales, Tarjetas y Bancos.
 * **Documentos Emitidos y Estado SUNAT**: Monitoreo de comprobantes con CDR recibido, pendientes o rechazados.
+
+### 3.15. Contratos de Servicios con Firma Digital (`/contracts`)
+* **Gestión Contractual Legal**: Creación, edición, consulta y anulación de contratos de prestación de servicios y eventos.
+* **Comparecencia de Partes**: Registro formal de El Prestador (con datos de empresa emisora o representante) y El Cliente.
+* **Especificación del Evento**: Fecha programada, horario de inicio y dirección/recinto del evento.
+* **Cláusulas Dinámicas**: Editor dinámico de cláusulas legales con reordenamiento, adición, eliminación y carga de plantillas predefinidas.
+* **Ítems y Precios**: Selección desde el catálogo o ingreso de servicios a medida con cálculo en vivo de subtotales, opción de IGV y total.
+* **Firma Digital**: Captura directa en pantalla mediante Canvas táctil/mouse y opción alternativa de carga de imagen de firma.
+* **Exportación en PDF A4**: Generación de contrato legal en formato A4 con logo, comparecientes, tabla de ítems, importe en letras (`NumeroALetras`), cláusulas y doble bloque de firma.
+
+> [!TIP]
+> Para consultar la especificación técnica completa y exhaustiva de todos los módulos, consulte el [PDR Oficial del Sistema Completo](docs/PDR_SISTEMA_COMPLETO.md).
 
 ---
 
