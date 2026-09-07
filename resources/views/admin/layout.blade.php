@@ -149,7 +149,7 @@
                     $isBillingScreen = (request()->is('billings') || (request()->is('billings/*') && ! request()->is('billings/reports*') && ! request()->is('billings/credit-notes*') && ! request()->is('billings/debit-notes*')))
                         && ! $isCreditNoteListScreen
                         && ! $isDebitNoteListScreen;
-                    $canVentas = $authUser?->canany(['admin.clients', 'admin.quotes', 'admin.pos', 'admin.sale_notes', 'admin.billings', 'admin.shipment_guides']);
+                    $canVentas = $authUser?->canany(['admin.clients', 'admin.quotes', 'admin.contracts', 'admin.pos', 'admin.sale_notes', 'admin.billings', 'admin.shipment_guides']);
                     $canCompras = $authUser?->canany(['admin.providers', 'admin.buys']);
                     $canInventario = $authUser?->canany(['admin.products', 'admin.categories', 'admin.warehouses', 'admin.transfer_orders']);
                     $canReportes = $authUser?->canany([
@@ -218,9 +218,13 @@
                             <div class="sidenav-menu-heading">Opciones</div>
 
                             @if($canArching)
-                            <a class="nav-link {{ request()->is('archingcash') ? 'active' : '' }}" href="{{ route('admin.arching_cashes') }}">
+                            <a class="nav-link {{ request()->is('archingcash') && !request()->is('archingcash/cierre-diario*') ? 'active' : '' }}" href="{{ route('admin.arching_cashes') }}">
                                 <div class="nav-link-icon"><i data-feather="dollar-sign"></i></div>
                                 Arqueo de cajas
+                            </a>
+                            <a class="nav-link {{ request()->is('archingcash/cierre-diario*') ? 'active' : '' }}" href="{{ route('admin.daily_closing') }}">
+                                <div class="nav-link-icon"><i data-feather="lock"></i></div>
+                                Cierre de caja del día
                             </a>
                             @endif
 
@@ -235,6 +239,7 @@
                             @if($canVentas)
                             <a class="nav-link {{ request()->is('quotes') || 
                                                 request()->is('quotes/*') ||
+                                                request()->is('contracts*') ||
                                                 request()->is('pos') ||
                                                 request()->is('pos/*') ||
                                                 $isBillingScreen ||
@@ -249,6 +254,7 @@
                             </a>
                             <div class="collapse {{ request()->is('quotes') || 
                                         request()->is('quotes/*') || 
+                                        request()->is('contracts*') || 
                                         request()->is('pos') ||
                                         request()->is('pos/*') ||
                                         $isBillingScreen ||
@@ -259,6 +265,9 @@
                                 <nav class="sidenav-menu-nested nav">
                                     @can('admin.quotes')
                                     <a class="nav-link {{ request()->is('quotes') || request()->is('quotes/*') ? 'active' : '' }}" href="{{ route('admin.quotes') }}">Cotizaciones</a>
+                                    @endcan
+                                    @can('admin.contracts')
+                                    <a class="nav-link {{ request()->is('contracts*') ? 'active' : '' }}" href="{{ route('admin.contracts') }}">Contratos</a>
                                     @endcan
                                     @can('admin.pos')
                                     <a class="nav-link {{ request()->is('pos') || request()->is('pos/*') ? 'active' : '' }}" href="{{ route('admin.pos') }}">Punto de venta</a>
