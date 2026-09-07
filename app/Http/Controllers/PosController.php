@@ -12,6 +12,7 @@ use App\Models\DetailSaleNote;
 use App\Models\IdentityDocumentType;
 use App\Models\PayMode;
 use App\Models\Product;
+use App\Models\ProductPresentation;
 use App\Models\SaleNote;
 use App\Models\Serie;
 use App\Models\StockProduct;
@@ -21,6 +22,9 @@ use App\Services\Ebilling\Payload\BillingPayloadBuilder;
 use App\Services\Ebilling\SunatDispatchService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -31,8 +35,7 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class PosController extends Controller
 {
-    public function index()
-    {
+    public function index(): View {
         $billingSummary = $this->billingsByCurrentWarehouse()
             ->join('type_documents', 'billings.idtipo_comprobante', '=', 'type_documents.id')
             ->whereIn('type_documents.codigo', ['01', '03']);
@@ -50,8 +53,7 @@ class PosController extends Controller
         ]);
     }
 
-    public function create()
-    {
+    public function create(): View|RedirectResponse {
         $data['signo'] = $this->signo_pais();
         $data['typeDocuments'] = IdentityDocumentType::query()
             ->where('estado', 1)
@@ -59,7 +61,7 @@ class PosController extends Controller
             ->get(['id', 'codigo', 'descripcion']);
 
         $idusuario = (int) Auth::user()['id'];
-        $idcaja = (int) Auth::user()['idcaja'];
+        $idcaja    = (int) Auth::user()['idcaja'];
         $siExisteArqueo = ArchingCash::where('idcaja', $idcaja)
             ->where('idusuario', $idusuario)
             ->latest('id')
@@ -77,8 +79,7 @@ class PosController extends Controller
         return view('admin.pos.home', $data);
     }
 
-    public function get()
-    {
+    public function get(): JsonResponse {
         $billingDocuments = $this->billingsByCurrentWarehouse()
             ->selectRaw("
                 billings.id as record_id,
@@ -122,12 +123,12 @@ class PosController extends Controller
             ->fromSub($billingDocuments->unionAll($saleNoteDocuments), 'documents');
 
         if (request()->has('columns')) {
-            $dateSearch = trim((string) request()->input('columns.0.search.value'));
-            $typeSearch = trim((string) request()->input('columns.1.search.value'));
+            $dateSearch     = trim((string) request()->input('columns.0.search.value'));
+            $typeSearch     = trim((string) request()->input('columns.1.search.value'));
             $documentSearch = trim((string) request()->input('columns.2.search.value'));
             $customerSearch = trim((string) request()->input('columns.3.search.value'));
-            $totalSearch = trim((string) request()->input('columns.4.search.value'));
-            $statusSearch = trim((string) request()->input('columns.5.search.value'));
+            $totalSearch    = trim((string) request()->input('columns.4.search.value'));
+            $statusSearch   = trim((string) request()->input('columns.5.search.value'));
 
             if ($dateSearch !== '') {
                 $documents->whereDate('issue_date', $dateSearch);
@@ -195,8 +196,7 @@ class PosController extends Controller
             ->toJson();
     }
 
-    public function load_cart(Request $request)
-    {
+    public function load_cart(Request $request): JsonResponse {
         if (! $request->ajax()) {
             return response()->json([
                 'status' => false,
@@ -217,8 +217,43 @@ class PosController extends Controller
                 $subtotal = number_format(((float) $product['precio_venta'] * (float) $product['cantidad']), 2, '.', '');
                 $precioVenta = number_format((float) $product['precio_venta'], 2, '.', '');
 
+                $presentations = $product['presentations'] ?? [];
+                if (empty($presentations)) {
+                    $prodModel = Product::with(['unit', 'presentations.unit'])->find($product['id']);
+                    if ($prodModel) {
+                        $presentations = $this->getProductPresentations($prodModel, $product['precio_venta']);
+                    }
+                }
+
+                $selectedPresId = (string) ($product['idpresentacion'] ?? 'base');
+                $optionsHtml = '';
+                foreach ($presentations as $pres) {
+                    $isSel = ((string) $pres['id'] === $selectedPresId) ? 'selected' : '';
+                    $label = $pres['descripcion'] . ' | ' . number_format((float) $pres['precio_venta'], 2, '.', '');
+                    $optionsHtml .= '<option value="' . e($pres['id']) . '" '
+                        . 'data-price="' . number_format((float) $pres['precio_venta'], 2, '.', '') . '" '
+                        . 'data-factor="' . e((string) $pres['factor_conversion']) . '" '
+                        . 'data-unit="' . e((string) $pres['unit_code']) . '" '
+                        . $isSel . '>' . e($label) . '</option>';
+                }
+
+                $uMedHtml = '<div class="d-inline-flex align-items-center gap-1 justify-content-center">'
+                    . '<span class="badge bg-primary text-white presentation-badge" '
+                    . 'data-id="' . e((string) $product['id']) . '" '
+                    . 'style="font-size: 0.76rem; padding: 0.35rem 0.5rem; font-weight: 700; white-space: nowrap; border-radius: 4px;">'
+                    . $signo . ' ' . $precioVenta
+                    . '</span>'
+                    . '<select class="form-select form-select-sm select-presentation" '
+                    . 'data-id="' . e((string) $product['id']) . '" '
+                    . 'data-cantidad="' . e((string) $product['cantidad']) . '" '
+                    . 'style="min-width: 115px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">'
+                    . $optionsHtml
+                    . '</select>'
+                    . '</div>';
+
                 $html_cart .= '<tr id="row-' . $contador . '">
-                    <td class="align-middle">' . e((string) $product['descripcion']) . '</td>
+                    <td class="align-middle fw-semibold">' . e((string) $product['descripcion']) . '</td>
+                    <td class="text-center align-middle">' . $uMedHtml . '</td>
                     <td class="text-center align-middle">
                         <input type="text" class="form-control form-control-sm text-center input-update"
                             value="' . $precioVenta . '"
@@ -227,7 +262,7 @@ class PosController extends Controller
                             name="precio_venta">
                     </td>
                     <td class="text-center align-middle">
-                        <div class="input-group input-group-sm">
+                        <div class="input-group input-group-sm justify-content-center">
                             <button class="btn btn-light border btn-down" type="button"
                                 data-id="' . e((string) $product['id']) . '"
                                 data-cantidad="' . e((string) $product['cantidad']) . '"
@@ -238,7 +273,7 @@ class PosController extends Controller
                                 value="' . e((string) $product['cantidad']) . '"
                                 data-id="' . e((string) $product['id']) . '"
                                 data-precio_venta="' . e((string) $product['precio_venta']) . '"
-                                min="0" style="max-width: 60px;">
+                                min="0" style="max-width: 55px;">
                             <button class="btn btn-light border btn-up" type="button"
                                 data-id="' . e((string) $product['id']) . '"
                                 data-cantidad="' . e((string) $product['cantidad']) . '"
@@ -259,7 +294,7 @@ class PosController extends Controller
             }
         } else {
             $html_cart .= '<tr>
-                <td colspan="5" class="text-center text-muted py-4">
+                <td colspan="6" class="text-center text-muted py-4">
                     <div class="d-flex flex-column align-items-center">
                         <div class="fw-semibold mb-1">Tu carrito está vacío</div>
                         <small>Busca o escanea un producto para comenzar la venta.</small>
@@ -283,8 +318,7 @@ class PosController extends Controller
         ]);
     }
 
-    public function search_product(Request $request)
-    {
+    public function search_product(Request $request): JsonResponse {
         if (! $request->ajax()) {
             return response()->json([
                 'status' => false,
@@ -314,6 +348,9 @@ class PosController extends Controller
                     ->orWhere('products.codigo_barras', 'like', '%' . $value . '%')
                     ->orWhere('products.codigo_interno', 'like', '%' . $value . '%');
             })
+            ->with(['presentations' => function ($q) {
+                $q->where('estado', true)->with('unit');
+            }])
             ->limit(6)
             ->get();
 
@@ -332,14 +369,14 @@ class PosController extends Controller
                 'idalmacen' => $producto->idalmacen,
                 'texto_limpio' => $producto->descripcion,
                 'opcion' => $producto->opcion,
+                'presentations_count' => $producto->presentations ? $producto->presentations->count() : 0,
             ];
         });
 
         return response()->json($datos);
     }
 
-    public function add_product_search(Request $request)
-    {
+    public function add_product_search(Request $request): JsonResponse {
         if (! $request->ajax()) {
             return response()->json([
                 'status' => false,
@@ -366,9 +403,9 @@ class PosController extends Controller
 
         if (! $stockProducto) {
             return response()->json([
-                'status' => false,
-                'msg' => 'El producto no se encuentra en el almacen seleccionado.',
-                'type' => 'warning',
+                'status'    => false,
+                'msg'       => 'El producto no se encuentra en el almacen seleccionado.',
+                'type'      => 'warning',
             ]);
         }
 
@@ -382,16 +419,16 @@ class PosController extends Controller
 
         if (! $agregar['status']) {
             return response()->json([
-                'status' => false,
-                'msg' => $agregar['msg'],
-                'type' => 'warning',
+                'status'    => false,
+                'msg'       => $agregar['msg'],
+                'type'      => 'warning',
             ]);
         }
 
         return response()->json([
-            'status' => true,
-            'msg' => 'Producto agregado correctamente',
-            'type' => 'success',
+            'status'    => true,
+            'msg'       => 'Producto agregado correctamente',
+            'type'      => 'success',
         ]);
     }
 
@@ -399,9 +436,9 @@ class PosController extends Controller
     {
         if (! $request->ajax()) {
             return response()->json([
-                'status' => false,
-                'msg' => 'Intente de nuevo',
-                'type' => 'warning',
+                'status'    => false,
+                'msg'       => 'Intente de nuevo',
+                'type'      => 'warning',
             ]);
         }
 
@@ -410,24 +447,24 @@ class PosController extends Controller
 
         if (! $producto) {
             return response()->json([
-                'status' => false,
-                'msg' => 'El producto no existe.',
-                'type' => 'warning',
+                'status'    => false,
+                'msg'       => 'El producto no existe.',
+                'type'      => 'warning',
             ]);
         }
 
         if (! $this->delete_product_cart($id, (int) $producto->opcion)) {
             return response()->json([
-                'status' => false,
-                'msg' => 'No se pudo eliminar el producto',
-                'type' => 'warning',
+                'status'    => false,
+                'msg'       => 'No se pudo eliminar el producto',
+                'type'      => 'warning',
             ]);
         }
 
         return response()->json([
-            'status' => true,
-            'msg' => 'Registro eliminado correctamente',
-            'type' => 'success',
+            'status'    => true,
+            'msg'       => 'Registro eliminado correctamente',
+            'type'      => 'success',
         ]);
     }
 
@@ -479,13 +516,16 @@ class PosController extends Controller
             ]);
         }
 
-        $cantidad = (int) $request->input('cantidad');
-        $precio = number_format((float) $request->input('precio'), 2, '.', '');
+        $cantidad = $request->has('cantidad') ? (float) $request->input('cantidad') : null;
+        $precio = $request->has('precio') ? number_format((float) $request->input('precio'), 2, '.', '') : null;
+        $presentationId = $request->input('presentation_id');
 
-        if (! $this->update_quantity($id, $cantidad, $precio, (int) $producto->opcion)) {
+        $result = $this->update_product_cart($id, (int) $producto->opcion, $cantidad, $precio, $presentationId);
+
+        if (! $result['status']) {
             return response()->json([
                 'status' => false,
-                'msg' => 'Stock insuficiente',
+                'msg' => $result['msg'] ?? 'Stock insuficiente',
                 'type' => 'warning',
             ]);
         }
@@ -1225,7 +1265,9 @@ class PosController extends Controller
                         ->lockForUpdate()
                         ->first();
 
-                    $nuevoStock = max(0, (int) $registro->stock_actual - (int) $product['cantidad']);
+                    $factorConversion = (float) ($product['factor_conversion'] ?? 1);
+                    $cantidadUnidades = (float) $product['cantidad'] * ($factorConversion > 0 ? $factorConversion : 1);
+                    $nuevoStock = max(0, (float) $registro->stock_actual - $cantidadUnidades);
                     $registro->update([
                         'stock_actual' => $nuevoStock,
                     ]);
@@ -1438,7 +1480,10 @@ class PosController extends Controller
                 throw new \RuntimeException('Uno de los productos ya no está disponible en el almacen seleccionado.');
             }
 
-            if ((int) $registro->stock_actual < (int) $product['cantidad']) {
+            $factorConversion = (float) ($product['factor_conversion'] ?? 1);
+            $cantidadUnidades = (float) $product['cantidad'] * ($factorConversion > 0 ? $factorConversion : 1);
+
+            if ((float) $registro->stock_actual < $cantidadUnidades) {
                 throw new \RuntimeException('Stock insuficiente para ' . $product['descripcion'] . '.');
             }
         }
@@ -1683,7 +1728,54 @@ class PosController extends Controller
         return session()->get('pos');
     }
 
-    public function add_product_cart($id, $cantidad, $precio, $opcion, $idalmacen)
+    public function getProductPresentations($product, $basePrice = null): array
+    {
+        $presentations = [];
+
+        // 1. Base presentation (UND or unit code of product)
+        $baseUnitCode = 'UND';
+        if ($product->unit) {
+            $baseUnitCode = $product->unit->codigo === 'NIU' ? 'UND' : $product->unit->codigo;
+        }
+
+        $presentations[] = [
+            'id' => 'base',
+            'descripcion' => $baseUnitCode,
+            'unit_code' => $baseUnitCode,
+            'unit_id' => $product->idunidad,
+            'factor_conversion' => 1.0,
+            'precio_compra' => (float) ($product->precio_compra ?? 0),
+            'precio_venta' => (float) ($basePrice ?? $product->precio_venta),
+        ];
+
+        // 2. Extra presentations
+        $dbPresentations = ProductPresentation::where('idproducto', $product->id)
+            ->where('estado', true)
+            ->with('unit')
+            ->orderBy('id')
+            ->get();
+
+        foreach ($dbPresentations as $pres) {
+            $unitCode = optional($pres->unit)->codigo ?: $pres->descripcion;
+            if ($unitCode === 'NIU') {
+                $unitCode = 'UND';
+            }
+
+            $presentations[] = [
+                'id' => (string) $pres->id,
+                'descripcion' => $pres->descripcion,
+                'unit_code' => $unitCode,
+                'unit_id' => $pres->idunidad,
+                'factor_conversion' => (float) $pres->factor_conversion,
+                'precio_compra' => (float) $pres->precio_compra,
+                'precio_venta' => (float) $pres->precio_venta,
+            ];
+        }
+
+        return $presentations;
+    }
+
+    public function add_product_cart($id, $cantidad, $precio, $opcion, $idalmacen, $presentationId = 'base')
     {
         $product = Product::select(
             'products.*',
@@ -1707,26 +1799,39 @@ class PosController extends Controller
             ];
         }
 
-        if ((int) $opcion === 1 && ((int) $product->stock < (int) $cantidad || (int) $product->stock === 0)) {
+        $allPresentations       = $this->getProductPresentations($product, $precio);
+        $selectedPresentation   = collect($allPresentations)->firstWhere('id', (string) $presentationId) ?: $allPresentations[0];
+        $factorConversion       = (float) ($selectedPresentation['factor_conversion'] ?? 1);
+        $precioVenta            = number_format((float) ($selectedPresentation['precio_venta'] ?? $precio), 2, '.', '');
+        $unidadCodigo           = $selectedPresentation['unit_code'] ?? ($product->unidad === 'NIU' ? 'UND' : $product->unidad);
+        $unidadId               = $selectedPresentation['unit_id'] ?? $product->idunidad;
+        $presentacionDesc       = $selectedPresentation['descripcion'] ?? $unidadCodigo;
+        $cantidadBase           = (float) $cantidad * ($factorConversion > 0 ? $factorConversion : 1);
+
+        if ((int) $opcion === 1 && ((float) $product->stock < $cantidadBase || (float) $product->stock <= 0)) {
             return [
                 'status' => false,
-                'msg' => 'Producto sin stock para venta',
+                'msg'    => 'Producto sin stock para venta',
             ];
         }
 
         $newProduct = [
-            'id' => $product->id,
-            'descripcion' => $product->descripcion,
-            'idunidad' => $product->idunidad,
-            'unidad' => $product->unidad,
-            'igv' => $product->igv,
-            'idcodigo_igv' => $product->idcodigo_igv,
-            'precio_compra' => $product->precio_compra,
-            'precio_venta' => $precio,
-            'stock' => ((int) $opcion === 1) ? $product->stock : null,
-            'opcion' => $opcion,
-            'cantidad' => $cantidad,
-            'idalmacen' => ((int) $opcion === 1) ? $idalmacen : null,
+            'id'                        => $product->id,
+            'descripcion'               => $product->descripcion,
+            'idunidad'                  => $unidadId,
+            'unidad'                    => $unidadCodigo,
+            'idpresentacion'            => (string) $selectedPresentation['id'],
+            'presentacion_descripcion'  => $presentacionDesc,
+            'factor_conversion'         => $factorConversion,
+            'presentations'             => $allPresentations,
+            'igv'                       => $product->igv,
+            'idcodigo_igv'              => $product->idcodigo_igv,
+            'precio_compra'             => $selectedPresentation['precio_compra'] ?? $product->precio_compra,
+            'precio_venta'              => $precioVenta,
+            'stock'                     => ((int) $opcion === 1) ? $product->stock : null,
+            'opcion'                    => $opcion,
+            'cantidad'                  => $cantidad,
+            'idalmacen'                 => ((int) $opcion === 1) ? $idalmacen : null,
         ];
 
         if (empty(session()->get('pos')['products'])) {
@@ -1740,14 +1845,19 @@ class PosController extends Controller
 
         foreach (session()->get('pos')['products'] as $index => $sessionProduct) {
             if ($id == $sessionProduct['id'] && $sessionProduct['opcion'] == $opcion) {
-                if ((int) $opcion === 1 && (int) $sessionProduct['stock'] < ((int) $sessionProduct['cantidad'] + (int) $cantidad)) {
+                $currentFactor = (float) ($sessionProduct['factor_conversion'] ?? 1);
+                $nuevaCantidad = (float) $sessionProduct['cantidad'] + (float) $cantidad;
+                $requeridoBase = $nuevaCantidad * ($currentFactor > 0 ? $currentFactor : 1);
+
+                if ((int) $opcion === 1 && (float) $sessionProduct['stock'] < $requeridoBase) {
                     return [
                         'status' => false,
                         'msg' => 'Stock insuficiente para agregar más unidades.',
                     ];
                 }
 
-                $sessionProduct['cantidad'] = $sessionProduct['cantidad'] + $cantidad;
+                $sessionProduct['cantidad'] = $nuevaCantidad;
+                $sessionProduct['presentations'] = $allPresentations;
                 session()->put('pos.products.' . $index, $sessionProduct);
 
                 return [
@@ -1781,27 +1891,65 @@ class PosController extends Controller
         return false;
     }
 
-    public function update_quantity($id, $cantidad, $precio, $opcion)
+    public function update_product_cart($id, $opcion, $cantidad = null, $precio = null, $presentationId = null)
     {
         if (empty(session()->get('pos')['products'])) {
-            return false;
+            return ['status' => false, 'msg' => 'Carrito vacío'];
         }
 
         foreach (session()->get('pos')['products'] as $index => $product) {
             if ($id == $product['id'] && $opcion == $product['opcion']) {
-                if ($product['stock'] !== null && (int) $product['stock'] < (int) $cantidad) {
-                    return false;
+                $allPresentations = $product['presentations'] ?? [];
+                if (empty($allPresentations)) {
+                    $prodModel = Product::with(['unit', 'presentations.unit'])->find($id);
+                    if ($prodModel) {
+                        $allPresentations = $this->getProductPresentations($prodModel, $product['precio_venta']);
+                        $product['presentations'] = $allPresentations;
+                    }
                 }
 
-                $product['cantidad'] = $cantidad;
-                $product['precio_venta'] = $precio;
+                $targetPresId = ($presentationId !== null) ? (string) $presentationId : (string) ($product['idpresentacion'] ?? 'base');
+                $selectedPres = collect($allPresentations)->firstWhere('id', $targetPresId) ?: ($allPresentations[0] ?? null);
+
+                $factor = (float) ($selectedPres['factor_conversion'] ?? ($product['factor_conversion'] ?? 1));
+                $newCantidad = ($cantidad !== null) ? (float) $cantidad : (float) $product['cantidad'];
+                $newPrecio = ($precio !== null) ? $precio : ($selectedPres ? number_format((float) $selectedPres['precio_venta'], 2, '.', '') : $product['precio_venta']);
+
+                $stockRequerido = $newCantidad * ($factor > 0 ? $factor : 1);
+
+                if ($product['stock'] !== null && (float) $product['stock'] < $stockRequerido) {
+                    return [
+                        'status' => false,
+                        'msg' => 'Stock insuficiente (requiere ' . $stockRequerido . ' unid., stock actual: ' . $product['stock'] . ').',
+                    ];
+                }
+
+                $product['cantidad'] = $newCantidad;
+                $product['precio_venta'] = $newPrecio;
+                $product['idpresentacion'] = $targetPresId;
+                $product['factor_conversion'] = $factor;
+                if ($selectedPres) {
+                    $product['idunidad'] = $selectedPres['unit_id'] ?? $product['idunidad'];
+                    $product['unidad'] = $selectedPres['unit_code'] ?? $product['unidad'];
+                    $product['presentacion_descripcion'] = $selectedPres['descripcion'] ?? $product['unidad'];
+                    if (isset($selectedPres['precio_compra'])) {
+                        $product['precio_compra'] = $selectedPres['precio_compra'];
+                    }
+                }
+
                 session()->put('pos.products.' . $index, $product);
 
-                return true;
+                return ['status' => true];
             }
         }
 
-        return false;
+        return ['status' => false, 'msg' => 'Producto no encontrado en carrito'];
+    }
+
+    public function update_quantity($id, $cantidad, $precio, $opcion)
+    {
+        $res = $this->update_product_cart($id, $opcion, $cantidad, $precio, null);
+        return $res['status'];
     }
 
     public function destroy_cart()
