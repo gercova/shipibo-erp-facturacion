@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ArchingCashController; 
+use App\Http\Controllers\DailyCashClosingController;
 use App\Http\Controllers\BusinessController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\BillingReportController;
@@ -28,6 +29,7 @@ use App\Http\Controllers\WarehouseSelectorController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ReportSalesController;
 use App\Http\Controllers\ShipmentGuideController;
+use App\Http\Controllers\ContractController;
 use Illuminate\Http\Request;
 
 
@@ -219,6 +221,19 @@ Route::controller(QuoteController::class)->prefix('quotes')->middleware(['auth',
     Route::post('/get-price'                , 'get_product')->name('admin.get_product_buy_quote');
 });
 
+Route::controller(ContractController::class)->prefix('contracts')->middleware(['auth', 'can:admin.contracts'])->group(function() {
+    Route::get('/'                          , 'index')->name('admin.contracts');
+    Route::get('/get'                       , 'get')->name('contracts.get');
+    Route::get('/create'                    , 'create')->name('admin.create_contract');
+    Route::post('/store'                    , 'store')->name('admin.store_contract');
+    Route::get('/{id}/edit'                 , 'edit')->name('admin.edit_contract');
+    Route::post('/{id}/update'              , 'update')->name('admin.update_contract');
+    Route::post('/delete'                   , 'destroy')->name('admin.delete_contract');
+    Route::post('/detail'                   , 'detail')->name('admin.detail_contract');
+    Route::post('/print-a4'                 , 'print_a4')->name('admin.print_contract_a4');
+    Route::get('/{id}/download'             , 'download_pdf')->name('admin.contracts.download');
+});
+
 Route::controller(PosController::class)->prefix('pos')->middleware(['auth', 'can:admin.pos'])->group(function() {
     Route::get('/'                     , 'index')->name('admin.pos');
     Route::get('/crear'               , 'create')->name('admin.pos.create');
@@ -302,6 +317,16 @@ Route::controller(ArchingCashController::class)->prefix('archingcash')->middlewa
     Route::post('/save-withdrawal'    , 'save_withdrawal')->name('admin.save_withdrawal');
     Route::post('/print-resumen'      , 'print_resumen')->name('admin.print_resumen_archingcash');
     Route::post('/print-summary'      , 'print_summary')->name('admin.print_summary');
+});
+
+Route::controller(DailyCashClosingController::class)->prefix('archingcash/cierre-diario')->middleware(['auth', 'can:admin.arching_cashes'])->group(function() {
+    Route::get('/'                    , 'index')->name('admin.daily_closing');
+    Route::get('/ventas-data'         , 'sales_data')->name('admin.daily_closing.sales_data');
+    Route::get('/gastos-data'         , 'expenses_data')->name('admin.daily_closing.expenses_data');
+    Route::post('/gastos/guardar'     , 'store_expense')->name('admin.daily_closing.store_expense');
+    Route::post('/gastos/anular'      , 'delete_expense')->name('admin.daily_closing.delete_expense');
+    Route::post('/cerrar'             , 'close_cash')->name('admin.daily_closing.close_cash');
+    Route::get('/imprimir'            , 'print_ticket')->name('admin.daily_closing.print_ticket');
 });
 
 Route::controller(UserController::class)->prefix('users')->middleware(['auth', 'can:admin.users'])->group(function() {
