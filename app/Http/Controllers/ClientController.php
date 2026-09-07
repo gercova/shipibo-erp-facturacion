@@ -59,8 +59,15 @@ class ClientController extends Controller
             return response()->json(['status' => false, 'msg' => 'Intente de nuevo', 'type' => 'warning']);
         }
 
+        if (! $request->has('type_document') && $request->has('iddoc')) {
+            $request->merge(['type_document' => $request->input('iddoc')]);
+        }
+        if (! $request->has('dni_ruc') && $request->has('nro_documento')) {
+            $request->merge(['dni_ruc' => $request->input('nro_documento')]);
+        }
+
         $validator = Validator::make($request->all(), [
-            'type_document' => 'required|integer',
+            'type_document' => 'required',
             'dni_ruc' => 'required|string|max:15',
         ], [
             'type_document.required' => 'Debe seleccionar un tipo de documento.',
@@ -297,6 +304,19 @@ class ClientController extends Controller
 
     private function validateClientRequest(Request $request, bool $isUpdate = false)
     {
+        if (! $request->has('tipo_documento') && $request->has('iddoc')) {
+            $request->merge(['tipo_documento' => $request->input('iddoc')]);
+        }
+        if (! $request->has('dni_ruc') && $request->has('nro_documento')) {
+            $request->merge(['dni_ruc' => $request->input('nro_documento')]);
+        }
+        if (! $request->has('razon_social') && $request->has('nombres')) {
+            $request->merge(['razon_social' => $request->input('nombres')]);
+        }
+        if (! $request->filled('direccion')) {
+            $request->merge(['direccion' => '-']);
+        }
+
         $rules = [
             'tipo_documento' => 'required|integer|exists:identity_document_types,id',
             'dni_ruc' => 'required|string|max:15',
