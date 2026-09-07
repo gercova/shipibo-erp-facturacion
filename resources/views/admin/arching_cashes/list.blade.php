@@ -1,5 +1,4 @@
 @extends('admin.layout')
-
 @section('styles')
     <style>
         .arching-card {
@@ -220,6 +219,10 @@
                     </h1>
                 </div>
                 <div class="col-auto">
+                    <a href="{{ route('admin.daily_closing') }}" class="btn btn-outline-primary waves-effect waves-light mb-2 me-1">
+                        <i class="ri-calendar-check-line align-middle"></i>
+                        <span class="d-none d-sm-inline-block"> Cierre del Día</span>
+                    </a>
                     <button type="button"
                         class="btn btn-success waves-effect waves-light btn-create mb-2"
                         @disabled(! $canOpenArching)>
