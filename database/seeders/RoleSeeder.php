@@ -23,6 +23,7 @@ class RoleSeeder extends Seeder
             'Ventas' => [
                 'admin.clients' => 'Gestionar clientes',
                 'admin.quotes' => 'Gestionar cotizaciones',
+                'admin.contracts' => 'Gestionar contratos',
                 'admin.pos' => 'Usar punto de venta',
                 'admin.sale_notes' => 'Gestionar notas de venta',
                 'admin.billings' => 'Gestionar comprobantes',
@@ -84,6 +85,7 @@ class RoleSeeder extends Seeder
             'admin.home',
             'admin.clients',
             'admin.quotes',
+            'admin.contracts',
             'admin.pos',
             'admin.sale_notes',
             'admin.billings',
