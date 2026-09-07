@@ -25,4 +25,9 @@ class Client extends Model
     {
         return $this->belongsTo(IdentityDocumentType::class, 'iddoc');
     }
+
+    public function contracts()
+    {
+        return $this->hasMany(Contract::class, 'idcliente');
+    }
 }
