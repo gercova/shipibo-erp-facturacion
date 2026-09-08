@@ -6,6 +6,7 @@ use App\Models\Business;
 use App\Models\Client;
 use App\Models\Contract;
 use App\Models\ContractClause;
+use App\Models\ContractInstallment;
 use App\Models\ContractItem;
 use App\Models\IdentityDocumentType;
 use App\Models\Product;
@@ -48,6 +49,7 @@ class ContractController extends Controller
         $contracts = Contract::query()
             ->select('contracts.*', 'clients.nombres as cliente', 'clients.nro_documento as dni_ruc')
             ->join('clients', 'contracts.idcliente', '=', 'clients.id')
+            ->with('installments')
             ->orderBy('contracts.id', 'DESC');
 
         if ($warehouseId > 0) {
@@ -99,7 +101,14 @@ class ContractController extends Controller
                 return $this->signo_pais() . ' ' . number_format($row->total, 2);
             })
             ->addColumn('estado_badge', function ($row) {
-                return $row->status_badge;
+                $html = '<div class="d-flex flex-column align-items-center gap-1">';
+                $html .= '<div>' . $row->status_badge . '</div>';
+                $financialBadge = $row->financial_alert_badge;
+                if ($financialBadge) {
+                    $html .= '<div>' . $financialBadge . '</div>';
+                }
+                $html .= '</div>';
+                return $html;
             })
             ->addColumn('acciones', function ($row) {
                 $id = $row->id;
@@ -119,6 +128,9 @@ class ContractController extends Controller
                                 </a>
                                 <a class="dropdown-item" href="' . route('admin.contracts.edit', $id) . '">
                                     <i class="ri-edit-line me-2"></i> Editar
+                                </a>
+                                <a class="dropdown-item text-primary" href="' . route('admin.event_checklists.generate', $id) . '">
+                                    <i class="ri-checkbox-multiple-line me-2"></i> Checklist del Evento
                                 </a>
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item text-danger btn-delete-contract" data-id="' . $id . '" href="javascript:void(0);">
@@ -197,6 +209,19 @@ class ContractController extends Controller
             $igv = $applyIgv ? round($subtotal * 0.18, 2) : 0.00;
             $total = $subtotal + $igv;
 
+            // Validate installments if provided
+            $installmentsData = $request->input('installments', []);
+            if (!empty($installmentsData)) {
+                $sumInstallments = round((float) collect($installmentsData)->sum(fn($i) => floatval($i['monto'] ?? 0)), 2);
+                if (abs($sumInstallments - $total) > 0.05) {
+                    return response()->json([
+                        'status' => false,
+                        'msg' => 'La suma de las cuotas (' . number_format($sumInstallments, 2) . ') debe coincidir con el total del contrato (' . number_format($total, 2) . ').',
+                        'type' => 'warning'
+                    ], 422);
+                }
+            }
+
             // Handle digital signature
             $clientSignatureFile = null;
             if ($request->filled('signature_client_data')) {
@@ -265,6 +290,9 @@ class ContractController extends Controller
                 }
             }
 
+            // Sync Installments (50% initial down payment + remaining installments schedule)
+            $this->syncInstallments($contract, $installmentsData, $total, $request->input('fecha_emision'), $request->input('fecha_evento'));
+
             DB::commit();
 
             // Generate initial A4 PDF
@@ -288,7 +316,7 @@ class ContractController extends Controller
 
     public function edit($id)
     {
-        $contract = Contract::with(['client', 'items.product', 'clauses'])->find($id);
+        $contract = Contract::with(['client', 'items.product', 'clauses', 'installments'])->find($id);
         abort_if(!$contract, 404);
 
         $business = Business::first();
@@ -357,6 +385,19 @@ class ContractController extends Controller
             $applyIgv = $request->boolean('apply_igv', false);
             $igv = $applyIgv ? round($subtotal * 0.18, 2) : 0.00;
             $total = $subtotal + $igv;
+
+            // Validate installments if provided
+            $installmentsData = $request->input('installments', []);
+            if (!empty($installmentsData)) {
+                $sumInstallments = round((float) collect($installmentsData)->sum(fn($i) => floatval($i['monto'] ?? 0)), 2);
+                if (abs($sumInstallments - $total) > 0.05) {
+                    return response()->json([
+                        'status' => false,
+                        'msg' => 'La suma de las cuotas (' . number_format($sumInstallments, 2) . ') debe coincidir con el total del contrato (' . number_format($total, 2) . ').',
+                        'type' => 'warning'
+                    ], 422);
+                }
+            }
 
             // Handle digital signature updates
             $clientSignatureFile = $contract->firma_cliente;
@@ -433,6 +474,9 @@ class ContractController extends Controller
                 }
             }
 
+            // Sync Installments
+            $this->syncInstallments($contract, $installmentsData, $total, $request->input('fecha_emision'), $request->input('fecha_evento'));
+
             DB::commit();
 
             // Re-generate A4 PDF
@@ -500,7 +544,7 @@ class ContractController extends Controller
     public function detail(Request $request)
     {
         $id = (int) $request->input('id');
-        $contract = Contract::with(['client.tipoDocumento', 'items', 'clauses'])->find($id);
+        $contract = Contract::with(['client.tipoDocumento', 'items', 'clauses', 'installments'])->find($id);
 
         if (!$contract) {
             return response()->json([
@@ -510,14 +554,85 @@ class ContractController extends Controller
             ], 404);
         }
 
+        $formattedInstallments = $contract->installments->map(function ($inst) {
+            return [
+                'id' => $inst->id,
+                'numero_cuota' => $inst->numero_cuota,
+                'descripcion' => $inst->descripcion,
+                'monto' => (float) $inst->monto,
+                'porcentaje' => (float) $inst->porcentaje,
+                'fecha_vencimiento' => $inst->fecha_vencimiento ? $inst->fecha_vencimiento->format('d/m/Y') : '-',
+                'fecha_vencimiento_raw' => $inst->fecha_vencimiento ? $inst->fecha_vencimiento->format('Y-m-d') : null,
+                'fecha_pago' => $inst->fecha_pago ? $inst->fecha_pago->format('d/m/Y') : '-',
+                'estado' => $inst->estado,
+                'is_paid' => $inst->isPaid(),
+                'is_overdue' => $inst->isOverdue(),
+                'is_due_today' => $inst->isDueToday(),
+                'badge' => $inst->status_badge,
+                'metodo_pago' => $inst->metodo_pago,
+                'referencia_pago' => $inst->referencia_pago,
+                'observaciones' => $inst->observaciones,
+            ];
+        });
+
         return response()->json([
             'status' => true,
             'contract' => $contract,
             'client' => $contract->client,
             'items' => $contract->items,
             'clauses' => $contract->clauses,
+            'installments' => $formattedInstallments,
+            'has_overdue' => $contract->hasOverdueInstallments(),
+            'paid_amount' => $contract->paid_amount,
+            'pending_amount' => $contract->pending_amount,
             'status_label' => $contract->status_label,
             'signo' => $this->signo_pais(),
+        ]);
+    }
+
+    public function pay_installment(Request $request, $id)
+    {
+        $installment = ContractInstallment::with('contract')->find($id);
+        if (!$installment) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'La cuota no existe o ya fue eliminada.',
+                'type' => 'warning'
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'fecha_pago' => 'required|date',
+            'metodo_pago' => 'nullable|string|max:50',
+            'referencia_pago' => 'nullable|string|max:100',
+            'observaciones' => 'nullable|string|max:255',
+        ], [
+            'fecha_pago.required' => 'Debe ingresar la fecha de pago.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'msg' => $validator->errors()->first(),
+                'type' => 'warning'
+            ], 422);
+        }
+
+        $installment->update([
+            'estado' => ContractInstallment::STATUS_PAID,
+            'fecha_pago' => $request->input('fecha_pago', date('Y-m-d')),
+            'metodo_pago' => $request->input('metodo_pago', 'Efectivo'),
+            'referencia_pago' => $request->input('referencia_pago'),
+            'observaciones' => $request->input('observaciones'),
+        ]);
+
+        // Re-generate contract PDF with updated payment details if desired
+        $this->generatePdfFile($installment->contract_id);
+
+        return response()->json([
+            'status' => true,
+            'msg' => 'Pago de la cuota #' . $installment->numero_cuota . ' registrado exitosamente.',
+            'installment' => $installment,
         ]);
     }
 
@@ -555,7 +670,7 @@ class ContractController extends Controller
 
     protected function generatePdfFile($contractId): string
     {
-        $contract = Contract::with(['client.tipoDocumento', 'items', 'clauses'])->findOrFail($contractId);
+        $contract = Contract::with(['client.tipoDocumento', 'items', 'clauses', 'installments'])->findOrFail($contractId);
         $business = Business::first();
 
         $formatter = new NumeroALetras();
@@ -566,6 +681,7 @@ class ContractController extends Controller
             'client' => $contract->client,
             'items' => $contract->items,
             'clauses' => $contract->clauses,
+            'installments' => $contract->installments,
             'business' => $business,
             'logo' => $business?->logo,
             'numero_letras' => $numeroLetras,
@@ -626,6 +742,97 @@ class ContractController extends Controller
         return sprintf("CON-%s-%04d", $year, $correlativo);
     }
 
+    protected function syncInstallments(Contract $contract, array $installmentsData, float $total, string $fechaEmision, ?string $fechaEvento): void
+    {
+        // If installmentsData is empty, auto-generate default 50% initial down payment + 50% remaining balance
+        if (empty($installmentsData)) {
+            $monto1 = round($total * 0.50, 2);
+            $monto2 = round($total - $monto1, 2);
+            $dueDate2 = $fechaEvento ?: Carbon::parse($fechaEmision)->addDays(15)->format('Y-m-d');
+
+            $installmentsData = [
+                [
+                    'numero_cuota' => 1,
+                    'descripcion' => 'Adelanto Inicial (50%)',
+                    'porcentaje' => 50,
+                    'monto' => $monto1,
+                    'fecha_vencimiento' => $fechaEmision,
+                    'estado' => 0,
+                ],
+                [
+                    'numero_cuota' => 2,
+                    'descripcion' => 'Saldo Final (50%)',
+                    'porcentaje' => 50,
+                    'monto' => $monto2,
+                    'fecha_vencimiento' => $dueDate2,
+                    'estado' => 0,
+                ]
+            ];
+        }
+
+        // Keep track of existing paid status if updating
+        $existingPaidMap = [];
+        foreach ($contract->installments as $existingInst) {
+            if ($existingInst->isPaid()) {
+                $existingPaidMap[$existingInst->numero_cuota] = [
+                    'estado' => $existingInst->estado,
+                    'fecha_pago' => $existingInst->fecha_pago?->format('Y-m-d'),
+                    'metodo_pago' => $existingInst->metodo_pago,
+                    'referencia_pago' => $existingInst->referencia_pago,
+                    'observaciones' => $existingInst->observaciones,
+                ];
+            }
+        }
+
+        // Delete previous installments
+        $contract->installments()->delete();
+
+        $cuotasJson = [];
+        $order = 1;
+
+        foreach ($installmentsData as $inst) {
+            $monto = round(floatval($inst['monto'] ?? 0), 2);
+            if ($monto <= 0) continue;
+
+            $fechaVenc = !empty($inst['fecha_vencimiento']) ? $inst['fecha_vencimiento'] : $fechaEmision;
+            $desc = !empty($inst['descripcion']) ? trim($inst['descripcion']) : ($order === 1 ? 'Adelanto Inicial (50%)' : "Cuota {$order}");
+            $porcentaje = !empty($inst['porcentaje']) ? floatval($inst['porcentaje']) : ($total > 0 ? round(($monto / $total) * 100, 2) : 0);
+
+            // Restore paid status if matched by installment number
+            $isPreviouslyPaid = isset($existingPaidMap[$order]);
+            $estado = $isPreviouslyPaid ? $existingPaidMap[$order]['estado'] : intval($inst['estado'] ?? 0);
+            $fechaPago = $isPreviouslyPaid ? $existingPaidMap[$order]['fecha_pago'] : (!empty($inst['fecha_pago']) ? $inst['fecha_pago'] : null);
+            $metodoPago = $isPreviouslyPaid ? $existingPaidMap[$order]['metodo_pago'] : ($inst['metodo_pago'] ?? null);
+            $referenciaPago = $isPreviouslyPaid ? $existingPaidMap[$order]['referencia_pago'] : ($inst['referencia_pago'] ?? null);
+            $observaciones = $isPreviouslyPaid ? $existingPaidMap[$order]['observaciones'] : ($inst['observaciones'] ?? null);
+
+            ContractInstallment::create([
+                'contract_id' => $contract->id,
+                'numero_cuota' => $order,
+                'descripcion' => $desc,
+                'monto' => $monto,
+                'porcentaje' => $porcentaje,
+                'fecha_vencimiento' => $fechaVenc,
+                'fecha_pago' => $fechaPago,
+                'estado' => $estado,
+                'metodo_pago' => $metodoPago,
+                'referencia_pago' => $referenciaPago,
+                'observaciones' => $observaciones,
+            ]);
+
+            $cuotasJson[] = [
+                'nro' => $order,
+                'monto' => number_format($monto, 2, '.', ''),
+                'fecha_vencimiento' => $fechaVenc,
+            ];
+
+            $order++;
+        }
+
+        $contract->cuotas = $cuotasJson;
+        $contract->save();
+    }
+
     protected function getDefaultClauseTemplates($business): array
     {
         $companyName = $business?->razon_social ?: ($business?->nombre_comercial ?: 'LA EMPRESA');
@@ -659,6 +866,10 @@ class ContractController extends Controller
             [
                 'titulo' => 'SÉPTIMA: CONFORMIDAD Y JURISDICCIÓN',
                 'contenido' => 'Ambas partes expresan su absoluta conformidad con el contenido de todas y cada una de las cláusulas del presente contrato, el cual firman de manera digital o presencial. Para cualquier controversia no resuelta de mutuo acuerdo, las partes se someten expresamente a la jurisdicción y competencia de los jueces y tribunales correspondientes.'
+            ],
+            [
+                'titulo' => 'OCTAVA: DE LA GARANTÍA POR PÉRDIDAS O DAÑOS (20%)',
+                'contenido' => 'EL CLIENTE se compromete a constituir o asumir un fondo de garantía equivalente al 20% del valor total del contrato, destinado a cubrir eventuales roturas, pérdidas, extravíos o deterioros de cristalería, barras móviles, utensilios, equipos de coctelería o menaje suministrados durante el evento. Dicho monto o saldo remanente será liquidado o reintegrado a EL CLIENTE una vez culminado el evento e inventariado el material conforme por ambas partes.'
             ]
         ];
     }
