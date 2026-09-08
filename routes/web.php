@@ -30,6 +30,8 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ReportSalesController;
 use App\Http\Controllers\ShipmentGuideController;
 use App\Http\Controllers\ContractController;
+use App\Http\Controllers\EventChecklistController;
+use App\Http\Controllers\CocktailMenuController;
 use Illuminate\Http\Request;
 
 
@@ -232,6 +234,32 @@ Route::controller(ContractController::class)->prefix('contracts')->middleware(['
     Route::post('/detail'                   , 'detail')->name('admin.detail_contract');
     Route::post('/print-a4'                 , 'print_a4')->name('admin.print_contract_a4');
     Route::get('/{id}/download'             , 'download_pdf')->name('admin.contracts.download');
+    Route::post('/installments/{id}/pay'    , 'pay_installment')->name('admin.contracts.pay_installment');
+});
+
+Route::controller(EventChecklistController::class)->prefix('event-checklists')->middleware(['auth', 'can:admin.contracts'])->group(function() {
+    Route::get('/'                                  , 'index')->name('admin.event_checklists');
+    Route::get('/get'                               , 'get')->name('event_checklists.get');
+    Route::get('/contract/{contractId}/generate'    , 'generateFromContract')->name('admin.event_checklists.generate');
+    Route::get('/{id}/tablet'                       , 'tablet')->name('admin.event_checklists.tablet');
+    Route::post('/{id}/update-item'                 , 'updateItem')->name('admin.event_checklists.update_item');
+    Route::post('/{id}/add-item'                    , 'addItem')->name('admin.event_checklists.add_item');
+    Route::post('/{id}/bulk-toggle'                 , 'bulkToggle')->name('admin.event_checklists.bulk_toggle');
+    Route::get('/{id}/report'                       , 'report')->name('admin.event_checklists.report');
+    Route::get('/{id}/pdf'                          , 'pdfReport')->name('admin.event_checklists.pdf');
+    Route::post('/delete'                           , 'destroy')->name('admin.event_checklists.delete');
+});
+
+Route::controller(CocktailMenuController::class)->prefix('cocktail-menu')->middleware(['auth', 'can:admin.contracts'])->group(function() {
+    Route::get('/'                                  , 'index')->name('admin.cocktail_menu.index');
+    Route::get('/get'                               , 'get')->name('admin.cocktail_menu.get');
+    Route::post('/detail'                           , 'detail')->name('admin.cocktail_menu.detail');
+    Route::post('/store'                            , 'store')->name('admin.cocktail_menu.store');
+    Route::post('/delete'                           , 'delete')->name('admin.cocktail_menu.delete');
+    Route::post('/toggle-status'                    , 'toggle_status')->name('admin.cocktail_menu.toggle_status');
+    Route::post('/store-category'                   , 'store_category')->name('admin.cocktail_menu.store_category');
+    Route::post('/delete-category'                  , 'delete_category')->name('admin.cocktail_menu.delete_category');
+    Route::get('/tablet'                            , 'tablet')->name('admin.cocktail_menu.tablet');
 });
 
 Route::controller(PosController::class)->prefix('pos')->middleware(['auth', 'can:admin.pos'])->group(function() {
