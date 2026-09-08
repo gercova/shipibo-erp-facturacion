@@ -253,12 +253,101 @@
             </div>
         </div>
 
-        <!-- 4. CONTRACT CLAUSES -->
+        <!-- 4. PAYMENT SCHEDULE & CREDIT FINANCING -->
+        <div class="card custom-card pro-card mb-4">
+            <div class="card-body">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                    <div class="section-title mb-0 border-0 p-0">
+                        <i class="ri-bank-card-line"></i> 4. Cronograma de Pagos y Financiamiento a Crédito
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mt-2 mt-md-0">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-primary btn-quick-split active" data-split="50_50">
+                                50% Inicial + 50% Saldo
+                            </button>
+                            <button type="button" class="btn btn-outline-primary btn-quick-split" data-split="50_25_25">
+                                50% Inicial + 2 Cuotas (25%/25%)
+                            </button>
+                            <button type="button" class="btn btn-outline-primary btn-quick-split" data-split="50_3">
+                                50% Inicial + 3 Cuotas
+                            </button>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-success" id="btn-add-installment">
+                            <i class="ri-add-line me-1"></i> Agregar Cuota
+                        </button>
+                    </div>
+                </div>
+
+                <div class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center justify-content-between">
+                    <div class="small">
+                        <i class="ri-information-line me-1"></i>
+                        <strong>Esquema Estándar para Eventos:</strong> Se establece un <strong>adelanto inicial del 50%</strong> para reserva de fecha y el saldo restante amortizado en cuotas con fecha límite hasta la ejecución del evento.
+                    </div>
+                    <div class="badge bg-white text-info border border-info fw-bold py-1 px-2">
+                        Crédito Configurable
+                    </div>
+                </div>
+
+                <div class="table-responsive mb-3">
+                    <table class="table table-bordered table-sm align-middle" id="table-contract-installments">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="5%" class="text-center">#</th>
+                                <th width="35%">Concepto / Descripción</th>
+                                <th width="15%" class="text-center">Porcentaje (%)</th>
+                                <th width="20%" class="text-center">Fecha Vencimiento <span class="text-danger">*</span></th>
+                                <th width="20%" class="text-end">Monto ({{ $signo }}) <span class="text-danger">*</span></th>
+                                <th width="5%" class="text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Generated dynamically by js-form.blade.php -->
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <td colspan="4" class="text-end fw-bold">Suma de Cuotas Programadas:</td>
+                                <td class="text-end fw-bold">
+                                    {{ $signo }} <span id="display-installments-sum">0.00</span>
+                                </td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- Validation and Guarantee info cards -->
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-7">
+                        <div id="installment-balance-alert" class="p-2 rounded-3 border bg-success-subtle border-success text-success small d-flex align-items-center">
+                            <i class="ri-checkbox-circle-line fs-5 me-2"></i>
+                            <span id="installment-balance-text">El cronograma de pagos cuadra exactamente con el total del contrato.</span>
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="p-2 rounded-3 border bg-warning-subtle border-warning text-dark small">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold text-warning-emphasis">
+                                    <i class="ri-shield-check-line me-1"></i> Garantía 20% (Cláusula 8va):
+                                </span>
+                                <span class="fw-bold fs-6 text-dark">
+                                    {{ $signo }} <span id="display-guarantee-val">0.00</span>
+                                </span>
+                            </div>
+                            <span class="text-muted d-block mt-1" style="font-size: 0.75rem;">
+                                Monto referencial por pérdidas/roturas de menaje y barras.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. CONTRACT CLAUSES -->
         <div class="card custom-card pro-card mb-4">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div class="section-title mb-0 border-0 p-0">
-                        <i class="ri-article-line"></i> 4. Cláusulas del Contrato (Personalizables y Múltiples)
+                        <i class="ri-article-line"></i> 5. Cláusulas del Contrato (Personalizables y Múltiples)
                     </div>
                     <div>
                         <button type="button" class="btn btn-sm btn-outline-secondary me-1" id="btn-load-default-clauses">
@@ -305,11 +394,11 @@
             </div>
         </div>
 
-        <!-- 5. DIGITAL SIGNATURE -->
+        <!-- 6. DIGITAL SIGNATURE -->
         <div class="card custom-card pro-card mb-4">
             <div class="card-body">
                 <div class="section-title">
-                    <i class="ri-quill-pen-line"></i> 5. Firma Digital del Cliente (Captura en Pantalla o Subida)
+                    <i class="ri-quill-pen-line"></i> 6. Firma Digital del Cliente (Captura en Pantalla o Subida)
                 </div>
                 <div class="row g-3">
                     <div class="col-md-7">
@@ -353,11 +442,11 @@
             </div>
         </div>
 
-        <!-- 6. OBSERVATIONS & STATUS & SUBMIT -->
+        <!-- 7. OBSERVATIONS & STATUS & SUBMIT -->
         <div class="card custom-card pro-card mb-4">
             <div class="card-body">
                 <div class="section-title">
-                    <i class="ri-chat-check-line"></i> 6. Observaciones, Condiciones de Pago y Estado
+                    <i class="ri-chat-check-line"></i> 7. Observaciones, Condiciones de Pago y Estado
                 </div>
                 <div class="row g-3">
                     <div class="col-md-8">
