@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\ProductsCatalogExport;
+use App\Http\Requests\ProductImportRequest;
 use App\Imports\ProductsCatalogImport;
 use App\Models\Category;
 use App\Models\DetailBilling;
@@ -54,6 +55,10 @@ class ProductController extends Controller
                     $badges[] = '<span class="badge bg-info-subtle text-info fw-medium ms-2">Servicio</span>';
                 } else {
                     $badges[] = '<span class="badge bg-success-subtle text-success fw-medium ms-2">Producto</span>';
+                }
+
+                if ($product->rentable) {
+                    $badges[] = '<span class="badge bg-warning-subtle text-warning fw-medium ms-2"><i class="ri-tools-line me-1"></i>Alquiler / Eventos</span>';
                 }
 
                 if (! empty($product->codigo_interno)) {
@@ -136,10 +141,11 @@ class ProductController extends Controller
         }
 
         $isService      = (int) $data['opcion'] === 2;
-        $stockActual    = $isService ? null : (int) $data['stock_actual'];
+        $stockActual    = $isService ? null : round((float) $data['stock_actual'], 4);
         $precioCompra   = round((float) $data['precio_compra'], 2);
         $precioVenta    = round((float) $data['precio_venta'], 2);
         $igvPercent     = $this->resolveIgvPercentByAffectionId((int) $data['idcodigo_igv']);
+        $rentable       = $isService ? false : $request->boolean('rentable');
 
         $product = Product::create([
             'codigo_interno'    => $this->normalizeNullableText($data['codigo_interno'] ?? null),
@@ -153,6 +159,7 @@ class ProductController extends Controller
             'precio_compra'     => $precioCompra,
             'precio_venta'      => $precioVenta,
             'opcion'            => (int) $data['opcion'],
+            'rentable'          => $rentable,
             'stock_actual'      => $stockActual,
         ]);
 
@@ -250,7 +257,9 @@ class ProductController extends Controller
         $data['categoria'] = empty($product->categoria) ? '-' : $product->categoria;
         $data['precio_compra'] = $signo . number_format((float) $product->precio_compra, 2, '.', '');
         $data['precio_venta'] = $signo . number_format((float) $product->precio_venta, 2, '.', '');
-        $data['stock'] = $product->stock_actual === null ? '-' : $product->stock_actual;
+        $data['stock'] = $product->stock_actual === null ? '-' : rtrim(rtrim(number_format((float) $product->stock_actual, 4, '.', ''), '0'), '.');
+        $data['rentable'] = (bool) $product->rentable;
+        $data['tipo'] = (int) $product->opcion === 2 ? 'Servicio' : ($product->rentable ? 'Producto (Herramienta / Alquiler)' : 'Producto');
 
         return response()->json([
             'status' => true,
@@ -308,6 +317,7 @@ class ProductController extends Controller
             'igv' => $this->resolveIgvPercentByAffectionId((int) $data['idcodigo_igv']),
             'idcodigo_igv' => (int) $data['idcodigo_igv'],
             'opcion' => (int) $data['opcion'],
+            'rentable' => (int) $data['opcion'] === 2 ? false : $request->boolean('rentable'),
         ]);
 
         return response()->json([
@@ -449,6 +459,7 @@ class ProductController extends Controller
             'idcategoria' => 'required|integer|exists:categories,id',
             'idcodigo_igv' => 'required|integer|exists:igv_type_affections,id',
             'opcion' => 'required|in:1,2',
+            'rentable' => 'nullable|boolean',
             'precio_compra' => 'nullable|numeric|min:0',
             'precio_venta' => 'nullable|numeric|min:0',
             'stock_actual' => 'nullable|numeric|min:0',
@@ -576,57 +587,68 @@ class ProductController extends Controller
                 'products.*',
                 'units.codigo as unidad_codigo',
                 'categories.descripcion as categoria',
-                'igv_type_affections.codigo as afectacion_igv_codigo'
+                'igv_type_affections.codigo as afectacion_igv_codigo',
+                'warehouses.descripcion as almacen_descripcion',
+                'stock_products.stock_actual as stock_almacen',
+                'stock_products.stock_minimo as stock_minimo_almacen'
             )
-            ->join('units', 'units.id', '=', 'products.idunidad')
-            ->join('categories', 'categories.id', '=', 'products.idcategoria')
-            ->join('igv_type_affections', 'igv_type_affections.id', '=', 'products.idcodigo_igv')
+            ->leftJoin('units', 'units.id', '=', 'products.idunidad')
+            ->leftJoin('categories', 'categories.id', '=', 'products.idcategoria')
+            ->leftJoin('igv_type_affections', 'igv_type_affections.id', '=', 'products.idcodigo_igv')
+            ->leftJoin('stock_products', function ($join) {
+                $join->on('stock_products.idproducto', '=', 'products.id')
+                    ->whereRaw('stock_products.id = (SELECT MIN(sp2.id) FROM stock_products sp2 WHERE sp2.idproducto = products.id)');
+            })
+            ->leftJoin('warehouses', 'warehouses.id', '=', 'stock_products.idalmacen')
             ->orderBy('products.descripcion')
             ->get();
 
         return Excel::download(new ProductsCatalogExport($products), 'catalogo_productos.xlsx');
     }
 
-    public function upload(Request $request)
+    public function upload(ProductImportRequest $request)
     {
         if (! $request->ajax()) {
             return response()->json([
                 'status' => false,
-                'msg' => 'Intente de nuevo',
-                'type' => 'warning',
+                'msg'    => 'Intente de nuevo',
+                'type'   => 'warning',
             ]);
-        }
-
-        $excel = $request->file('excel');
-        if (empty($excel)) {
-            return response()->json([
-                'status' => false,
-                'msg' => 'Seleccione un documento',
-                'type' => 'warning',
-            ]);
-        }
-
-        if ($excel->extension() !== 'xlsx') {
-            return response()->json([
-                'status' => false,
-                'msg' => 'Seleccione un documento valido en formato .xlsx',
-                'type' => 'warning',
-            ], 422);
         }
 
         try {
-            Excel::import(new ProductsCatalogImport(), $excel);
+            $import = new ProductsCatalogImport();
+            Excel::import($import, $request->file('excel'));
+
+            $summary = $import->getSummary();
+            $importedCount = $summary['imported_count'];
+            $errorCount = $summary['error_count'];
+
+            if ($importedCount === 0 && $errorCount > 0) {
+                return response()->json([
+                    'status'  => false,
+                    'msg'     => "No se pudo importar ninguna fila. Se encontraron {$errorCount} observaciones.",
+                    'type'    => 'warning',
+                    'summary' => $summary,
+                ], 422);
+            }
+
+            $message = "Importación completada: {$importedCount} fila(s) procesada(s) con éxito.";
+            if ($errorCount > 0) {
+                $message .= " Se encontraron {$errorCount} fila(s) con observaciones.";
+            }
 
             return response()->json([
-                'status' => true,
-                'msg' => 'El catalogo se actualizo correctamente.',
-                'type' => 'success',
+                'status'  => true,
+                'msg'     => $message,
+                'type'    => $errorCount > 0 ? 'warning' : 'success',
+                'summary' => $summary,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return response()->json([
                 'status' => false,
-                'msg' => 'Se encontraron observaciones en el documento: ' . $e->getMessage(),
-                'type' => 'warning',
+                'msg'    => 'Error al procesar el documento: ' . $e->getMessage(),
+                'type'   => 'danger',
             ], 422);
         }
     }
