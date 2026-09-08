@@ -29,7 +29,7 @@ class ProductsCatalogExport implements FromView, ShouldAutoSize, WithEvents
         return [
             AfterSheet::class => function (AfterSheet $event) {
                 $richText = new RichText();
-                $richText->createText('No modifique product_id. El catalogo general solo actualiza datos maestros del producto.');
+                $richText->createText("Plantilla Mixta de Catálogo:\n- tipo_item: PRODUCTO o SERVICIO\n- almacen_destino y stock_inicial: Obligatorios solo para PRODUCTO\n- Para nuevos productos deje product_id vacío.");
 
                 $event->sheet->getDelegate()->getComment('A1')
                     ->setAuthor('Sistema')
@@ -38,7 +38,7 @@ class ProductsCatalogExport implements FromView, ShouldAutoSize, WithEvents
                 $sheet = $event->sheet->getDelegate();
                 $lastRow = max(2, $sheet->getHighestRow());
 
-                $sheet->getStyle("C2:E{$lastRow}")
+                $sheet->getStyle("J2:L{$lastRow}")
                     ->getNumberFormat()
                     ->setFormatCode(NumberFormat::FORMAT_TEXT);
             },
