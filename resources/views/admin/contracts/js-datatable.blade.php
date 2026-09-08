@@ -173,6 +173,66 @@
                     $('#modal-igv').text(signo + ' ' + parseFloat(c.igv).toFixed(2));
                     $('#modal-total').text(signo + ' ' + parseFloat(c.total).toFixed(2));
 
+                    // Render installments table
+                    let installments = r.installments || [];
+                    let installmentsHtml = '';
+                    installments.forEach(inst => {
+                        let rowClass = inst.is_overdue ? 'table-danger' : (inst.is_paid ? '' : '');
+                        let dueHtml = inst.fecha_vencimiento;
+
+                        if (inst.is_overdue) {
+                            dueHtml = `<span class="text-danger fw-bold"><i class="ri-alarm-warning-fill me-1"></i>${inst.fecha_vencimiento}</span>`;
+                        } else if (inst.is_due_today) {
+                            dueHtml = `<span class="text-warning-emphasis fw-bold"><i class="ri-time-fill me-1"></i>${inst.fecha_vencimiento} (Hoy)</span>`;
+                        }
+
+                        let actionHtml = '';
+                        if (inst.is_paid) {
+                            actionHtml = `<span class="badge bg-success-subtle text-success py-1 px-2"><i class="ri-check-line me-1"></i>Pagado</span>`;
+                        } else {
+                            actionHtml = `<button type="button" class="btn btn-sm btn-outline-success py-0 px-2 btn-open-pay-modal" 
+                                data-id="${inst.id}" 
+                                data-contract-id="${c.id}" 
+                                data-num="${inst.numero_cuota}" 
+                                data-desc="${inst.descripcion}" 
+                                data-amount="${parseFloat(inst.monto).toFixed(2)}" 
+                                data-due="${inst.fecha_vencimiento}">
+                                <i class="ri-money-dollar-circle-line me-1"></i>Pagar
+                            </button>`;
+                        }
+
+                        installmentsHtml += `<tr class="${rowClass}">
+                            <td class="text-center fw-bold">${inst.numero_cuota}</td>
+                            <td>
+                                <strong>${inst.descripcion}</strong>
+                                ${inst.metodo_pago ? `<br><small class="text-muted">Método: ${inst.metodo_pago}</small>` : ''}
+                            </td>
+                            <td class="text-center">${parseFloat(inst.porcentaje).toFixed(1)}%</td>
+                            <td class="text-center">${dueHtml}</td>
+                            <td class="text-end fw-bold">${signo} ${parseFloat(inst.monto).toFixed(2)}</td>
+                            <td class="text-center">${inst.badge}</td>
+                            <td class="text-center">${actionHtml}</td>
+                        </tr>`;
+                    });
+
+                    if (installments.length === 0) {
+                        installmentsHtml = `<tr><td colspan="7" class="text-center text-muted py-2">Sin cronograma registrado.</td></tr>`;
+                    }
+                    $('#modal-installments-body').html(installmentsHtml);
+
+                    $('#modal-installments-paid').text(signo + ' ' + parseFloat(r.paid_amount || 0).toFixed(2));
+                    $('#modal-installments-pending').text(signo + ' ' + parseFloat(r.pending_amount || 0).toFixed(2));
+
+                    if (r.has_overdue) {
+                        $('#modal-overdue-alert-banner').show();
+                    } else {
+                        $('#modal-overdue-alert-banner').hide();
+                    }
+
+                    // 20% Guarantee numerical display
+                    let guaranteeVal = (parseFloat(c.total) * 0.20).toFixed(2);
+                    $('#modal-guarantee-total').text(signo + ' ' + guaranteeVal);
+
                     // Render clauses
                     let clausesHtml = '';
                     if (clauses.length > 0) {
@@ -195,8 +255,9 @@
                         $('#modal-signature-wrapper').hide();
                     }
 
-                    // Download button in modal
+                    // Download and checklist buttons in modal
                     $('#modal-btn-download-pdf').attr('href', "{{ url('contracts') }}/" + c.id + "/download");
+                    $('#modal-btn-checklist').attr('href', "{{ url('event-checklists/contract') }}/" + c.id + "/generate");
                     $('#modal-btn-print-pdf').data('id', c.id);
 
                     $('#modalDetailContract').modal('show');
@@ -243,6 +304,64 @@
                             toastr.error('Ocurrió un error en el servidor al eliminar.');
                         }
                     });
+                }
+            });
+        // Open Pay Installment Modal
+        $(document).on('click', '.btn-open-pay-modal', function(e) {
+            e.preventDefault();
+            let id = $(this).data('id');
+            let contractId = $(this).data('contract-id');
+            let num = $(this).data('num');
+            let desc = $(this).data('desc');
+            let amount = $(this).data('amount');
+            let due = $(this).data('due');
+
+            $('#pay-contract-id').val(contractId);
+            $('#pay-installment-id').val(id);
+            $('#pay-installment-desc').text(`Cuota #${num}: ${desc}`);
+            $('#pay-installment-due').text(due);
+            $('#pay-installment-amount').text(`S/ ${amount}`);
+            $('#pay-installment-date').val(new Date().toISOString().slice(0, 10));
+            $('#pay-installment-reference').val('');
+            $('#pay-installment-notes').val('');
+
+            $('#modalPayContractInstallment').modal('show');
+        });
+
+        // Submit Pay Installment
+        $('#form-pay-installment').on('submit', function(e) {
+            e.preventDefault();
+            let installmentId = $('#pay-installment-id').val();
+            let contractId = $('#pay-contract-id').val();
+            let btn = $('#btn-submit-pay-installment');
+
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Registrando...');
+
+            let postUrl = "{{ url('contracts/installments') }}/" + installmentId + "/pay";
+
+            $.ajax({
+                url: postUrl,
+                type: "POST",
+                data: $(this).serialize(),
+                dataType: "json",
+                success: function(response) {
+                    btn.prop('disabled', false).html('<i class="ri-check-line me-1"></i> Confirmar Pago');
+                    if (response.status) {
+                        $('#modalPayContractInstallment').modal('hide');
+                        toastr.success(response.msg);
+                        table.ajax.reload(null, false);
+                        // Refresh contract detail modal
+                        if (contractId) {
+                            $(`.btn-detail-contract[data-id="${contractId}"]`).first().trigger('click');
+                        }
+                    } else {
+                        toastr.error(response.msg || 'No se pudo registrar el pago.');
+                    }
+                },
+                error: function(xhr) {
+                    btn.prop('disabled', false).html('<i class="ri-check-line me-1"></i> Confirmar Pago');
+                    let msg = xhr.responseJSON?.msg || 'Error al procesar el pago.';
+                    toastr.error(msg);
                 }
             });
         });
