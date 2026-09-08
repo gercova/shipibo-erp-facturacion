@@ -115,6 +115,7 @@
             $('#idcategoria').val($('#idcategoria').data('default') || '').trigger('change');
             $('#idcodigo_igv').val($('#idcodigo_igv').data('default') || '').trigger('change');
             $('#producto').prop('checked', true).trigger('change');
+            $('#rentable').prop('checked', false);
             $('#stock_actual').val(0);
             $('#precio_compra').val('0.00');
             $('#precio_venta').val('0.00');
@@ -127,6 +128,8 @@
 
             if (isService) {
                 $('#container-stock').addClass('d-none');
+                $('#container-rentable').addClass('d-none');
+                $('#rentable').prop('checked', false);
                 $('#stock_actual').val(0);
                 $('.finance-col').removeClass('col-md-4').addClass('col-md-6');
                 return;
@@ -134,6 +137,7 @@
 
             $('.finance-col').removeClass('col-md-6').addClass('col-md-4');
             $('#container-stock').removeClass('d-none');
+            $('#container-rentable').removeClass('d-none');
         }
 
         function toggleButtonState(button, loading, loadingText = 'Guardando...') {
