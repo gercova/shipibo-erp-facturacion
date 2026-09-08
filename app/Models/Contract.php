@@ -34,7 +34,8 @@ class Contract extends Model
         'firma_proveedor',
         'estado',
         'idusuario',
-        'idalmacen'
+        'idalmacen',
+        'cuotas'
     ];
 
     protected $casts = [
@@ -45,6 +46,7 @@ class Contract extends Model
         'igv'               => 'decimal:2',
         'total'             => 'decimal:2',
         'estado'            => 'integer',
+        'cuotas'            => 'array',
     ];
 
     // Status Constants
@@ -68,6 +70,21 @@ class Contract extends Model
         return $this->hasMany(ContractItem::class, 'contract_id');
     }
 
+    public function installments(): HasMany
+    {
+        return $this->hasMany(ContractInstallment::class, 'contract_id')->orderBy('numero_cuota', 'asc');
+    }
+
+    public function checklists(): HasMany
+    {
+        return $this->hasMany(EventChecklist::class, 'contract_id')->orderBy('id', 'desc');
+    }
+
+    public function latestChecklist()
+    {
+        return $this->checklists()->first();
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'idusuario');
@@ -76,6 +93,47 @@ class Contract extends Model
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(Warehouse::class, 'idalmacen');
+    }
+
+    public function hasOverdueInstallments(): bool
+    {
+        return $this->installments->contains(fn($inst) => $inst->isOverdue());
+    }
+
+    public function hasDueTodayInstallments(): bool
+    {
+        return $this->installments->contains(fn($inst) => $inst->isDueToday());
+    }
+
+    public function getPaidAmountAttribute(): float
+    {
+        return (float) $this->installments->where('estado', ContractInstallment::STATUS_PAID)->sum('monto');
+    }
+
+    public function getPendingAmountAttribute(): float
+    {
+        return (float) $this->installments->where('estado', ContractInstallment::STATUS_PENDING)->sum('monto');
+    }
+
+    public function getFinancialAlertBadgeAttribute(): string
+    {
+        if ($this->installments->isEmpty()) {
+            return '';
+        }
+
+        if ($this->hasOverdueInstallments()) {
+            return '<span class="badge bg-danger text-white"><i class="ri-alarm-warning-line me-1"></i> Cuota Vencida</span>';
+        }
+
+        if ($this->hasDueTodayInstallments()) {
+            return '<span class="badge bg-warning text-dark"><i class="ri-time-line me-1"></i> Vence Hoy</span>';
+        }
+
+        if ($this->getPendingAmountAttribute() <= 0) {
+            return '<span class="badge bg-success-subtle text-success"><i class="ri-checkbox-circle-line me-1"></i> Pagado</span>';
+        }
+
+        return '<span class="badge bg-info-subtle text-info"><i class="ri-calendar-check-line me-1"></i> Al día</span>';
     }
 
     public function getStatusLabelAttribute(): string
