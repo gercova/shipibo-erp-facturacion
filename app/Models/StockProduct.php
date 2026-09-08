@@ -21,4 +21,22 @@ class StockProduct extends Model
         'fecha_registro',
         'stock_entrada'
     ];
+
+    protected $casts = [
+        'stock_minimo' => 'decimal:4',
+        'stock_actual' => 'decimal:4',
+        'stock_entrada' => 'decimal:4',
+        'precio_compra' => 'decimal:4',
+        'precio_venta' => 'decimal:4',
+    ];
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class, 'idproducto');
+    }
+
+    public function warehouse()
+    {
+        return $this->belongsTo(Warehouse::class, 'idalmacen');
+    }
 }
