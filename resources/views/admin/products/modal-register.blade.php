@@ -87,18 +87,28 @@
                 <hr class="text-muted opacity-25">
 
                 <div class="row g-3 mb-4 align-items-end">
-                    <div class="col-md-12">
+                    <div class="col-md-7">
                         <label class="form-label small fw-bold text-muted text-uppercase d-block">Tipo de Item</label>
                         <div class="btn-group w-100 shadow-sm" role="group">
                             <input type="radio" class="btn-check" name="opcion" id="producto" value="1" checked>
                             <label class="btn btn-outline-primary py-2" for="producto">
-                                <i class="fas fa-boxes me-1"></i> Producto
+                                <i class="fas fa-boxes me-1"></i> Producto F&iacute;sico
                             </label>
 
                             <input type="radio" class="btn-check" name="opcion" id="servicio" value="2">
                             <label class="btn btn-outline-primary py-2" for="servicio">
                                 <i class="fas fa-tools me-1"></i> Servicio
                             </label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-5" id="container-rentable">
+                        <label class="form-label small fw-bold text-muted text-uppercase d-block">&iquest;Herramienta de Barra / Alquiler?</label>
+                        <div class="form-check form-switch p-2 bg-light rounded border px-4 d-flex align-items-center justify-content-between">
+                            <label class="form-check-label small fw-semibold text-dark mb-0" for="rentable">
+                                <i class="fas fa-cocktail text-warning me-1"></i> Alquilable / Retornable (Checklist)
+                            </label>
+                            <input class="form-check-input ms-2" type="checkbox" role="switch" id="rentable" name="rentable" value="1">
                         </div>
                     </div>
                 </div>
@@ -126,7 +136,7 @@
                         <label for="stock_actual" class="form-label small fw-bold text-muted text-uppercase text-danger">Stock Inicial</label>
                         <div class="input-group">
                             <span class="input-group-text bg-danger text-white border-danger"><i class="fas fa-layer-group"></i></span>
-                            <input type="number" id="stock_actual" class="form-control border-danger shadow-sm" name="stock_actual" value="0" min="0" step="1">
+                            <input type="number" id="stock_actual" class="form-control border-danger shadow-sm" name="stock_actual" value="0" min="0" step="any" placeholder="Ej: 10 o 0.5">
                         </div>
                     </div>
                 </div>

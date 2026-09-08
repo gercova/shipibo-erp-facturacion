@@ -165,6 +165,12 @@
     function syncEditProductType(type) {
         $('#edit_original_opcion').val(String(type || ''));
         $(`#form_edit_product input[name="opcion"][value="${type}"]`).prop('checked', true);
+        if (String(type) === '2') {
+            $('#container-edit-rentable').addClass('d-none');
+            $('#edit_rentable').prop('checked', false);
+        } else {
+            $('#container-edit-rentable').removeClass('d-none');
+        }
     }
 
     // ═══════════════════════════════════════════════════
@@ -200,6 +206,8 @@
                 $('.detail-category').html(r.data.categoria);
                 $('.detail-buy').html(r.data.precio_compra);
                 $('.detail-sale').html(r.data.precio_venta);
+                $('.detail-type').html(r.data.tipo || '-');
+                $('.detail-stock').html(r.data.stock || '-');
 
                 $('#offCanvasDetail').offcanvas('show');
             },
@@ -244,6 +252,7 @@
                 form.find('input[name="codigo_barras"]').val(r.product.codigo_barras || '');
                 form.find('input[name="codigo_sunat"]').val(r.product.codigo_sunat || '');
                 form.find('input[name="descripcion"]').val(r.product.descripcion || '');
+                form.find('#edit_rentable').prop('checked', !!(r.product.rentable == 1 || r.product.rentable === true));
                 syncEditProductType(r.product.opcion);
 
                 // Load presentations
@@ -416,13 +425,54 @@
     // UPLOAD EXCEL
     // ═══════════════════════════════════════════════════
 
+    function renderImportSummary(summary) {
+        if (!summary) return;
+
+        $('#import-summary-container').removeClass('d-none');
+        $('#badge-imported-count').text(`Importados: ${summary.imported_count || 0}`);
+        $('#badge-error-count').text(`Observaciones: ${summary.error_count || 0}`);
+
+        const $tbody = $('#tbody-import-errors');
+        $tbody.empty();
+
+        if (summary.error_count > 0 && Array.isArray(summary.errors) && summary.errors.length > 0) {
+            $('#import-error-table-wrapper').removeClass('d-none');
+            summary.errors.forEach(function(err) {
+                const fila = err.fila || '-';
+                const desc = $('<div>').text(err.descripcion || '').html();
+                const motivo = $('<div>').text(err.motivo || '').html();
+                $tbody.append(`
+                    <tr>
+                        <td class="text-center fw-bold text-secondary">${fila}</td>
+                        <td class="fw-semibold">${desc}</td>
+                        <td class="text-danger">${motivo}</td>
+                    </tr>
+                `);
+            });
+        } else {
+            $('#import-error-table-wrapper').addClass('d-none');
+        }
+    }
+
     $('body').on('click', '.btn-upload', function(e) {
         e.preventDefault();
+        $('#import-summary-container').addClass('d-none');
+        $('#import-error-table-wrapper').addClass('d-none');
+        $('#tbody-import-errors').empty();
+        $('#form_excel').trigger('reset');
         $('#modalUpload').modal('show');
     });
 
     $('body').on('click', '.btn-upload-product', function(e) {
         e.preventDefault();
+
+        const fileInput = document.getElementById('excel');
+        if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+            toast_msg('Por favor seleccione un archivo Excel (.xlsx)', 'warning');
+            $('#excel').addClass('is-invalid');
+            return;
+        }
+        $('#excel').removeClass('is-invalid');
 
         const form = new FormData($('#form_excel')[0]);
 
@@ -442,21 +492,37 @@
                 $('.btn-upload-product').prop('disabled', false);
                 $('.text-upload-product').removeClass('d-none');
                 $('.text-uploads-product').addClass('d-none');
-                toast_msg(r.msg, r.type);
+                toast_msg(r.msg, r.type || 'success');
 
-                if (!r.status) {
-                    return;
+                if (r.summary) {
+                    renderImportSummary(r.summary);
                 }
 
-                $('#form_excel').trigger('reset');
-                $('#modalUpload').modal('hide');
-                reload_table();
+                if (r.summary && r.summary.imported_count > 0) {
+                    reload_table();
+                }
+
+                if (r.status && (!r.summary || r.summary.error_count === 0)) {
+                    setTimeout(function() {
+                        $('#modalUpload').modal('hide');
+                        $('#form_excel').trigger('reset');
+                    }, 1200);
+                }
             },
             error: function(xhr) {
                 $('.btn-upload-product').prop('disabled', false);
                 $('.text-upload-product').removeClass('d-none');
                 $('.text-uploads-product').addClass('d-none');
-                toast_msg(xhr.responseJSON?.msg || 'No se pudo importar el catalogo.', xhr.responseJSON?.type || 'error');
+
+                const res = xhr.responseJSON;
+                toast_msg(res?.msg || 'Se encontraron observaciones en el archivo.', res?.type || 'warning');
+
+                if (res?.summary) {
+                    renderImportSummary(res.summary);
+                }
+                if (res?.summary?.imported_count > 0) {
+                    reload_table();
+                }
             },
             dataType: 'json'
         });

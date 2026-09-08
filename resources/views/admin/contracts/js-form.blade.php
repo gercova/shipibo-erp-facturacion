@@ -159,6 +159,319 @@ $(document).ready(function() {
         $('#input-subtotal').val(subtotal.toFixed(2));
         $('#input-igv').val(igv.toFixed(2));
         $('#input-total').val(total.toFixed(2));
+
+        // Update installments and 20% guarantee
+        updateInstallmentsAfterTotalChange(total);
+    }
+
+    /* -------------------------------------------------------------
+       2.1. PAYMENT SCHEDULE / CREDIT INSTALLMENTS LOGIC
+    ------------------------------------------------------------- */
+    let currentSplitMode = '50_50';
+    let isUserEditingInstallmentsManually = false;
+
+    function getContractTotal() {
+        return parseFloat($('#input-total').val()) || 0;
+    }
+
+    function getEventDate() {
+        return $('input[name="fecha_evento"]').val() || $('input[name="fecha_emision"]').val() || '{{ date("Y-m-d") }}';
+    }
+
+    function getIssueDate() {
+        return $('input[name="fecha_emision"]').val() || '{{ date("Y-m-d") }}';
+    }
+
+    function buildDefaultSchedule(total, splitMode = '50_50') {
+        let issueDate = getIssueDate();
+        let eventDate = getEventDate();
+
+        if (splitMode === '50_50') {
+            let m1 = Math.round(total * 0.50 * 100) / 100;
+            let m2 = Math.round((total - m1) * 100) / 100;
+            return [
+                {
+                    numero_cuota: 1,
+                    descripcion: 'Adelanto Inicial (50%)',
+                    porcentaje: 50,
+                    fecha_vencimiento: issueDate,
+                    monto: m1.toFixed(2),
+                },
+                {
+                    numero_cuota: 2,
+                    descripcion: 'Saldo Final (50%)',
+                    porcentaje: 50,
+                    fecha_vencimiento: eventDate,
+                    monto: m2.toFixed(2),
+                }
+            ];
+        } else if (splitMode === '50_25_25') {
+            let m1 = Math.round(total * 0.50 * 100) / 100;
+            let m2 = Math.round(total * 0.25 * 100) / 100;
+            let m3 = Math.round((total - m1 - m2) * 100) / 100;
+            return [
+                {
+                    numero_cuota: 1,
+                    descripcion: 'Adelanto Inicial (50%)',
+                    porcentaje: 50,
+                    fecha_vencimiento: issueDate,
+                    monto: m1.toFixed(2),
+                },
+                {
+                    numero_cuota: 2,
+                    descripcion: 'Cuota 2 - Saldo Intermedio (25%)',
+                    porcentaje: 25,
+                    fecha_vencimiento: issueDate,
+                    monto: m2.toFixed(2),
+                },
+                {
+                    numero_cuota: 3,
+                    descripcion: 'Cuota 3 - Saldo Final (25%)',
+                    porcentaje: 25,
+                    fecha_vencimiento: eventDate,
+                    monto: m3.toFixed(2),
+                }
+            ];
+        } else if (splitMode === '50_3') {
+            let m1 = Math.round(total * 0.50 * 100) / 100;
+            let remaining = total - m1;
+            let part = Math.round((remaining / 3) * 100) / 100;
+            let m2 = part;
+            let m3 = part;
+            let m4 = Math.round((remaining - m2 - m3) * 100) / 100;
+            return [
+                {
+                    numero_cuota: 1,
+                    descripcion: 'Adelanto Inicial (50%)',
+                    porcentaje: 50,
+                    fecha_vencimiento: issueDate,
+                    monto: m1.toFixed(2),
+                },
+                {
+                    numero_cuota: 2,
+                    descripcion: 'Cuota 2 - Saldo 1/3',
+                    porcentaje: 16.67,
+                    fecha_vencimiento: issueDate,
+                    monto: m2.toFixed(2),
+                },
+                {
+                    numero_cuota: 3,
+                    descripcion: 'Cuota 3 - Saldo 2/3',
+                    porcentaje: 16.67,
+                    fecha_vencimiento: issueDate,
+                    monto: m3.toFixed(2),
+                },
+                {
+                    numero_cuota: 4,
+                    descripcion: 'Cuota 4 - Saldo Final',
+                    porcentaje: 16.66,
+                    fecha_vencimiento: eventDate,
+                    monto: m4.toFixed(2),
+                }
+            ];
+        }
+        return [];
+    }
+
+    function renderInstallments(installments) {
+        let tbody = $('#table-contract-installments tbody');
+        tbody.empty();
+
+        if (!installments || installments.length === 0) {
+            installments = buildDefaultSchedule(getContractTotal(), currentSplitMode);
+        }
+
+        installments.forEach((inst, idx) => {
+            let nro = idx + 1;
+            let desc = inst.descripcion || (nro === 1 ? 'Adelanto Inicial (50%)' : `Cuota ${nro}`);
+            let pct = parseFloat(inst.porcentaje) || 0;
+            let fecha = inst.fecha_vencimiento ? (String(inst.fecha_vencimiento).substring(0, 10)) : getIssueDate();
+            let monto = parseFloat(inst.monto) || 0;
+
+            let rowHtml = `
+                <tr class="installment-row" data-index="${idx}">
+                    <td class="text-center installment-num fw-bold">${nro}</td>
+                    <td>
+                        <input type="text" name="installments[${idx}][descripcion]" class="form-control form-control-sm inst-desc" value="${desc}" required />
+                        <input type="hidden" name="installments[${idx}][numero_cuota]" class="inst-num" value="${nro}" />
+                    </td>
+                    <td>
+                        <div class="input-group input-group-sm">
+                            <input type="number" step="0.01" min="0" max="100" name="installments[${idx}][porcentaje]" class="form-control form-control-sm text-center inst-pct" value="${pct.toFixed(2)}" />
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </td>
+                    <td>
+                        <input type="date" name="installments[${idx}][fecha_vencimiento]" class="form-control form-control-sm text-center inst-due-date" value="${fecha}" required />
+                    </td>
+                    <td>
+                        <input type="number" step="0.01" min="0" name="installments[${idx}][monto]" class="form-control form-control-sm text-end fw-bold inst-amount" value="${monto.toFixed(2)}" required />
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-outline-danger btn-sm btn-remove-installment" title="Eliminar Cuota" ${installments.length <= 1 ? 'disabled' : ''}>
+                            <i class="ri-delete-bin-line"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+            tbody.append(rowHtml);
+        });
+
+        checkInstallmentBalance();
+    }
+
+    function checkInstallmentBalance() {
+        let total = getContractTotal();
+        let sum = 0;
+
+        $('#table-contract-installments tbody tr').each(function() {
+            let amt = parseFloat($(this).find('.inst-amount').val()) || 0;
+            sum += amt;
+        });
+
+        sum = Math.round(sum * 100) / 100;
+        $('#display-installments-sum').text(sum.toFixed(2));
+
+        let diff = Math.round((total - sum) * 100) / 100;
+        let alertBox = $('#installment-balance-alert');
+
+        if (Math.abs(diff) <= 0.05) {
+            alertBox.removeClass('bg-danger-subtle border-danger text-danger bg-warning-subtle border-warning text-warning')
+                    .addClass('bg-success-subtle border-success text-success')
+                    .html('<i class="ri-checkbox-circle-line fs-5 me-2"></i><span>El cronograma de cuotas cuadra exactamente con el total del contrato (' + total.toFixed(2) + ').</span>');
+            return true;
+        } else {
+            alertBox.removeClass('bg-success-subtle border-success text-success')
+                    .addClass('bg-danger-subtle border-danger text-danger')
+                    .html('<i class="ri-error-warning-line fs-5 me-2"></i><span><strong>Descuadre en cuotas:</strong> La suma programada (S/ ' + sum.toFixed(2) + ') difiere del total contratado (S/ ' + total.toFixed(2) + ') por S/ ' + Math.abs(diff).toFixed(2) + '. Ajuste los montos.</span>');
+            return false;
+        }
+    }
+
+    function updateInstallmentsAfterTotalChange(total) {
+        // Guarantee 20% (HS Coctelería clause)
+        let guarantee = total * 0.20;
+        $('#display-guarantee-val').text(guarantee.toFixed(2));
+
+        if (!isUserEditingInstallmentsManually) {
+            let schedule = buildDefaultSchedule(total, currentSplitMode);
+            renderInstallments(schedule);
+        } else {
+            checkInstallmentBalance();
+        }
+    }
+
+    // Quick split buttons
+    $(document).on('click', '.btn-quick-split', function() {
+        $('.btn-quick-split').removeClass('active');
+        $(this).addClass('active');
+        currentSplitMode = $(this).data('split');
+        isUserEditingInstallmentsManually = false;
+        let total = getContractTotal();
+        let schedule = buildDefaultSchedule(total, currentSplitMode);
+        renderInstallments(schedule);
+    });
+
+    // Manual amount editing in installment row
+    $(document).on('input', '.inst-amount', function() {
+        isUserEditingInstallmentsManually = true;
+        let total = getContractTotal();
+        let row = $(this).closest('tr');
+        let amt = parseFloat($(this).val()) || 0;
+        if (total > 0) {
+            let pct = (amt / total) * 100;
+            row.find('.inst-pct').val(pct.toFixed(2));
+        }
+        checkInstallmentBalance();
+    });
+
+    // Manual percentage editing in installment row
+    $(document).on('input', '.inst-pct', function() {
+        isUserEditingInstallmentsManually = true;
+        let total = getContractTotal();
+        let row = $(this).closest('tr');
+        let pct = parseFloat($(this).val()) || 0;
+        let amt = (total * pct) / 100;
+        row.find('.inst-amount').val(amt.toFixed(2));
+        checkInstallmentBalance();
+    });
+
+    // Add installment manually
+    $('#btn-add-installment').on('click', function() {
+        isUserEditingInstallmentsManually = true;
+        let total = getContractTotal();
+        let currentSum = 0;
+        let existingRows = [];
+
+        $('#table-contract-installments tbody tr').each(function(idx) {
+            let amt = parseFloat($(this).find('.inst-amount').val()) || 0;
+            currentSum += amt;
+            existingRows.push({
+                numero_cuota: idx + 1,
+                descripcion: $(this).find('.inst-desc').val(),
+                porcentaje: $(this).find('.inst-pct').val(),
+                fecha_vencimiento: $(this).find('.inst-due-date').val(),
+                monto: amt.toFixed(2),
+            });
+        });
+
+        let diff = Math.max(0, Math.round((total - currentSum) * 100) / 100);
+        let pct = total > 0 ? ((diff / total) * 100).toFixed(2) : '0.00';
+        let count = existingRows.length + 1;
+
+        existingRows.push({
+            numero_cuota: count,
+            descripcion: 'Cuota ' + count,
+            porcentaje: pct,
+            fecha_vencimiento: getEventDate(),
+            monto: diff.toFixed(2),
+        });
+
+        renderInstallments(existingRows);
+    });
+
+    // Remove installment row
+    $(document).on('click', '.btn-remove-installment', function() {
+        isUserEditingInstallmentsManually = true;
+        let rows = $('#table-contract-installments tbody tr');
+        if (rows.length <= 1) {
+            toastr.warning('Debe mantener al menos una cuota programada.');
+            return;
+        }
+
+        $(this).closest('tr').remove();
+
+        let existingRows = [];
+        $('#table-contract-installments tbody tr').each(function(idx) {
+            existingRows.push({
+                numero_cuota: idx + 1,
+                descripcion: $(this).find('.inst-desc').val(),
+                porcentaje: $(this).find('.inst-pct').val(),
+                fecha_vencimiento: $(this).find('.inst-due-date').val(),
+                monto: $(this).find('.inst-amount').val(),
+            });
+        });
+
+        renderInstallments(existingRows);
+    });
+
+    // Event date change updates due date of the final installment if untouched
+    $('input[name="fecha_evento"]').on('change', function() {
+        let newEventDate = $(this).val();
+        if (!isUserEditingInstallmentsManually && newEventDate) {
+            let lastRow = $('#table-contract-installments tbody tr:last');
+            if (lastRow.length) {
+                lastRow.find('.inst-due-date').val(newEventDate);
+            }
+        }
+    });
+
+    // Initialize installments (from window.existingInstallments if editing, or default 50_50)
+    if (window.existingInstallments && window.existingInstallments.length > 0) {
+        isUserEditingInstallmentsManually = true;
+        renderInstallments(window.existingInstallments);
+    } else {
+        renderInstallments(buildDefaultSchedule(getContractTotal(), '50_50'));
     }
 
     $('#btn-add-item').on('click', function() {
@@ -435,6 +748,15 @@ $(document).ready(function() {
         // Check items
         if ($('#table-contract-items tbody tr').length === 0) {
             toastr.warning('Debe agregar al menos un servicio o producto al contrato.');
+            return;
+        }
+
+        // Check installment balance
+        if ($('#table-contract-installments tbody tr').length > 0 && !checkInstallmentBalance()) {
+            toastr.error('La suma de las cuotas programadas debe coincidir exactamente con el total del contrato.');
+            $('html, body').animate({
+                scrollTop: $("#table-contract-installments").offset().top - 120
+            }, 400);
             return;
         }
 
