@@ -65,8 +65,7 @@
         
         @yield('styles')
     </head>
-    <body class="nav-fixed {{ request()->routeIs('admin.products_warehouse') ||
-                            request()->is('pos/crear') ? 'sidenav-toggled' : '' }}">
+    <body class="nav-fixed {{ request()->routeIs('admin.products_warehouse') || request()->is('pos/crear') ? 'sidenav-toggled' : '' }}">
         <nav class="topnav navbar navbar-expand shadow justify-content-between justify-content-sm-start navbar-light bg-white" id="sidenavAccordion">
             <!-- Sidenav Toggle Button-->
             <button class="btn btn-icon btn-transparent-dark order-1 order-lg-0 me-2 ms-lg-2 me-lg-0" id="sidebarToggle"><i data-feather="menu"></i></button>
@@ -255,6 +254,8 @@
                             <div class="collapse {{ request()->is('quotes') || 
                                         request()->is('quotes/*') || 
                                         request()->is('contracts*') || 
+                                        request()->is('event-checklists*') || 
+                                        request()->is('cocktail-menu*') || 
                                         request()->is('pos') ||
                                         request()->is('pos/*') ||
                                         $isBillingScreen ||
@@ -268,6 +269,8 @@
                                     @endcan
                                     @can('admin.contracts')
                                     <a class="nav-link {{ request()->is('contracts*') ? 'active' : '' }}" href="{{ route('admin.contracts') }}">Contratos</a>
+                                    <a class="nav-link {{ request()->is('event-checklists*') ? 'active' : '' }}" href="{{ route('admin.event_checklists') }}">Checklists de Eventos</a>
+                                    <a class="nav-link {{ request()->is('cocktail-menu*') ? 'active' : '' }}" href="{{ route('admin.cocktail_menu.index') }}">Carta de Cócteles</a>
                                     @endcan
                                     @can('admin.pos')
                                     <a class="nav-link {{ request()->is('pos') || request()->is('pos/*') ? 'active' : '' }}" href="{{ route('admin.pos') }}">Punto de venta</a>
