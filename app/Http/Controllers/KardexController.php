@@ -37,7 +37,7 @@ class KardexController extends Controller
 
         foreach ($movements as $movement) {
             $productId = (int) $movement->product_id;
-            $runningBalances[$productId] = round(($runningBalances[$productId] ?? 0) + (float) $movement->entrada - (float) $movement->salida, 2);
+            $runningBalances[$productId] = round(($runningBalances[$productId] ?? 0) + (float) $movement->entrada - (float) $movement->salida, 4);
             $movement->saldo = $runningBalances[$productId];
 
             if ($dateFrom !== '' && (string) $movement->fecha < $dateFrom) {
@@ -48,9 +48,9 @@ class KardexController extends Controller
         }
 
         $summary = [
-            'entries' => round((float) $rows->sum('entrada'), 2),
-            'exits' => round((float) $rows->sum('salida'), 2),
-            'closing_balance' => round(array_sum($runningBalances), 2),
+            'entries' => round((float) $rows->sum('entrada'), 4),
+            'exits' => round((float) $rows->sum('salida'), 4),
+            'closing_balance' => round(array_sum($runningBalances), 4),
             'movement_count' => $rows->count(),
         ];
 
