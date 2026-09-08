@@ -890,7 +890,7 @@ class PosController extends Controller
                         ->lockForUpdate()
                         ->first();
 
-                    $nuevoStock = max(0, (int) $registro->stock_actual - (int) $product['cantidad']);
+                    $nuevoStock = max(0, round((float) $registro->stock_actual - (float) $product['cantidad'], 4));
                     $registro->update([
                         'stock_actual' => $nuevoStock,
                     ]);
