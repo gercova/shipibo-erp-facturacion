@@ -314,8 +314,8 @@ class WarehouseController extends Controller
                     return '<span class="badge bg-light text-muted border">No inventariable</span>';
                 }
 
-                $stockActual = (int) $producto->stock_actual;
-                $stockMinimo = (int) $producto->stock_minimo;
+                $stockActual = (float) $producto->stock_actual;
+                $stockMinimo = (float) $producto->stock_minimo;
                 $badgeClass = 'bg-success-subtle text-success';
                 $label = 'En stock';
 
@@ -327,7 +327,8 @@ class WarehouseController extends Controller
                     $label = 'Stock bajo';
                 }
 
-                return '<div class="text-center"><div class="fw-semibold">' . $stockActual . '</div><div class="mt-1"><span class="badge ' . $badgeClass . '">' . $label . '</span></div></div>';
+                $formattedStock = (floor($stockActual) == $stockActual) ? number_format($stockActual, 0) : rtrim(rtrim(number_format($stockActual, 4, '.', ''), '0'), '.');
+                return '<div class="text-center"><div class="fw-semibold">' . $formattedStock . '</div><div class="mt-1"><span class="badge ' . $badgeClass . '">' . $label . '</span></div></div>';
             })
             ->addColumn('acciones', function ($producto) {
                 $hidden = ($producto->opcion == 1) ? '' : 'd-none';
@@ -678,7 +679,7 @@ class WarehouseController extends Controller
 
         $idalmacen = (int) $request->input('idalmacen');
         $idproducto = (int) $request->input('idproducto');
-        $cantidad = (int) $request->input('cantidad');
+        $cantidad = (float) $request->input('cantidad');
         if ($cantidad <= 0) {
             return response()->json([
                 'status' => false,
@@ -701,7 +702,7 @@ class WarehouseController extends Controller
         }
 
         StockProduct::where('idalmacen', $idalmacen)->where('idproducto', $idproducto)->update([
-            'stock_actual' => $stock_db->stock_actual + $cantidad,
+            'stock_actual' => round((float) $stock_db->stock_actual + $cantidad, 4),
         ]);
 
         return response()->json([
@@ -752,7 +753,7 @@ class WarehouseController extends Controller
 
         $idalmacen = (int) $request->input('idalmacen');
         $idproducto = (int) $request->input('idproducto');
-        $stock_actual = (int) $request->input('stock_actual');
+        $stock_actual = (float) $request->input('stock_actual');
         if ($stock_actual < 0) {
             return response()->json([
                 'status' => false,
@@ -775,7 +776,7 @@ class WarehouseController extends Controller
         }
 
         StockProduct::where('idalmacen', $idalmacen)->where('idproducto', $idproducto)->update([
-            'stock_actual' => $stock_actual,
+            'stock_actual' => round($stock_actual, 4),
         ]);
 
         return response()->json([
@@ -800,7 +801,7 @@ class WarehouseController extends Controller
             return $stock;
         }
 
-        if ((int) $stock->opcion === 1 && (int) $stock->stock_actual > 0) {
+        if ((int) $stock->opcion === 1 && (float) $stock->stock_actual > 0) {
             return response()->json([
                 'status' => false,
                 'msg' => 'No se puede retirar el producto mientras tenga stock en el almacÃ©n.',
