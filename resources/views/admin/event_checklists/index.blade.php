@@ -204,12 +204,12 @@ $(document).ready(function() {
             }
         },
         columns: [
-            { data: 'code', name: 'event_checklists.code', className: 'text-center fw-bold text-primary' },
+            { data: 'codigo', name: 'event_checklists.codigo', className: 'text-center fw-bold text-primary' },
             { data: 'contract_number', name: 'contracts.contract_number', className: 'text-center' },
-            { data: 'fecha_evento', name: 'contracts.fecha_evento', className: 'text-center' },
+            { data: 'fecha_evento', name: 'event_checklists.fecha_evento', className: 'text-center' },
             { data: 'cliente', name: 'clients.nombres' },
-            { data: 'progreso_llevado', name: 'progreso_llevado', orderable: false, searchable: false },
-            { data: 'progreso_devuelto', name: 'progreso_devuelto', orderable: false, searchable: false },
+            { data: 'progreso_salida', name: 'progreso_salida', orderable: false, searchable: false },
+            { data: 'progreso_retorno', name: 'progreso_retorno', orderable: false, searchable: false },
             { data: 'estado_badge', name: 'estado_badge', className: 'text-center', orderable: false, searchable: false },
             { data: 'acciones', name: 'acciones', className: 'text-center', orderable: false, searchable: false }
         ],
