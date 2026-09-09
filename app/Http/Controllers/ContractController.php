@@ -126,7 +126,7 @@ class ContractController extends Controller
                                 <a class="dropdown-item" href="' . route('admin.contracts.download', $id) . '" target="_blank">
                                     <i class="ri-download-2-line me-2"></i> Descargar PDF
                                 </a>
-                                <a class="dropdown-item" href="' . route('admin.contracts.edit', $id) . '">
+                                <a class="dropdown-item" href="' . route('admin.edit_contract', $id) . '">
                                     <i class="ri-edit-line me-2"></i> Editar
                                 </a>
                                 <a class="dropdown-item text-primary" href="' . route('admin.event_checklists.generate', $id) . '">
