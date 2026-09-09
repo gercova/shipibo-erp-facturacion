@@ -306,6 +306,8 @@
                     });
                 }
             });
+        });
+
         // Open Pay Installment Modal
         $(document).on('click', '.btn-open-pay-modal', function(e) {
             e.preventDefault();
