@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,6 +12,7 @@
     <link rel="icon" href="{{ asset('assets/img/favicon-white.ico') }}" type="image/x-icon">
     <link rel="stylesheet" href="{{ asset('css/login.css') }}">
 </head>
+
 <body>
 
     <div class="login-wrapper">
@@ -23,50 +25,39 @@
                     <img src="{{ asset('files/logos/' . $logo) }}" alt="Logo EasyStock">
                 @endif
             </div>
-            
+
             <h2 class="fw-bold mb-1" style="color: #212529;">Bienvenido</h2>
             <p class="text-muted mb-4" style="font-size: 0.95rem;">Ingresa tus credenciales para continuar.</p>
 
             <form method="POST" action="{{ route('login.login') }}" novalidate>
                 @csrf
                 <div class="mb-3">
-                    <label for="user" class="form-label text-muted fw-semibold" style="font-size: 0.85rem;">Usuario</label>
-                    <input
-                        id="user"
-                        type="text"
-                        name="user"
-                        class="form-control @if(session('message')) is-invalid @endif"
-                        placeholder="Ingresa tu nombre de usuario"
-                        required
-                        autocomplete="username"
-                        autofocus
-                        value="testuser"
-                    >
+                    <label for="user" class="form-label text-muted fw-semibold"
+                        style="font-size: 0.85rem;">Usuario</label>
+                    <input id="user" type="text" name="user"
+                        class="form-control @if (session('message')) is-invalid @endif"
+                        placeholder="Ingresa tu nombre de usuario" required autocomplete="username" autofocus
+                        value="testuser">
                     @if (session('message'))
                         <div class="invalid-feedback">{{ session('message') }}</div>
                     @endif
                 </div>
 
                 <div class="mb-4">
-                    <label for="password" class="form-label text-muted fw-semibold" style="font-size: 0.85rem;">Contraseña</label>
+                    <label for="password" class="form-label text-muted fw-semibold"
+                        style="font-size: 0.85rem;">Contraseña</label>
                     <div class="input-group">
-                        <input
-                            id="password"
-                            type="password"
-                            name="password"
-                            class="form-control border-end-0"
-                            placeholder="••••••••"
-                            required
-                            autocomplete="current-password"
-                            value="Test1234$$."
-                        >
-                        <button class="btn border border-start-0 bg-light" type="button" id="togglePassword" style="border-radius: 0 10px 10px 0; border-color:#dee2e6;">
+                        <input id="password" type="password" name="password" class="form-control border-end-0"
+                            placeholder="••••••••" required autocomplete="current-password" value="Test1234$$.">
+                        <button class="btn border border-start-0 bg-light" type="button" id="togglePassword"
+                            style="border-radius: 0 10px 10px 0; border-color:#dee2e6;">
                             <i class="fas fa-eye text-muted"></i>
                         </button>
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-primary-custom w-100 text-white d-flex justify-content-center align-items-center">
+                <button type="submit"
+                    class="btn btn-primary btn-primary-custom w-100 text-white d-flex justify-content-center align-items-center">
                     <span>Acceder</span>
                     <i class="fas fa-arrow-right ms-2" style="font-size: 0.85rem;"></i>
                 </button>
@@ -80,7 +71,8 @@
         <!-- Info Area -->
         <div class="login-info-area">
             <h3 class="fw-bold mb-2" style="color:#212529;">Agiliza tus operaciones.</h3>
-            <p class="text-muted mb-4" style="font-size:0.95rem;">Un espacio diseñado para hacer tu inventario rápido, preciso y confiable.</p>
+            <p class="text-muted mb-4" style="font-size:0.95rem;">Un espacio diseñado para hacer tu inventario rápido,
+                preciso y confiable.</p>
 
             <div class="feature-item">
                 <div class="feature-icon"><i class="fas fa-bolt"></i></div>
@@ -109,19 +101,22 @@
     </div>
 
     <script src="{{ asset('ajax/libs/font-awesome/6.3.0/js/all.min.js') }}" defer></script>
-    <script src="{{ asset('npm/bootstrap%405.2.3/dist/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ asset('js/popper.min.js') }}"></script>
+    <script src="{{ asset('js/bootstrap.min.js') }}"></script>
     <script>
-        (function () {
+        (function() {
             const btn = document.getElementById('togglePassword');
             const input = document.getElementById('password');
             if (!btn || !input) return;
 
-            btn.addEventListener('click', function () {
+            btn.addEventListener('click', function() {
                 const isPassword = input.type === 'password';
                 input.type = isPassword ? 'text' : 'password';
-                this.innerHTML = isPassword ? '<i class="fas fa-eye-slash text-muted"></i>' : '<i class="fas fa-eye text-muted"></i>';
+                this.innerHTML = isPassword ? '<i class="fas fa-eye-slash text-muted"></i>' :
+                    '<i class="fas fa-eye text-muted"></i>';
             });
         })();
     </script>
 </body>
+
 </html>
