@@ -28,12 +28,17 @@
     function updateSunatEnvironmentState(value) {
         const isProduction = String(value) === '1';
 
-        $('#sunat-environment-badge')
-            .attr('class', 'badge ' + (isProduction ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'))
-            .text(isProduction ? 'Produccion' : 'Beta');
+        // Badges in SUNAT Tab and Summary Card
+        const badgeClass = isProduction ? 'badge bg-success-soft text-success' : 'badge bg-warning-soft text-warning';
+        const badgeText = isProduction ? 'Producción' : 'Beta';
+
+        $('#sunat-environment-badge').attr('class', badgeClass).text(badgeText);
+        $('#summary-sunat-badge').attr('class', badgeClass).text(isProduction ? 'Producción' : 'Beta / Pruebas');
 
         $('#sunat-environment-text').text(
-            isProduction ? 'Listo para entorno productivo.' : 'Modo pruebas activo para integraciones y validaciones.'
+            isProduction
+                ? 'Listo para entorno productivo oficial.'
+                : 'Modo pruebas activo para integraciones y validaciones.'
         );
     }
 
@@ -74,6 +79,11 @@
     }
 
     $(document).ready(function() {
+        if (window.feather) {
+            feather.replace();
+        }
+
+        // Select2 Initialization
         $(".select2_department, .select2_province, .select2_district").select2({
             placeholder: "[SELECCIONE]",
             width: '100%'
@@ -81,6 +91,7 @@
 
         load_ubigeo();
 
+        // Department Change
         $('select[name="departamento"]').on('change', function() {
             let value = $(this).val();
             if (!value) return;
@@ -107,6 +118,7 @@
             });
         });
 
+        // Province Change
         $('select[name="provincia"]').on('change', function() {
             let value = $(this).val();
             let codigo_departamento = $('select[name="departamento"]').val();
@@ -133,37 +145,45 @@
             });
         });
 
+        // Logo Upload Preview
         $('#company_logo').on('change', function() {
             const file = this.files[0];
             const maxSize = 2 * 1024 * 1024;
 
             if (!file) {
+                $('#company-logo-selected-text').text('');
                 return;
             }
 
             if (!['image/jpeg', 'image/png'].includes(file.type)) {
                 toast_msg('El logo debe estar en formato JPG, JPEG o PNG.', 'warning');
                 this.value = '';
+                $('#company-logo-selected-text').text('');
                 return;
             }
 
             if (file.size > maxSize) {
                 toast_msg('El logo no debe superar los 2MB.', 'warning');
                 this.value = '';
+                $('#company-logo-selected-text').text('');
                 return;
             }
 
+            $('#company-logo-selected-text').text(file.name + ' (' + Math.round(file.size / 1024) + ' KB)');
+
             const reader = new FileReader();
             reader.onload = function(e) {
-                $('#preview-logo, #header-company-logo').attr('src', e.target.result);
+                $('#preview-logo').attr('src', e.target.result);
             };
             reader.readAsDataURL(file);
         });
 
+        // SUNAT Server Radio Change
         $('input[name="servidor_sunat"]').on('change', function() {
             updateSunatEnvironmentState($(this).val());
         });
 
+        // Certificate File Selection
         $('#certificado').on('change', function() {
             const file = this.files[0];
 
@@ -179,18 +199,45 @@
                 return;
             }
 
-            $('#certificate-selected-name').text('Archivo seleccionado: ' + file.name);
+            const sizeKb = Math.round(file.size / 1024);
+            $('#certificate-selected-name').html('<i class="fas fa-check-circle text-success me-1"></i> Seleccionado: <strong>' + file.name + '</strong> (' + sizeKb + ' KB)');
         });
 
+        // Tax Switch (IGV) Change
         $('#cobrar_igv').on('change', function() {
-            const statusText = $('#status-igv');
-            if (this.checked) {
-                statusText.text('Régimen General (18%)').removeClass('text-success').addClass('text-primary');
+            const isChecked = this.checked;
+            const statusBadge = $('#status-igv');
+            const descText = $('#desc-igv');
+            const summaryBadge = $('#summary-igv-badge');
+
+            if (isChecked) {
+                statusBadge.text('Régimen General (18%)').removeClass('text-success').addClass('text-primary');
+                descText.text('Se desglosará el 18% de IGV en los comprobantes de pago emitidos.');
+                summaryBadge.text('General (18%)').removeClass('bg-info-soft text-info').addClass('bg-primary-soft text-primary');
             } else {
-                statusText.text('Exonerado (Ley Amazonía)').removeClass('text-primary').addClass('text-success');
+                statusBadge.text('Exonerado (Ley Amazonía)').removeClass('text-primary').addClass('text-success');
+                descText.text('Exonerado de IGV conforme a la Ley N° 27037 (Ley de Promoción de la Inversión en la Amazonía).');
+                summaryBadge.text('Ley Amazonía').removeClass('bg-primary-soft text-primary').addClass('bg-info-soft text-info');
             }
         });
 
+        // Password visibility toggles (FontAwesome)
+        $('body').on('click', '.btn-toggle-pwd', function(e) {
+            e.preventDefault();
+            const targetId = $(this).data('target');
+            const $input = $('#' + targetId);
+            const $icon = $(this).find('i');
+
+            if ($input.attr('type') === 'password') {
+                $input.attr('type', 'text');
+                $icon.removeClass('fa-eye text-muted').addClass('fa-eye-slash text-primary');
+            } else {
+                $input.attr('type', 'password');
+                $icon.removeClass('fa-eye-slash text-primary').addClass('fa-eye text-muted');
+            }
+        });
+
+        // Save General Business Info (Tab 1)
         $('body').on('click', '.btn-save-info', function(e) {
             e.preventDefault();
             let btn = $(this);
@@ -211,8 +258,15 @@
                     toast_msg(r.msg, r.type);
 
                     if (r.logo_url) {
-                        $('#header-company-logo, #preview-logo').attr('src', r.logo_url);
+                        $('#preview-logo').attr('src', r.logo_url);
                     }
+
+                    // Dynamically update Summary Card
+                    const razonSocial = $('input[name="razon_social"]').val();
+                    const ruc = $('input[name="ruc"]').val();
+
+                    if (razonSocial) $('#card-summary-name').text(razonSocial.toUpperCase());
+                    if (ruc) $('#card-summary-ruc').text(ruc);
                 },
                 error: function(xhr) {
                     toggleBtnWaitMe(btn, false);
@@ -221,6 +275,7 @@
             });
         });
 
+        // Save SUNAT Info (Tab 2)
         $('body').on('click', '.btn-save-user', function(e) {
             e.preventDefault();
             let btn = $(this);
@@ -243,7 +298,7 @@
                     if (r.certificate_name) {
                         $('#certificate-current-badge').text(r.certificate_name);
                         $('#certificate-status-badge')
-                            .attr('class', 'badge bg-success-subtle text-success')
+                            .attr('class', 'badge bg-success-soft text-success')
                             .text('Cargado');
                         $('#certificate-status-text').text(r.certificate_name);
                         $('#certificate-selected-name').text('');
