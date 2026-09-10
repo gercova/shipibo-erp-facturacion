@@ -986,6 +986,182 @@
         });
     });
 
+    // ─── Ítem personalizado ─────────────────────────────────────────────────────
+
+    function initCustomItemUnitSelect2() {
+        const $select = $('#custom-item-unidad');
+
+        // Destroy previous instance if any
+        if ($select.hasClass('select2-hidden-accessible')) {
+            $select.select2('destroy');
+        }
+
+        $select.select2({
+            dropdownParent: $('#modalCustomItem'),
+            placeholder: 'Buscar unidad…',
+            allowClear: false,
+            minimumInputLength: 0,
+            language: {
+                searching:    () => 'Buscando…',
+                noResults:    () => 'Sin resultados',
+                inputTooShort: () => 'Escribe para buscar'
+            },
+            ajax: {
+                url:      "{{ route('pos.search_units') }}",
+                type:     'POST',
+                delay:    220,
+                headers:  { 'X-CSRF-TOKEN': "{{ csrf_token() }}" },
+                data: function (params) {
+                    return { _token: "{{ csrf_token() }}", q: params.term || '' };
+                },
+                processResults: function (data) {
+                    return { results: data.results || [] };
+                },
+                cache: true
+            },
+            templateResult: function (unit) {
+                if (unit.loading) {
+                    return $('<span class="text-muted">Buscando…</span>');
+                }
+                const parts = (unit.text || '').split(' – ');
+                const code  = parts[0] || '';
+                const desc  = parts[1] || '';
+                return $(`<span><strong>${code}</strong><span class="text-muted ms-1" style="font-size:.82rem;">${desc}</span></span>`);
+            },
+            templateSelection: function (unit) {
+                if (!unit.id) { return unit.text; }
+                // Show only the code (e.g. "UND") once selected
+                return unit.id;
+            }
+        });
+
+        // Pre-select UND by default on every modal open
+        const defaultOption = new Option('UND – UNIDAD', 'UND', true, true);
+        $select.append(defaultOption).trigger('change');
+    }
+
+    $('body').on('click', '#btn-open-custom-item', function () {
+        $('#custom-item-descripcion').val('');
+        $('#custom-item-precio').val('');
+        $('#custom-item-cantidad').val('1');
+        $('#custom-item-preview').hide();
+        $('#custom-item-subtotal').text('S/ 0.00');
+        $('#modalCustomItem').modal('show');
+    });
+
+    // Initialize Select2 each time the modal is shown
+    $('#modalCustomItem').on('shown.bs.modal', function () {
+        initCustomItemUnitSelect2();
+        setTimeout(() => $('#custom-item-descripcion').focus(), 100);
+    });
+
+    // Destroy Select2 cleanly when modal hides to avoid DOM leaks
+    $('#modalCustomItem').on('hidden.bs.modal', function () {
+        const $select = $('#custom-item-unidad');
+        if ($select.hasClass('select2-hidden-accessible')) {
+            $select.select2('destroy');
+        }
+    });
+
+    $('body').on('input', '#custom-item-precio, #custom-item-cantidad', function () {
+        const precio    = parseFloat($('#custom-item-precio').val()) || 0;
+        const cantidad  = parseFloat($('#custom-item-cantidad').val()) || 0;
+        const subtotal  = precio * cantidad;
+        const signo     = posTotals.signo || 'S/';
+
+        if (precio > 0 && cantidad > 0) {
+            $('#custom-item-subtotal').text(`${signo} ${subtotal.toFixed(2)}`);
+            $('#custom-item-preview').show();
+        } else {
+            $('#custom-item-preview').hide();
+        }
+    });
+
+    $('body').on('click', '#btn-save-custom-item', function () {
+        const descripcion   = $('#custom-item-descripcion').val().trim();
+        const unidad        = ($('#custom-item-unidad').val() || 'UND').trim().toUpperCase();
+        const precio        = parseFloat($('#custom-item-precio').val()) || 0;
+        const cantidad      = parseFloat($('#custom-item-cantidad').val()) || 0;
+
+        if (!descripcion) {
+            toast_msg('La descripción del ítem es obligatoria.', 'warning');
+            $('#custom-item-descripcion').focus();
+            return;
+        }
+
+        if (precio <= 0) {
+            toast_msg('El precio debe ser mayor a cero.', 'warning');
+            $('#custom-item-precio').focus();
+            return;
+        }
+
+        if (cantidad <= 0) {
+            toast_msg('La cantidad debe ser mayor a cero.', 'warning');
+            $('#custom-item-cantidad').focus();
+            return;
+        }
+
+        $.ajax({
+            url: "{{ route('pos.add_custom_item') }}",
+            method: 'POST',
+            data: {
+                _token:      "{{ csrf_token() }}",
+                descripcion: descripcion,
+                unidad:      unidad,
+                precio:      precio,
+                cantidad:    cantidad
+            },
+            beforeSend: function () {
+                $('#btn-save-custom-item').prop('disabled', true);
+            },
+            success: function (r) {
+                $('#btn-save-custom-item').prop('disabled', false);
+
+                if (!r.status) {
+                    toast_msg(r.msg, r.type || 'warning');
+                    return;
+                }
+
+                $('#modalCustomItem').modal('hide');
+                toast_msg(r.msg, r.type || 'success');
+                load_cart();
+            },
+            error: function (xhr) {
+                $('#btn-save-custom-item').prop('disabled', false);
+                toast_msg(xhr.responseJSON?.msg || 'No se pudo agregar el ítem personalizado.', 'error');
+            },
+            dataType: 'json'
+        });
+    });
+
+    $('body').on('click', '.btn-delete-custom', function (event) {
+        event.preventDefault();
+        const customId = $(this).data('custom-id');
+
+        $.ajax({
+            url: "{{ route('pos.delete_custom_item') }}",
+            method: 'POST',
+            data: {
+                _token: "{{ csrf_token() }}",
+                id:     customId
+            },
+            success: function (r) {
+                if (!r.status) {
+                    toast_msg(r.msg, r.type || 'warning');
+                    return;
+                }
+
+                load_cart();
+            },
+            error: function (xhr) {
+                toast_msg(xhr.responseJSON?.msg || 'No se pudo eliminar el ítem.', 'error');
+            },
+            dataType: 'json'
+        });
+    });
+
+    // ─── End ítem personalizado ──────────────────────────────────────────────────
+
     $(document).ready(function() {
         load_cart();
         $('#search-product').focus();
