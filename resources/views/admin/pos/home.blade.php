@@ -333,6 +333,49 @@
                 row-gap: .55rem;
             }
         }
+
+        /* Select2 inside #modalCustomItem */
+        #modalCustomItem .select2-container {
+            width: 100% !important;
+        }
+
+        #modalCustomItem .select2-selection--single {
+            height: 42px !important;
+            border-radius: 12px !important;
+            border: 1px solid #ced4da;
+            display: flex;
+            align-items: center;
+        }
+
+        #modalCustomItem .select2-selection__rendered {
+            line-height: 42px !important;
+            padding-left: .75rem;
+            font-size: .9rem;
+            color: #212529;
+        }
+
+        #modalCustomItem .select2-selection__arrow {
+            height: 42px !important;
+            right: 6px;
+        }
+
+        #modalCustomItem .select2-dropdown {
+            border-radius: 12px;
+            border: 1px solid rgba(33,40,50,.14);
+            box-shadow: 0 12px 32px rgba(0,0,0,.12);
+            overflow: hidden;
+        }
+
+        #modalCustomItem .select2-search--dropdown .select2-search__field {
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            padding: .35rem .6rem;
+            font-size: .88rem;
+        }
+
+        #modalCustomItem .select2-results__option--highlighted {
+            background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+        }
     </style>
 @endsection
 
@@ -366,6 +409,12 @@
                     <input type="hidden" name="idalmacenuser" value="{{ Auth::user()['idalmacen'] }}">
                     <div class="autocomplete-wrapper">
                         <input type="text" class="form-control input-barcode" id="search-product" placeholder="Escanea un codigo o busca por nombre">
+                    </div>
+                    <div class="mt-2 d-flex justify-content-end">
+                        <button type="button" class="btn btn-sm" id="btn-open-custom-item"
+                            style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; border: none; border-radius: 10px; padding: 0.38rem 0.85rem; font-weight: 700; font-size: 0.82rem; box-shadow: 0 4px 14px rgba(245,158,11,.28); transition: all .15s ease;">
+                            <i class="ri-add-circle-line me-1"></i> Ítem personalizado
+                        </button>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-sm mt-3">
@@ -556,6 +605,65 @@
     </div>
 
     @include('admin.clients.modal-register', ['typeDocuments' => $typeDocuments])
+
+    {{-- Modal: Agregar ítem personalizado --}}
+    <div class="modal fade" id="modalCustomItem" tabindex="-1" aria-labelledby="modalCustomItemLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 460px;">
+            <div class="modal-content" style="border-radius: 20px; overflow: hidden; border: 1px solid rgba(33,40,50,.10); box-shadow: 0 30px 80px rgba(0,0,0,.18);">
+                <div class="modal-header" style="background: linear-gradient(135deg, #f59e0b, #d97706); border-bottom: 0; padding: 1rem 1.15rem;">
+                    <h5 class="modal-title text-white fw-bold" id="modalCustomItemLabel" style="font-size:.95rem;">
+                        <i class="ri-add-circle-line me-1"></i> Ítem personalizado
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body" style="background: linear-gradient(180deg,#fafcff 0%,#fff 100%); padding: 1.2rem;">
+                    <p class="text-muted mb-3" style="font-size:.82rem;">
+                        Agrega un cargo que no está en el inventario (vaso roto, plato faltante, servicio adicional, etc.).
+                    </p>
+
+                    <div class="mb-3">
+                        <label for="custom-item-descripcion" class="form-label fw-semibold" style="font-size:.82rem;">Descripción <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="custom-item-descripcion"
+                            placeholder="Ej: Vaso roto, plato faltante..."
+                            style="border-radius:12px; min-height:42px;">
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-4">
+                            <label for="custom-item-unidad" class="form-label fw-semibold" style="font-size:.82rem;">U. Med.</label>
+                            <select id="custom-item-unidad" class="form-select" style="border-radius:12px; min-height:42px; width:100%;"></select>
+                        </div>
+                        <div class="col-4">
+                            <label for="custom-item-precio" class="form-label fw-semibold" style="font-size:.82rem;">Precio (c/IGV) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control text-center" id="custom-item-precio"
+                                placeholder="0.00" min="0.01" step="0.01" value=""
+                                style="border-radius:12px; min-height:42px;">
+                        </div>
+                        <div class="col-4">
+                            <label for="custom-item-cantidad" class="form-label fw-semibold" style="font-size:.82rem;">Cantidad <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control text-center" id="custom-item-cantidad"
+                                placeholder="1" min="0.01" step="0.01" value="1"
+                                style="border-radius:12px; min-height:42px;">
+                        </div>
+                    </div>
+
+                    <div class="mt-3 p-2 rounded-3" id="custom-item-preview" style="background:rgba(245,158,11,.08); border:1px dashed rgba(245,158,11,.35); display:none;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted" style="font-size:.8rem;">Subtotal estimado:</span>
+                            <span class="fw-bold text-warning" id="custom-item-subtotal" style="font-size:1rem;">S/ 0.00</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top:1px solid rgba(33,40,50,.08); padding:.9rem 1rem;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius:14px; min-width:100px;">Cancelar</button>
+                    <button type="button" class="btn text-white fw-bold" id="btn-save-custom-item"
+                        style="background: linear-gradient(135deg,#f59e0b,#d97706); border:none; border-radius:14px; min-width:130px; box-shadow:0 6px 18px rgba(245,158,11,.3);">
+                        <i class="ri-check-line me-1"></i> Agregar al carrito
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 
