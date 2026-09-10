@@ -276,6 +276,9 @@ Route::controller(PosController::class)->prefix('pos')->middleware(['auth', 'can
     Route::post('/store-product'      , 'store_product')->name('admin.store_product_pos');
     Route::post('/open-modal'         , 'open_modal')->name('pos.open_modal_confirm');
     Route::post('/save-sale'          , 'save_sale')->name('pos.save_sale');
+    Route::post('/search-units'        , 'search_units')->name('pos.search_units');
+    Route::post('/add-custom-item'    , 'add_custom_item')->name('pos.add_custom_item');
+    Route::post('/delete-custom-item' , 'delete_custom_item')->name('pos.delete_custom_item');
 });
 
 Route::controller(SaleNoteController::class)->prefix('salenotes')->middleware(['auth', 'can:admin.sale_notes'])->group(function() {
