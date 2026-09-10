@@ -10,10 +10,12 @@ class DetailSaleNote extends Model
     use HasFactory;
     protected $table        = 'detail_sale_notes';
     protected $primaryKey   = 'id';
-    protected $fillable     = 
+    protected $fillable     =
     [
         'idnotaventa',
         'idproducto',
+        'descripcion_custom',
+        'unidad_custom',
         'cantidad',
         'descuento',
         'igv',
