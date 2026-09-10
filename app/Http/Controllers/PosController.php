@@ -17,6 +17,7 @@ use App\Models\SaleNote;
 use App\Models\Serie;
 use App\Models\StockProduct;
 use App\Models\TypeDocument;
+use App\Models\Unit;
 use App\Models\Warehouse;
 use App\Services\Ebilling\Payload\BillingPayloadBuilder;
 use App\Services\Ebilling\SunatDispatchService;
@@ -214,83 +215,121 @@ class PosController extends Controller
         if (! empty($cart['products'])) {
             foreach ($cart['products'] as $product) {
                 $contador++;
-                $subtotal = number_format(((float) $product['precio_venta'] * (float) $product['cantidad']), 2, '.', '');
+                $isCustom    = ! empty($product['is_custom']);
+                $subtotal    = number_format(((float) $product['precio_venta'] * (float) $product['cantidad']), 2, '.', '');
                 $precioVenta = number_format((float) $product['precio_venta'], 2, '.', '');
 
-                $presentations = $product['presentations'] ?? [];
-                if (empty($presentations)) {
-                    $prodModel = Product::with(['unit', 'presentations.unit'])->find($product['id']);
-                    if ($prodModel) {
-                        $presentations = $this->getProductPresentations($prodModel, $product['precio_venta']);
+                if ($isCustom) {
+                    // Custom (non-inventory) item: show unit as plain badge, no presentation dropdown
+                    $uMedHtml = '<div class="d-inline-flex align-items-center gap-1 justify-content-center">'
+                        . '<span class="badge bg-warning text-dark" style="font-size: 0.76rem; padding: 0.35rem 0.5rem; font-weight: 700; white-space: nowrap; border-radius: 4px;">'
+                        . e(strtoupper((string) $product['unidad']))
+                        . '</span></div>';
+
+                    $html_cart .= '<tr id="row-' . $contador . '" class="table-warning">
+                        <td class="align-middle fw-semibold">
+                            <span class="badge bg-warning text-dark me-1" style="font-size:0.65rem;">PERSONALIZADO</span>'
+                        . e((string) $product['descripcion']) . '
+                        </td>
+                        <td class="text-center align-middle">' . $uMedHtml . '</td>
+                        <td class="text-center align-middle">
+                            <input type="text" class="form-control form-control-sm text-center input-update-custom"
+                                value="' . $precioVenta . '"
+                                data-custom-id="' . e((string) $product['id']) . '"
+                                data-cantidad="' . e((string) $product['cantidad']) . '"
+                                readonly
+                                name="precio_venta_custom">
+                        </td>
+                        <td class="text-center align-middle">
+                            <div class="d-flex align-items-center justify-content-center gap-1">
+                                <span class="fw-bold">' . rtrim(rtrim(number_format((float) $product['cantidad'], 2, '.', ''), '0'), '.') . '</span>
+                            </div>
+                        </td>
+                        <td class="text-center align-middle fw-bold">' . $subtotal . '</td>
+                        <td class="text-center align-middle">
+                            <button class="btn btn-sm btn-danger btn-delete-custom"
+                                data-custom-id="' . e((string) $product['id']) . '"
+                                title="Eliminar item personalizado">
+                                <i class="ri-delete-bin-line"></i>
+                            </button>
+                        </td>
+                    </tr>';
+                } else {
+                    $presentations = $product['presentations'] ?? [];
+                    if (empty($presentations)) {
+                        $prodModel = Product::with(['unit', 'presentations.unit'])->find($product['id']);
+                        if ($prodModel) {
+                            $presentations = $this->getProductPresentations($prodModel, $product['precio_venta']);
+                        }
                     }
-                }
 
-                $selectedPresId = (string) ($product['idpresentacion'] ?? 'base');
-                $optionsHtml = '';
-                foreach ($presentations as $pres) {
-                    $isSel = ((string) $pres['id'] === $selectedPresId) ? 'selected' : '';
-                    $label = $pres['descripcion'] . ' | ' . number_format((float) $pres['precio_venta'], 2, '.', '');
-                    $optionsHtml .= '<option value="' . e($pres['id']) . '" '
-                        . 'data-price="' . number_format((float) $pres['precio_venta'], 2, '.', '') . '" '
-                        . 'data-factor="' . e((string) $pres['factor_conversion']) . '" '
-                        . 'data-unit="' . e((string) $pres['unit_code']) . '" '
-                        . $isSel . '>' . e($label) . '</option>';
-                }
+                    $selectedPresId = (string) ($product['idpresentacion'] ?? 'base');
+                    $optionsHtml    = '';
+                    foreach ($presentations as $pres) {
+                        $isSel        = ((string) $pres['id'] === $selectedPresId) ? 'selected' : '';
+                        $label        = $pres['descripcion'] . ' | ' . number_format((float) $pres['precio_venta'], 2, '.', '');
+                        $optionsHtml .= '<option value="' . e($pres['id']) . '" '
+                            . 'data-price="' . number_format((float) $pres['precio_venta'], 2, '.', '') . '" '
+                            . 'data-factor="' . e((string) $pres['factor_conversion']) . '" '
+                            . 'data-unit="' . e((string) $pres['unit_code']) . '" '
+                            . $isSel . '>' . e($label) . '</option>';
+                    }
 
-                $uMedHtml = '<div class="d-inline-flex align-items-center gap-1 justify-content-center">'
-                    . '<span class="badge bg-primary text-white presentation-badge" '
-                    . 'data-id="' . e((string) $product['id']) . '" '
-                    . 'style="font-size: 0.76rem; padding: 0.35rem 0.5rem; font-weight: 700; white-space: nowrap; border-radius: 4px;">'
-                    . $signo . ' ' . $precioVenta
-                    . '</span>'
-                    . '<select class="form-select form-select-sm select-presentation" '
-                    . 'data-id="' . e((string) $product['id']) . '" '
-                    . 'data-cantidad="' . e((string) $product['cantidad']) . '" '
-                    . 'style="min-width: 115px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">'
-                    . $optionsHtml
-                    . '</select>'
-                    . '</div>';
+                    $uMedHtml = '<div class="d-inline-flex align-items-center gap-1 justify-content-center">'
+                        . '<span class="badge bg-primary text-white presentation-badge" '
+                        . 'data-id="' . e((string) $product['id']) . '" '
+                        . 'style="font-size: 0.76rem; padding: 0.35rem 0.5rem; font-weight: 700; white-space: nowrap; border-radius: 4px;">'
+                        . $signo . ' ' . $precioVenta
+                        . '</span>'
+                        . '<select class="form-select form-select-sm select-presentation" '
+                        . 'data-id="' . e((string) $product['id']) . '" '
+                        . 'data-cantidad="' . e((string) $product['cantidad']) . '" '
+                        . 'style="min-width: 115px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">'
+                        . $optionsHtml
+                        . '</select>'
+                        . '</div>';
 
-                $html_cart .= '<tr id="row-' . $contador . '">
-                    <td class="align-middle fw-semibold">' . e((string) $product['descripcion']) . '</td>
-                    <td class="text-center align-middle">' . $uMedHtml . '</td>
-                    <td class="text-center align-middle">
-                        <input type="text" class="form-control form-control-sm text-center input-update"
-                            value="' . $precioVenta . '"
-                            data-cantidad="' . e((string) $product['cantidad']) . '"
-                            data-id="' . e((string) $product['id']) . '"
-                            name="precio_venta">
-                    </td>
-                    <td class="text-center align-middle">
-                        <div class="input-group input-group-sm justify-content-center">
-                            <button class="btn btn-light border btn-down" type="button"
-                                data-id="' . e((string) $product['id']) . '"
+                    $html_cart .= '<tr id="row-' . $contador . '">
+                        <td class="align-middle fw-semibold">' . e((string) $product['descripcion']) . '</td>
+                        <td class="text-center align-middle">' . $uMedHtml . '</td>
+                        <td class="text-center align-middle">
+                            <input type="text" class="form-control form-control-sm text-center input-update"
+                                value="' . $precioVenta . '"
                                 data-cantidad="' . e((string) $product['cantidad']) . '"
-                                data-precio_venta="' . e((string) $product['precio_venta']) . '">
-                                <i class="ri-subtract-line"></i>
-                            </button>
-                            <input type="text" class="form-control text-center input-quantity"
-                                value="' . e((string) $product['cantidad']) . '"
                                 data-id="' . e((string) $product['id']) . '"
-                                data-precio_venta="' . e((string) $product['precio_venta']) . '"
-                                min="0" style="max-width: 55px;">
-                            <button class="btn btn-light border btn-up" type="button"
+                                name="precio_venta">
+                        </td>
+                        <td class="text-center align-middle">
+                            <div class="input-group input-group-sm justify-content-center">
+                                <button class="btn btn-light border btn-down" type="button"
+                                    data-id="' . e((string) $product['id']) . '"
+                                    data-cantidad="' . e((string) $product['cantidad']) . '"
+                                    data-precio_venta="' . e((string) $product['precio_venta']) . '">
+                                    <i class="ri-subtract-line"></i>
+                                </button>
+                                <input type="text" class="form-control text-center input-quantity"
+                                    value="' . e((string) $product['cantidad']) . '"
+                                    data-id="' . e((string) $product['id']) . '"
+                                    data-precio_venta="' . e((string) $product['precio_venta']) . '"
+                                    min="0" style="max-width: 55px;">
+                                <button class="btn btn-light border btn-up" type="button"
+                                    data-id="' . e((string) $product['id']) . '"
+                                    data-cantidad="' . e((string) $product['cantidad']) . '"
+                                    data-precio_venta="' . e((string) $product['precio_venta']) . '">
+                                    <i class="ri-add-line"></i>
+                                </button>
+                            </div>
+                        </td>
+                        <td class="text-center align-middle fw-bold">' . $subtotal . '</td>
+                        <td class="text-center align-middle">
+                            <button class="btn btn-sm btn-danger btn-delete-product"
                                 data-id="' . e((string) $product['id']) . '"
-                                data-cantidad="' . e((string) $product['cantidad']) . '"
-                                data-precio_venta="' . e((string) $product['precio_venta']) . '">
-                                <i class="ri-add-line"></i>
+                                title="Eliminar">
+                                <i class="ri-delete-bin-line"></i>
                             </button>
-                        </div>
-                    </td>
-                    <td class="text-center align-middle fw-bold">' . $subtotal . '</td>
-                    <td class="text-center align-middle">
-                        <button class="btn btn-sm btn-danger btn-delete-product"
-                            data-id="' . e((string) $product['id']) . '"
-                            title="Eliminar">
-                            <i class="ri-delete-bin-line"></i>
-                        </button>
-                    </td>
-                </tr>';
+                        </td>
+                    </tr>';
+                }
             }
         } else {
             $html_cart .= '<tr>
@@ -1177,16 +1216,19 @@ class PosController extends Controller
                     ]);
 
                     foreach ($saleBreakdown['items'] as $product) {
+                        $isCustom = ! empty($product['is_custom']);
                         DetailSaleNote::create([
-                            'idnotaventa' => $document->id,
-                            'idproducto' => $product['id'],
-                            'cantidad' => $product['cantidad'],
-                            'igv' => $product['igv'],
-                            'precio_unitario' => $product['precio_unitario_descuento'],
-                            'precio_total' => $product['precio_total_descuento'],
-                            'descuento' => $product['descuento'],
-                            'opcion' => $product['opcion'],
-                            'idalmacen' => $product['idalmacen'],
+                            'idnotaventa'      => $document->id,
+                            'idproducto'       => $isCustom ? null : $product['id'],
+                            'descripcion_custom' => $isCustom ? $product['descripcion'] : null,
+                            'unidad_custom'    => $isCustom ? ($product['unidad'] ?? null) : null,
+                            'cantidad'         => $product['cantidad'],
+                            'igv'              => $product['igv'],
+                            'precio_unitario'  => $product['precio_unitario_descuento'],
+                            'precio_total'     => $product['precio_total_descuento'],
+                            'descuento'        => $product['descuento'],
+                            'opcion'           => $product['opcion'],
+                            'idalmacen'        => $product['idalmacen'],
                         ]);
                     }
 
@@ -1234,20 +1276,23 @@ class PosController extends Controller
                     ]);
 
                     foreach ($saleBreakdown['items'] as $product) {
+                        $isCustom = ! empty($product['is_custom']);
                         DetailBilling::create([
-                            'idfacturacion' => $document->id,
-                            'idproducto' => $product['id'],
-                            'cantidad' => $product['cantidad'],
-                            'descuento' => $product['descuento'],
-                            'igv' => $product['igv_monto'],
-                            'icbper' => 0,
-                            'factor_icbper' => null,
-                            'cantidad_bolsas' => 0,
+                            'idfacturacion'    => $document->id,
+                            'idproducto'       => $isCustom ? null : $product['id'],
+                            'descripcion_custom' => $isCustom ? $product['descripcion'] : null,
+                            'unidad_custom'    => $isCustom ? ($product['unidad'] ?? null) : null,
+                            'cantidad'         => $product['cantidad'],
+                            'descuento'        => $product['descuento'],
+                            'igv'              => $product['igv_monto'],
+                            'icbper'           => 0,
+                            'factor_icbper'    => null,
+                            'cantidad_bolsas'  => 0,
                             'id_afectacion_igv' => (int) ($product['idcodigo_igv'] ?? 1),
-                            'precio_unitario' => $product['precio_unitario_descuento'],
-                            'valor_unitario' => $product['valor_unitario_descuento'],
-                            'valor_total' => $product['valor_total_descuento'],
-                            'precio_total' => $product['precio_total_descuento'],
+                            'precio_unitario'  => $product['precio_unitario_descuento'],
+                            'valor_unitario'   => $product['valor_unitario_descuento'],
+                            'valor_total'      => $product['valor_total_descuento'],
+                            'precio_total'     => $product['precio_total_descuento'],
                         ]);
                     }
 
@@ -1467,6 +1512,11 @@ class PosController extends Controller
     protected function validateStockBeforeSale(array $cart): void
     {
         foreach ($cart['products'] as $product) {
+            // Custom items (non-inventory) skip all stock validation
+            if (! empty($product['is_custom'])) {
+                continue;
+            }
+
             if ((int) $product['opcion'] !== 1) {
                 continue;
             }
@@ -1516,8 +1566,11 @@ class PosController extends Controller
             ->where('idfactura', $saleNote->id)
             ->where('idtipo_comprobante', $saleNote->idtipo_comprobante)
             ->get();
-        $details = DetailSaleNote::select('detail_sale_notes.*', 'products.descripcion as producto')
-            ->join('products', 'detail_sale_notes.idproducto', '=', 'products.id')
+        $details = DetailSaleNote::select(
+                'detail_sale_notes.*',
+                DB::raw('COALESCE(products.descripcion, detail_sale_notes.descripcion_custom) as producto')
+            )
+            ->leftJoin('products', 'detail_sale_notes.idproducto', '=', 'products.id')
             ->where('idnotaventa', $saleNote->id)
             ->get();
 
@@ -1560,8 +1613,11 @@ class PosController extends Controller
             ->where('idfactura', $billing->id)
             ->where('idtipo_comprobante', $billing->idtipo_comprobante)
             ->get();
-        $details = DetailBilling::select('detail_billings.*', 'products.descripcion as producto')
-            ->join('products', 'detail_billings.idproducto', '=', 'products.id')
+        $details = DetailBilling::select(
+                'detail_billings.*',
+                DB::raw('COALESCE(products.descripcion, detail_billings.descripcion_custom) as producto')
+            )
+            ->leftJoin('products', 'detail_billings.idproducto', '=', 'products.id')
             ->where('idfacturacion', $billing->id)
             ->get();
 
@@ -1683,6 +1739,104 @@ class PosController extends Controller
         }
     }
 
+    public function search_units(Request $request): JsonResponse
+    {
+        $term  = trim((string) $request->input('q', ''));
+
+        $units = Unit::where('estado', 1)
+            ->when($term !== '', function ($query) use ($term) {
+                $query->where(function ($q) use ($term) {
+                    $q->where('descripcion', 'like', '%' . $term . '%')
+                      ->orWhere('codigo', 'like', '%' . $term . '%');
+                });
+            })
+            ->orderBy('descripcion')
+            ->limit(50)
+            ->get(['id', 'codigo', 'descripcion']);
+
+        return response()->json([
+            'results' => $units->map(fn ($u) => [
+                'id'   => $u->codigo,          // we store the unit CODE (e.g. "UND") as value
+                'text' => $u->codigo . ' – ' . $u->descripcion,
+            ])->values(),
+        ]);
+    }
+
+    public function add_custom_item(Request $request): JsonResponse
+    {
+        if (! $request->ajax()) {
+            return response()->json(['status' => false, 'msg' => 'Intente de nuevo', 'type' => 'warning']);
+        }
+
+        $descripcion = trim((string) $request->input('descripcion', ''));
+        $unidad      = trim((string) $request->input('unidad', 'UND'));
+        $precio      = (float) $request->input('precio', 0);
+        $cantidad    = (float) $request->input('cantidad', 1);
+
+        if ($descripcion === '') {
+            return response()->json(['status' => false, 'msg' => 'La descripcion del item es obligatoria.', 'type' => 'warning']);
+        }
+
+        if ($precio <= 0) {
+            return response()->json(['status' => false, 'msg' => 'El precio debe ser mayor a cero.', 'type' => 'warning']);
+        }
+
+        if ($cantidad <= 0) {
+            return response()->json(['status' => false, 'msg' => 'La cantidad debe ser mayor a cero.', 'type' => 'warning']);
+        }
+
+        $customId   = 'custom_' . uniqid();
+        $newItem    = [
+            'id'           => $customId,
+            'descripcion'  => $descripcion,
+            'unidad'       => strtoupper($unidad) ?: 'UND',
+            'idunidad'     => null,
+            'idpresentacion' => 'base',
+            'presentations'  => [],
+            'presentacion_descripcion' => strtoupper($unidad) ?: 'UND',
+            'factor_conversion' => 1.0,
+            'igv'          => 10,       // gravado 10% por defecto
+            'idcodigo_igv' => 1,
+            'precio_compra' => 0,
+            'precio_venta' => number_format($precio, 2, '.', ''),
+            'stock'        => null,
+            'opcion'       => 0,        // sin control de stock
+            'cantidad'     => $cantidad,
+            'idalmacen'    => null,
+            'is_custom'    => true,
+        ];
+
+        session()->push('pos.products', $newItem);
+
+        return response()->json(['status' => true, 'msg' => 'Item personalizado agregado al carrito.', 'type' => 'success']);
+    }
+
+    public function delete_custom_item(Request $request): JsonResponse
+    {
+        if (! $request->ajax()) {
+            return response()->json(['status' => false, 'msg' => 'Intente de nuevo', 'type' => 'warning']);
+        }
+
+        $customId = trim((string) $request->input('id', ''));
+
+        if (! str_starts_with($customId, 'custom_')) {
+            return response()->json(['status' => false, 'msg' => 'ID de item personalizado invalido.', 'type' => 'warning']);
+        }
+
+        if (! session()->has('pos') || empty(session()->get('pos')['products'])) {
+            return response()->json(['status' => false, 'msg' => 'El carrito ya esta vacio.', 'type' => 'warning']);
+        }
+
+        foreach (session()->get('pos')['products'] as $index => $product) {
+            if ((string) $product['id'] === $customId) {
+                session()->forget('pos.products.' . $index);
+                return response()->json(['status' => true, 'msg' => 'Item eliminado.', 'type' => 'success']);
+            }
+        }
+
+        return response()->json(['status' => false, 'msg' => 'Item no encontrado en el carrito.', 'type' => 'warning']);
+    }
+
     public function create_cart()
     {
         if (! session()->get('pos') || empty(session()->get('pos')['products'])) {
@@ -1704,11 +1858,11 @@ class PosController extends Controller
         $igv = 0;
 
         foreach (session('pos')['products'] as $index => $product) {
-            $igvFactor = $this->resolveIgvFactor((int) $product['igv']);
-            $precioBase = $igvFactor > 0 ? ((float) $product['precio_venta'] / $igvFactor) : (float) $product['precio_venta'];
-            $igvProducto = ((float) $product['precio_venta'] - $precioBase) * (int) $product['cantidad'];
-            $igv += $this->redondeado($igvProducto);
-            $subtotal += $precioBase * (int) $product['cantidad'];
+            $igvFactor   = $this->resolveIgvFactor((int) $product['igv']);
+            $precioBase  = $igvFactor > 0 ? ((float) $product['precio_venta'] / $igvFactor) : (float) $product['precio_venta'];
+            $igvProducto = ((float) $product['precio_venta'] - $precioBase) * (float) $product['cantidad'];
+            $igv        += $this->redondeado($igvProducto);
+            $subtotal   += $precioBase * (float) $product['cantidad'];
             session()->put('pos.products.' . $index, $product);
         }
 
