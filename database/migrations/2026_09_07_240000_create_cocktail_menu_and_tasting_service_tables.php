@@ -57,22 +57,30 @@ return new class extends Migration
                 ?? DB::table('categories')->first();
             $catServiceId = $catService ? $catService->id : 8;
 
+            // Buscar el tipo de afectación IGV "GRAVADO" (código SUNAT 10), con fallback al primero disponible
+            $igvType = DB::table('igv_type_affections')->where('codigo', '10')->first()
+                ?? DB::table('igv_type_affections')->first();
+
+            if (!$igvType) {
+                throw new \RuntimeException('No se encontró ningún registro en igv_type_affections. Asegúrate de correr el seeder correspondiente antes de esta migración.');
+            }
+
             DB::table('products')->insert([
-                'codigo_interno' => 'SRV-DEGUSTACION',
-                'codigo_barras' => null,
-                'codigo_sunat' => '80141607',
-                'descripcion' => 'SERVICIO DE DEGUSTACIÓN PREVIA DE COCTELERÍA (10 OPCIONES / ELIGE 5)',
-                'idunidad' => $unitId,
-                'idcategoria' => $catServiceId,
-                'igv' => 18.00,
-                'idcodigo_igv' => 1,
-                'precio_compra' => 0.00,
-                'precio_venta' => 180.00,
-                'opcion' => 2,
-                'rentable' => false,
-                'stock_actual' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
+                'codigo_interno'    => 'SRV-DEGUSTACION',
+                'codigo_barras'     => null,
+                'codigo_sunat'      => '80141607',
+                'descripcion'       => 'SERVICIO DE DEGUSTACIÓN PREVIA DE COCTELERÍA (10 OPCIONES / ELIGE 5)',
+                'idunidad'          => $unitId,
+                'idcategoria'       => $catServiceId,
+                'igv'               => 18.00,
+                'idcodigo_igv'      => $igvType->id,
+                'precio_compra'     => 0.00,
+                'precio_venta'      => 180.00,
+                'opcion'            => 2,
+                'rentable'          => false,
+                'stock_actual'      => null,
+                'created_at'        => now(),
+                'updated_at'        => now(),
             ]);
         }
     }
