@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CocktailMenuCategory extends Model
 {
@@ -24,18 +25,15 @@ class CocktailMenuCategory extends Model
         'orden' => 'integer',
     ];
 
-    public function items()
-    {
+    public function items(): HasMany {
         return $this->hasMany(CocktailMenuItem::class, 'menu_category_id')->orderBy('orden');
     }
 
-    public function activeItems()
-    {
+    public function activeItems(): HasMany {
         return $this->hasMany(CocktailMenuItem::class, 'menu_category_id')->where('activo', true)->orderBy('orden');
     }
 
-    public function scopeActive($query)
-    {
+    public function scopeActive($query) {
         return $query->where('activo', true)->orderBy('orden');
     }
 }

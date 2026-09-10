@@ -24,10 +24,10 @@ class DetailSaleNote extends Model
     ];
 
     protected $casts = [
-        'cantidad' => 'decimal:2',
-        'descuento' => 'decimal:2',
-        'igv' => 'decimal:2',
-        'precio_unitario' => 'decimal:2',
-        'precio_total' => 'decimal:2',
+        'cantidad'          => 'decimal:2',
+        'descuento'         => 'decimal:2',
+        'igv'               => 'decimal:2',
+        'precio_unitario'   => 'decimal:2',
+        'precio_total'      => 'decimal:2',
     ];
 }

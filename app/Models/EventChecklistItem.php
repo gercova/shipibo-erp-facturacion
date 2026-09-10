@@ -38,45 +38,39 @@ class EventChecklistItem extends Model
     ];
 
     protected $casts = [
-        'cantidad_planeada' => 'decimal:2',
-        'cantidad_llevada' => 'decimal:2',
-        'cantidad_devuelta' => 'decimal:2',
-        'costo_penalidad_estimado' => 'decimal:2',
-        'llevado' => 'boolean',
-        'devuelto' => 'boolean',
-        'tiene_incidencia' => 'boolean',
-        'fecha_llevado' => 'datetime',
-        'fecha_devuelto' => 'datetime',
-        'orden' => 'integer',
+        'cantidad_planeada'         => 'decimal:2',
+        'cantidad_llevada'          => 'decimal:2',
+        'cantidad_devuelta'         => 'decimal:2',
+        'costo_penalidad_estimado'  => 'decimal:2',
+        'llevado'                   => 'boolean',
+        'devuelto'                  => 'boolean',
+        'tiene_incidencia'          => 'boolean',
+        'fecha_llevado'             => 'datetime',
+        'fecha_devuelto'            => 'datetime',
+        'orden'                     => 'integer',
     ];
 
-    public function checklist(): BelongsTo
-    {
+    public function checklist(): BelongsTo {
         return $this->belongsTo(EventChecklist::class, 'checklist_id');
     }
 
-    public function contractItem(): BelongsTo
-    {
+    public function contractItem(): BelongsTo {
         return $this->belongsTo(ContractItem::class, 'contract_item_id');
     }
 
-    public function product(): BelongsTo
-    {
+    public function product(): BelongsTo {
         return $this->belongsTo(Product::class, 'idproducto');
     }
 
-    public function userLlevado(): BelongsTo
-    {
+    public function userLlevado(): BelongsTo {
         return $this->belongsTo(User::class, 'idusuario_llevado');
     }
 
-    public function userDevuelto(): BelongsTo
-    {
+    public function userDevuelto(): BelongsTo {
         return $this->belongsTo(User::class, 'idusuario_devuelto');
     }
 
-    public function toggleLlevado($userId, $quantity = null): bool
-    {
+    public function toggleLlevado($userId, $quantity = null): bool {
         if ($this->llevado) {
             $this->llevado = false;
             $this->cantidad_llevada = 0.00;
@@ -94,8 +88,7 @@ class EventChecklistItem extends Model
         return $saved;
     }
 
-    public function toggleDevuelto($userId, $quantity = null): bool
-    {
+    public function toggleDevuelto($userId, $quantity = null): bool {
         if ($this->devuelto) {
             $this->devuelto = false;
             $this->cantidad_devuelta = 0.00;
@@ -113,8 +106,7 @@ class EventChecklistItem extends Model
         return $saved;
     }
 
-    public function reportIncident(string $type, $arg2 = null, $arg3 = null, float $penalty = 0.0): bool
-    {
+    public function reportIncident(string $type, $arg2 = null, $arg3 = null, float $penalty = 0.0): bool {
         $this->tiene_incidencia = true;
         $this->tipo_incidencia = $type;
 
@@ -138,8 +130,7 @@ class EventChecklistItem extends Model
         return $saved;
     }
 
-    public function clearIncident(): bool
-    {
+    public function clearIncident(): bool {
         $this->tiene_incidencia = false;
         $this->tipo_incidencia = null;
         $this->observaciones = null;
@@ -150,51 +141,42 @@ class EventChecklistItem extends Model
         return $saved;
     }
 
-    public function getCantidadAttribute(): float
-    {
+    public function getCantidadAttribute(): float {
         return (float) $this->cantidad_planeada;
     }
 
-    public function getCantidadAfectadaAttribute(): float
-    {
+    public function getCantidadAfectadaAttribute(): float {
         if ($this->cantidad_devuelta > 0 && $this->cantidad_llevada > $this->cantidad_devuelta) {
             return (float) ($this->cantidad_llevada - $this->cantidad_devuelta);
         }
         return (float) ($this->cantidad_planeada ?: 1.00);
     }
 
-    public function getUnidadMedidaAttribute(): string
-    {
+    public function getUnidadMedidaAttribute(): string {
         return $this->product?->unidad_medida ?? 'UNIDAD';
     }
 
-    public function getUserLlevadoNameAttribute(): string
-    {
+    public function getUserLlevadoNameAttribute(): string {
         return $this->userLlevado?->nombre ?: ($this->userLlevado?->name ?: '');
     }
 
-    public function getUserDevueltoNameAttribute(): string
-    {
+    public function getUserDevueltoNameAttribute(): string {
         return $this->userDevuelto?->nombre ?: ($this->userDevuelto?->name ?: '');
     }
 
-    public function getFechaLlevadoFormattedAttribute(): string
-    {
+    public function getFechaLlevadoFormattedAttribute(): string {
         return $this->fecha_llevado ? $this->fecha_llevado->format('d/m H:i') : '';
     }
 
-    public function getFechaDevueltoFormattedAttribute(): string
-    {
+    public function getFechaDevueltoFormattedAttribute(): string {
         return $this->fecha_devuelto ? $this->fecha_devuelto->format('d/m H:i') : '';
     }
 
-    public function setProductoIdAttribute($value): void
-    {
+    public function setProductoIdAttribute($value): void {
         $this->attributes['idproducto'] = $value;
     }
 
-    public function setCantidadAttribute($value): void
-    {
+    public function setCantidadAttribute($value): void {
         $this->attributes['cantidad_planeada'] = $value;
     }
 }

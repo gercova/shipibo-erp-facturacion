@@ -146,47 +146,46 @@ class ContractController extends Controller
 
     public function create()
     {
-        $business = Business::first();
-        $clients = Client::orderBy('nombres', 'asc')->get();
-        $products = Product::where('opcion', 1)->orderBy('descripcion', 'asc')->get();
-        $typeDocuments = IdentityDocumentType::where('estado', 1)->orderBy('descripcion')->get();
-
-        $nextNumber = $this->generateNextContractNumber();
+        $business       = Business::first();
+        $clients        = Client::orderBy('nombres', 'asc')->get();
+        $products       = Product::where('opcion', 1)->orderBy('descripcion', 'asc')->get();
+        $typeDocuments  = IdentityDocumentType::where('estado', 1)->orderBy('descripcion')->get();
+        $nextNumber     = $this->generateNextContractNumber();
         $defaultClauses = $this->getDefaultClauseTemplates($business);
 
         return view('admin.contracts.create', [
-            'business' => $business,
-            'clients' => $clients,
-            'products' => $products,
-            'typeDocuments' => $typeDocuments,
-            'nextNumber' => $nextNumber,
-            'defaultClauses' => $defaultClauses,
-            'signo' => $this->signo_pais(),
-            'moneda' => $this->moneda_pais(),
+            'business'          => $business,
+            'clients'           => $clients,
+            'products'          => $products,
+            'typeDocuments'     => $typeDocuments,
+            'nextNumber'        => $nextNumber,
+            'defaultClauses'    => $defaultClauses,
+            'signo'             => $this->signo_pais(),
+            'moneda'            => $this->moneda_pais(),
         ]);
     }
 
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), Contract::validationRules(), [
-            'idcliente.required' => 'Debe seleccionar un cliente contratante.',
-            'contract_number.required' => 'El número de contrato es obligatorio.',
-            'contract_number.unique' => 'Este número de contrato ya ha sido registrado.',
-            'fecha_evento.required' => 'La fecha del evento es obligatoria.',
-            'fecha_emision.required' => 'La fecha de emisión del contrato es obligatoria.',
-            'items.required' => 'Debe agregar al menos un servicio o producto al contrato.',
-            'items.min' => 'Debe agregar al menos un servicio o producto al contrato.',
-            'items.*.descripcion.required' => 'La descripción del servicio/producto es obligatoria.',
-            'items.*.cantidad.required' => 'La cantidad debe ser mayor a 0.',
-            'items.*.precio_unitario.required' => 'El precio unitario es obligatorio.',
+            'idcliente.required'        => 'Debe seleccionar un cliente contratante.',
+            'contract_number.required'  => 'El número de contrato es obligatorio.',
+            'contract_number.unique'    => 'Este número de contrato ya ha sido registrado.',
+            'fecha_evento.required'     => 'La fecha del evento es obligatoria.',
+            'fecha_emision.required'    => 'La fecha de emisión del contrato es obligatoria.',
+            'items.required'            => 'Debe agregar al menos un servicio o producto al contrato.',
+            'items.min'                 => 'Debe agregar al menos un servicio o producto al contrato.',
+            'items.*.descripcion.required'      => 'La descripción del servicio/producto es obligatoria.',
+            'items.*.cantidad.required'         => 'La cantidad debe ser mayor a 0.',
+            'items.*.precio_unitario.required'  => 'El precio unitario es obligatorio.',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
-                'msg' => $validator->errors()->first(),
-                'errors' => $validator->errors(),
-                'type' => 'warning'
+                'status'    => false,
+                'msg'       => $validator->errors()->first(),
+                'errors'    => $validator->errors(),
+                'type'      => 'warning'
             ], 422);
         }
 
@@ -199,15 +198,15 @@ class ContractController extends Controller
             $itemsData = $request->input('items', []);
             $subtotal = 0;
             foreach ($itemsData as $item) {
-                $qty = floatval($item['cantidad'] ?? 1);
-                $price = floatval($item['precio_unitario'] ?? 0);
-                $subtotal += ($qty * $price);
+                $qty        = floatval($item['cantidad'] ?? 1);
+                $price      = floatval($item['precio_unitario'] ?? 0);
+                $subtotal   += ($qty * $price);
             }
 
             // In typical Peruvian services, check if IGV applies or total equals subtotal
-            $applyIgv = $request->boolean('apply_igv', false);
-            $igv = $applyIgv ? round($subtotal * 0.18, 2) : 0.00;
-            $total = $subtotal + $igv;
+            $applyIgv   = $request->boolean('apply_igv', false);
+            $igv        = $applyIgv ? round($subtotal * 0.18, 2) : 0.00;
+            $total      = $subtotal + $igv;
 
             // Validate installments if provided
             $installmentsData = $request->input('installments', []);
@@ -215,9 +214,9 @@ class ContractController extends Controller
                 $sumInstallments = round((float) collect($installmentsData)->sum(fn($i) => floatval($i['monto'] ?? 0)), 2);
                 if (abs($sumInstallments - $total) > 0.05) {
                     return response()->json([
-                        'status' => false,
-                        'msg' => 'La suma de las cuotas (' . number_format($sumInstallments, 2) . ') debe coincidir con el total del contrato (' . number_format($total, 2) . ').',
-                        'type' => 'warning'
+                        'status'    => false,
+                        'msg'       => 'La suma de las cuotas (' . number_format($sumInstallments, 2) . ') debe coincidir con el total del contrato (' . number_format($total, 2) . ').',
+                        'type'      => 'warning'
                     ], 422);
                 }
             }
@@ -231,33 +230,33 @@ class ContractController extends Controller
                     'client'
                 );
             } elseif ($request->hasFile('signature_client_file')) {
-                $file = $request->file('signature_client_file');
-                $filename = 'sig_client_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $file       = $request->file('signature_client_file');
+                $filename   = 'sig_client_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
                 $file->move(public_path('files/contracts/signatures'), $filename);
                 $clientSignatureFile = 'files/contracts/signatures/' . $filename;
             }
 
             $contract = Contract::create([
-                'contract_number' => $request->input('contract_number'),
-                'title' => $request->input('title', 'CONTRATO DE PRESTACIÓN DE SERVICIOS'),
-                'idcliente' => $request->input('idcliente'),
-                'provider_name' => $request->input('provider_name') ?: ($business?->razon_social ?: $business?->nombre_comercial),
-                'provider_document' => $request->input('provider_document') ?: $business?->ruc,
-                'provider_representative' => $request->input('provider_representative') ?: $business?->representante,
-                'fecha_evento' => $request->input('fecha_evento'),
-                'hora_evento' => $request->input('hora_evento'),
-                'lugar_evento' => $request->input('lugar_evento'),
-                'fecha_emision' => $request->input('fecha_emision'),
-                'fecha_vencimiento' => $request->input('fecha_vencimiento'),
-                'subtotal' => $subtotal,
-                'igv' => $igv,
-                'total' => $total,
-                'moneda' => $request->input('moneda', $this->moneda_pais()),
-                'observaciones' => $request->input('observaciones'),
-                'firma_cliente' => $clientSignatureFile,
-                'estado' => $request->input('estado', Contract::STATUS_SIGNED),
-                'idusuario' => Auth::id(),
-                'idalmacen' => $this->currentWarehouseId(),
+                'contract_number'           => $request->input('contract_number'),
+                'title'                     => $request->input('title', 'CONTRATO DE PRESTACIÓN DE SERVICIOS'),
+                'idcliente'                 => $request->input('idcliente'),
+                'provider_name'             => $request->input('provider_name') ?: ($business?->razon_social ?: $business?->nombre_comercial),
+                'provider_document'         => $request->input('provider_document') ?: $business?->ruc,
+                'provider_representative'   => $request->input('provider_representative') ?: $business?->representante,
+                'fecha_evento'              => $request->input('fecha_evento'),
+                'hora_evento'               => $request->input('hora_evento'),
+                'lugar_evento'              => $request->input('lugar_evento'),
+                'fecha_emision'             => $request->input('fecha_emision'),
+                'fecha_vencimiento'         => $request->input('fecha_vencimiento'),
+                'subtotal'                  => $subtotal,
+                'igv'                       => $igv,
+                'total'                     => $total,
+                'moneda'                    => $request->input('moneda', $this->moneda_pais()),
+                'observaciones'             => $request->input('observaciones'),
+                'firma_cliente'             => $clientSignatureFile,
+                'estado'                    => $request->input('estado', Contract::STATUS_SIGNED),
+                'idusuario'                 => Auth::id(),
+                'idalmacen'                 => $this->currentWarehouseId(),
             ]);
 
             // Save Items
@@ -267,12 +266,12 @@ class ContractController extends Controller
                 $lineSubtotal = round($qty * $price, 2);
 
                 ContractItem::create([
-                    'contract_id' => $contract->id,
-                    'idproducto' => !empty($item['idproducto']) ? $item['idproducto'] : null,
-                    'descripcion' => $item['descripcion'],
-                    'cantidad' => $qty,
-                    'precio_unitario' => $price,
-                    'subtotal' => $lineSubtotal,
+                    'contract_id'       => $contract->id,
+                    'idproducto'        => !empty($item['idproducto']) ? $item['idproducto'] : null,
+                    'descripcion'       => $item['descripcion'],
+                    'cantidad'          => $qty,
+                    'precio_unitario'   => $price,
+                    'subtotal'          => $lineSubtotal,
                 ]);
             }
 
@@ -282,10 +281,10 @@ class ContractController extends Controller
             foreach ($clausesData as $clause) {
                 if (!empty($clause['titulo']) && !empty($clause['contenido'])) {
                     ContractClause::create([
-                        'contract_id' => $contract->id,
-                        'titulo' => trim($clause['titulo']),
-                        'contenido' => trim($clause['contenido']),
-                        'orden' => $order++,
+                        'contract_id'   => $contract->id,
+                        'titulo'        => trim($clause['titulo']),
+                        'contenido'     => trim($clause['contenido']),
+                        'orden'         => $order++,
                     ]);
                 }
             }
@@ -299,17 +298,17 @@ class ContractController extends Controller
             $pdfFileName = $this->generatePdfFile($contract->id);
 
             return response()->json([
-                'status' => true,
-                'msg' => 'Contrato registrado y firmado exitosamente.',
-                'id' => $contract->id,
-                'pdf' => $pdfFileName,
+                'status'    => true,
+                'msg'       => 'Contrato registrado y firmado exitosamente.',
+                'id'        => $contract->id,
+                'pdf'       => $pdfFileName,
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();
             return response()->json([
-                'status' => false,
-                'msg' => 'Ocurrió un error al guardar el contrato: ' . $e->getMessage(),
-                'type' => 'error'
+                'status'    => false,
+                'msg'       => 'Ocurrió un error al guardar el contrato: ' . $e->getMessage(),
+                'type'      => 'error'
             ], 500);
         }
     }
@@ -319,19 +318,19 @@ class ContractController extends Controller
         $contract = Contract::with(['client', 'items.product', 'clauses', 'installments'])->find($id);
         abort_if(!$contract, 404);
 
-        $business = Business::first();
-        $clients = Client::orderBy('nombres', 'asc')->get();
-        $products = Product::where('opcion', 1)->orderBy('descripcion', 'asc')->get();
-        $typeDocuments = IdentityDocumentType::where('estado', 1)->orderBy('descripcion')->get();
+        $business       = Business::first();
+        $clients        = Client::orderBy('nombres', 'asc')->get();
+        $products       = Product::where('opcion', 1)->orderBy('descripcion', 'asc')->get();
+        $typeDocuments  = IdentityDocumentType::where('estado', 1)->orderBy('descripcion')->get();
 
         return view('admin.contracts.edit', [
-            'contract' => $contract,
-            'business' => $business,
-            'clients' => $clients,
-            'products' => $products,
+            'contract'      => $contract,
+            'business'      => $business,
+            'clients'       => $clients,
+            'products'      => $products,
             'typeDocuments' => $typeDocuments,
-            'signo' => $this->signo_pais(),
-            'moneda' => $this->moneda_pais(),
+            'signo'         => $this->signo_pais(),
+            'moneda'        => $this->moneda_pais(),
         ]);
     }
 
@@ -340,31 +339,31 @@ class ContractController extends Controller
         $contract = Contract::find($id);
         if (!$contract) {
             return response()->json([
-                'status' => false,
-                'msg' => 'El contrato no existe.',
-                'type' => 'warning'
+                'status'    => false,
+                'msg'       => 'El contrato no existe.',
+                'type'      => 'warning'
             ], 404);
         }
 
         $validator = Validator::make($request->all(), Contract::validationRules($id), [
-            'idcliente.required' => 'Debe seleccionar un cliente contratante.',
-            'contract_number.required' => 'El número de contrato es obligatorio.',
-            'contract_number.unique' => 'Este número de contrato ya ha sido registrado.',
-            'fecha_evento.required' => 'La fecha del evento es obligatoria.',
-            'fecha_emision.required' => 'La fecha de emisión del contrato es obligatoria.',
-            'items.required' => 'Debe agregar al menos un servicio o producto al contrato.',
-            'items.min' => 'Debe agregar al menos un servicio o producto al contrato.',
-            'items.*.descripcion.required' => 'La descripción del servicio/producto es obligatoria.',
-            'items.*.cantidad.required' => 'La cantidad debe ser mayor a 0.',
-            'items.*.precio_unitario.required' => 'El precio unitario es obligatorio.',
+            'idcliente.required'        => 'Debe seleccionar un cliente contratante.',
+            'contract_number.required'  => 'El número de contrato es obligatorio.',
+            'contract_number.unique'    => 'Este número de contrato ya ha sido registrado.',
+            'fecha_evento.required'     => 'La fecha del evento es obligatoria.',
+            'fecha_emision.required'    => 'La fecha de emisión del contrato es obligatoria.',
+            'items.required'            => 'Debe agregar al menos un servicio o producto al contrato.',
+            'items.min'                 => 'Debe agregar al menos un servicio o producto al contrato.',
+            'items.*.descripcion.required'      => 'La descripción del servicio/producto es obligatoria.',
+            'items.*.cantidad.required'         => 'La cantidad debe ser mayor a 0.',
+            'items.*.precio_unitario.required'  => 'El precio unitario es obligatorio.',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
-                'msg' => $validator->errors()->first(),
-                'errors' => $validator->errors(),
-                'type' => 'warning'
+                'status'    => false,
+                'msg'       => $validator->errors()->first(),
+                'errors'    => $validator->errors(),
+                'type'      => 'warning'
             ], 422);
         }
 
@@ -375,16 +374,16 @@ class ContractController extends Controller
 
             // Calculate item subtotal and totals
             $itemsData = $request->input('items', []);
-            $subtotal = 0;
+            $subtotal  = 0;
             foreach ($itemsData as $item) {
-                $qty = floatval($item['cantidad'] ?? 1);
-                $price = floatval($item['precio_unitario'] ?? 0);
-                $subtotal += ($qty * $price);
+                $qty        = floatval($item['cantidad'] ?? 1);
+                $price      = floatval($item['precio_unitario'] ?? 0);
+                $subtotal   += ($qty * $price);
             }
 
             $applyIgv = $request->boolean('apply_igv', false);
-            $igv = $applyIgv ? round($subtotal * 0.18, 2) : 0.00;
-            $total = $subtotal + $igv;
+            $igv      = $applyIgv ? round($subtotal * 0.18, 2) : 0.00;
+            $total    = $subtotal + $igv;
 
             // Validate installments if provided
             $installmentsData = $request->input('installments', []);
@@ -392,9 +391,9 @@ class ContractController extends Controller
                 $sumInstallments = round((float) collect($installmentsData)->sum(fn($i) => floatval($i['monto'] ?? 0)), 2);
                 if (abs($sumInstallments - $total) > 0.05) {
                     return response()->json([
-                        'status' => false,
-                        'msg' => 'La suma de las cuotas (' . number_format($sumInstallments, 2) . ') debe coincidir con el total del contrato (' . number_format($total, 2) . ').',
-                        'type' => 'warning'
+                        'status'    => false,
+                        'msg'       => 'La suma de las cuotas (' . number_format($sumInstallments, 2) . ') debe coincidir con el total del contrato (' . number_format($total, 2) . ').',
+                        'type'      => 'warning'
                     ], 422);
                 }
             }
