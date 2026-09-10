@@ -14,6 +14,8 @@ class DetailBilling extends Model
     protected $fillable = [
         'idfacturacion',
         'idproducto',
+        'descripcion_custom',
+        'unidad_custom',
         'cantidad',
         'descuento',
         'igv',
