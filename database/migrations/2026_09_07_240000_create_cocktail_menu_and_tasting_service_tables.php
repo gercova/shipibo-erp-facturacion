@@ -57,12 +57,21 @@ return new class extends Migration
                 ?? DB::table('categories')->first();
             $catServiceId = $catService ? $catService->id : 8;
 
-            // Buscar el tipo de afectación IGV "GRAVADO" (código SUNAT 10), con fallback al primero disponible
-            $igvType = DB::table('igv_type_affections')->where('codigo', '10')->first()
-                ?? DB::table('igv_type_affections')->first();
+            // Buscar el tipo de afectación IGV "GRAVADO" (código SUNAT 10), con fallback al primero disponible.
+            // Si la tabla está vacía (p.ej. migrate:fresh antes de seeders), se inserta el registro mínimo
+            // necesario; el IgvTypeAffectionSeeder usa updateOrCreate, por lo que no habrá duplicados.
+            $igvType = DB::table('igv_type_affections')->where('codigo', '10')->first();
 
             if (!$igvType) {
-                throw new \RuntimeException('No se encontró ningún registro en igv_type_affections. Asegúrate de correr el seeder correspondiente antes de esta migración.');
+                $igvId = DB::table('igv_type_affections')->insertGetId([
+                    'codigo'      => '10',
+                    'descripcion' => 'Gravado - Operacion Onerosa',
+                    'tipo'        => 'GRAV',
+                    'estado'      => true,
+                    'created_at'  => now(),
+                    'updated_at'  => now(),
+                ]);
+                $igvType = DB::table('igv_type_affections')->find($igvId);
             }
 
             DB::table('products')->insert([
