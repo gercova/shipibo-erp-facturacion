@@ -388,7 +388,7 @@ Route::get('/reports/sales/products',           [ReportSalesController::class, '
 
 
 Route::get('/reportes/pagos',                   [ReportPaymentController::class, 'index'])->name('report.payments.index')->middleware(['auth', 'can:report.payments.index']);
-Route::get('/reports/sales/payment-methods'     , [ReportPaymentController::class, 'getSalesByPaymentMethod'])->name('report.sales.payment_methods')->middleware(['auth', 'can:report.payments.index']);
+Route::get('/reports/sales/payment-methods',    [ReportPaymentController::class, 'getSalesByPaymentMethod'])->name('report.sales.payment_methods')->middleware(['auth', 'can:report.payments.index']);
 
 Route::controller(BuyController::class)->prefix('buys')->middleware(['auth', 'can:admin.buys'])->group(function() {
     Route::get('/'                          , 'index')->name('admin.buys');
