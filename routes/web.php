@@ -34,7 +34,6 @@ use App\Http\Controllers\EventChecklistController;
 use App\Http\Controllers\CocktailMenuController;
 use Illuminate\Http\Request;
 
-
 /*
 |--------------------------------------------------------------------------
 | Web Routes
