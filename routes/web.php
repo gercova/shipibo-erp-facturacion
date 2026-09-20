@@ -32,7 +32,6 @@ use App\Http\Controllers\ShipmentGuideController;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\EventChecklistController;
 use App\Http\Controllers\CocktailMenuController;
-use Illuminate\Http\Request;
 
 /*
 |--------------------------------------------------------------------------
