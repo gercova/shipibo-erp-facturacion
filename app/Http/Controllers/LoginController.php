@@ -13,40 +13,29 @@ use Illuminate\Support\Str;
 
 class LoginController extends Controller
 {
-    /**
-     * Maximum login attempts before the account is temporarily locked.
-     */
+    // Maximum login attempts before the account is temporarily locked.
     private const MAX_ATTEMPTS = 5;
 
-    /**
-     * Lockout duration in seconds (1 minute).
-     */
+    // Lockout duration in seconds (1 minute).
     private const DECAY_SECONDS = 60;
 
-    /**
-     * Maximum allowed length for the username field.
-     */
+    // Maximum allowed length for the username field.
     private const MAX_USER_LENGTH = 60;
 
-    /**
-     * Minimum required length for the password field.
-     */
+    // Minimum required length for the password field.
     private const MIN_PASSWORD_LENGTH = 6;
 
-    /**
-     * Maximum allowed length for the password field.
-     */
+    // Maximum allowed length for the password field.
     private const MAX_PASSWORD_LENGTH = 100;
 
-    public function index(): View
-    {
-        $data['logo'] = Business::first()->logo;
+    public function index(): View {
+        $business         = Business::first();
+        $data['logo']     = $business->logo;
+        $data['business'] = $business;
         return view('login', $data);
     }
 
-    public function login(Request $request): RedirectResponse|View
-    {
-        // ── 1. Input sanitisation & basic validation ───────────────────────
+    public function login(Request $request): RedirectResponse|View {
         $user     = trim((string) $request->input('user', ''));
         $password = (string) $request->input('password', '');
 
@@ -66,12 +55,10 @@ class LoginController extends Controller
             return back()->with('message', 'La contraseña proporcionada no es válida.');
         }
 
-        // Allow only alphanumeric characters, dots, hyphens and underscores in the username.
         if (! preg_match('/^[\w.\-@]+$/u', $user)) {
             return back()->with('message', 'El nombre de usuario contiene caracteres no permitidos.');
         }
 
-        // ── 2. Rate-limiter check (keyed by username + client IP) ──────────
         $throttleKey = $this->throttleKey($user, $request);
 
         if (RateLimiter::tooManyAttempts($throttleKey, self::MAX_ATTEMPTS)) {
@@ -82,7 +69,6 @@ class LoginController extends Controller
             );
         }
 
-        // ── 3. Authentication attempt ──────────────────────────────────────
         $credentials = [
             'user'     => strtolower($user),
             'password' => $password,
@@ -101,10 +87,8 @@ class LoginController extends Controller
             return back()->with('message', $message);
         }
 
-        // ── 4. Clear rate-limiter counter on successful authentication ──────
         RateLimiter::clear($throttleKey);
 
-        // ── 5. Account status validation ───────────────────────────────────
         $authUser = User::query()->find(Auth::user()->id);
 
         if ((int) ($authUser->estado ?? 0) !== 1) {
@@ -114,10 +98,8 @@ class LoginController extends Controller
             return back()->with('message', 'No tiene los permisos necesarios para acceder al sistema.');
         }
 
-        // ── 6. Session fixation protection ────────────────────────────────
         $request->session()->regenerate();
 
-        // ── 7. Warehouse assignment ────────────────────────────────────────
         $warehouseIds = method_exists($authUser, 'warehouses')
             ? $authUser->warehouses()->pluck('warehouses.id')->map(fn ($id) => (int) $id)->filter()->values()
             : collect();
@@ -133,29 +115,20 @@ class LoginController extends Controller
             }
         } elseif ($warehouseIds->count() > 1) {
             $request->session()->forget('selected_warehouse_id');
-
             return redirect()->route('warehouse.selector.index');
         }
 
         return redirect()->route('admin.home')->with('message_welcome', 'Bienvenido al sistema.');
     }
 
-    public function logout(Request $request): RedirectResponse
-    {
+    public function logout(Request $request): RedirectResponse {
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         return redirect()->route('login');
     }
 
-    // ── Private helpers ────────────────────────────────────────────────────
-
-    /**
-     * Build a unique rate-limiter key combining the (normalised) username
-     * and the client's IP address to prevent cross-account collisions.
-     */
-    private function throttleKey(string $user, Request $request): string
-    {
+    private function throttleKey(string $user, Request $request): string {
         return 'login|' . Str::lower($user) . '|' . $request->ip();
     }
 }
