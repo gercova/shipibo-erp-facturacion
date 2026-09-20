@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="Sistema de Inventarios y control de Stock">
     <meta name="author" content="Devkro">
-    <title>EasyStock</title>
+    <title>{{ $business->nombre_comercial }} | @yield('title', 'Panel de Administración')</title>
     <link rel="stylesheet" href="{{ asset('npm/litepicker/dist/css/litepicker.css') }}">
     <link rel="stylesheet" href="{{ asset('css/styles.css') }}">
     <link rel="stylesheet" href="{{ asset('css/pro-ui.css') }}">
@@ -48,22 +48,22 @@
             padding-bottom: 2rem;
         }
     </style>
-    
+
     <script src="{{ asset('js/jquery-3.6.4.min.js') }}"></script>
     <script src="{{ asset('js/jquery-ui.min.js') }}"></script>
-    <script src="{{ asset('js/toastr.min.js')}}"></script>
-    <script src="{{ asset('js/select2.min.js')}}"></script>
-    <script src="{{ asset('js/jquery.dataTables.min.js')}}"></script>
-    <script src="{{ asset('js/dataTables.bootstrap5.min.js')}}"></script>
-    <script src="{{ asset('js/sweetalert2@11.js')}}"></script>
-    <script src="{{ asset('js/chart.js')}}"></script>
-    <script src="{{ asset('js/dataTables.buttons.min.js')}}"></script>
-    <script src="{{ asset('js/buttons.bootstrap5.min.js')}}"></script>
-    <script src="{{ asset('js/jszip.min.js')}}"></script>
-    <script src="{{ asset('js/pdfmake.min.js')}}"></script>
-    <script src="{{ asset('js/vfs_fonts.js')}}"></script>
-    <script src="{{ asset('js/buttons.html5.min.js')}}"></script>
-    <script src="{{ asset('js/buttons.print.min.js')}}"></script>
+    <script src="{{ asset('js/toastr.min.js') }}"></script>
+    <script src="{{ asset('js/select2.min.js') }}"></script>
+    <script src="{{ asset('js/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ asset('js/dataTables.bootstrap5.min.js') }}"></script>
+    <script src="{{ asset('js/sweetalert2@11.js') }}"></script>
+    <script src="{{ asset('js/chart.js') }}"></script>
+    <script src="{{ asset('js/dataTables.buttons.min.js') }}"></script>
+    <script src="{{ asset('js/buttons.bootstrap5.min.js') }}"></script>
+    <script src="{{ asset('js/jszip.min.js') }}"></script>
+    <script src="{{ asset('js/pdfmake.min.js') }}"></script>
+    <script src="{{ asset('js/vfs_fonts.js') }}"></script>
+    <script src="{{ asset('js/buttons.html5.min.js') }}"></script>
+    <script src="{{ asset('js/buttons.print.min.js') }}"></script>
 
     @yield('styles')
 </head>
@@ -240,19 +240,6 @@
             <nav class="sidenav shadow-right sidenav-light">
                 <div class="sidenav-menu">
                     <div class="nav accordion" id="accordionSidenav">
-                        <!-- Sidenav Menu Heading (Account)-->
-                        <!-- * * Note: * * Visible only on and above the sm breakpoint-->
-                        {{-- <div class="sidenav-menu-heading d-sm-none">Cuenta</div> --}}
-                        <!-- Sidenav Link (Alerts)-->
-                        <!-- * * Note: * * Visible only on and above the sm breakpoint-->
-                        <!-- Sidenav Link (Messages)-->
-                        <!-- * * Note: * * Visible only on and above the sm breakpoint-->
-                        {{-- <a class="nav-link d-sm-none" href="#!">
-                                <div class="nav-link-icon"><i data-feather="mail"></i></div>
-                                Messages
-                                <span class="badge bg-success-soft text-success ms-auto">2 New!</span>
-                            </a> --}}
-                        <!-- Sidenav Menu Heading (Core)-->
                         <div class="sidenav-menu-heading">Menu</div>
                         @if ($canDashboard)
                             <a class="nav-link {{ request()->is('home') ? 'active' : '' }}"
@@ -587,5 +574,4 @@
 
     @yield('scripts')
 </body>
-
 </html>
