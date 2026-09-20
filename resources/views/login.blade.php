@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Login - EasyStock</title>
+    <title>Login - {{ $business->nombre_comercial }}</title>
 
     <link href="{{ asset('css/styles.css') }}" rel="stylesheet">
     <!-- Google Fonts: Inter -->
@@ -26,7 +26,7 @@
                 @endif
             </div>
 
-            <h2 class="fw-bold mb-1" style="color: #212529;">Bienvenido</h2>
+            <h2 class="fw-bold mb-1" style="color: #212529;">Bienvenido a {{ $business->nombre_comercial }}</h2>
             <p class="text-muted mb-4" style="font-size: 0.95rem;">Ingresa tus credenciales para continuar.</p>
 
             <form method="POST" action="{{ route('login.login') }}" novalidate>
