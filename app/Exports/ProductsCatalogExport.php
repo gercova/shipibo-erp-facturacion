@@ -6,11 +6,12 @@ use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\RichText\RichText;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-class ProductsCatalogExport implements FromView, ShouldAutoSize, WithEvents
+class ProductsCatalogExport implements FromView, ShouldAutoSize, WithEvents, WithTitle
 {
     public function __construct(
         private readonly mixed $products
@@ -22,6 +23,11 @@ class ProductsCatalogExport implements FromView, ShouldAutoSize, WithEvents
         return view('admin.products.format_excel', [
             'products' => $this->products,
         ]);
+    }
+
+    public function title(): string
+    {
+        return 'Catálogo Productos';
     }
 
     public function registerEvents(): array
