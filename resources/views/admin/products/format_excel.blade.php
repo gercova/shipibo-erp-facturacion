@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Plantilla de Cat&aacute;logo de Productos y Servicios</title>
+    <title>Catálogo de Productos</title>
     <style>
         body { font-family: sans-serif; font-size: 11px; }
         #table_items { width: 100%; border-collapse: collapse; margin-top: 10px; }
