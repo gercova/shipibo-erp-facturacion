@@ -166,52 +166,129 @@
         <!-- 3. PRODUCTS & SERVICES TABLE -->
         <div class="card custom-card pro-card mb-4">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
                     <div class="section-title mb-0 border-0 p-0">
-                        <i class="ri-shopping-cart-2-line"></i> 3. Lista de Servicios y Productos Contratados
+                        <i class="ri-shopping-cart-2-line"></i> 3. Lista de Servicios y Productos Contratados (Modelo Product)
                     </div>
-                    <button type="button" class="btn btn-sm btn-outline-primary" id="btn-add-item">
-                        <i class="ri-add-circle-line me-1"></i> Agregar Servicio / Ítem
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-add-item">
+                        <i class="ri-edit-line me-1"></i> Agregar Ítem Libre / Personalizado
                     </button>
+                </div>
+
+                <!-- Product/Service Select2 Search Bar -->
+                <div class="p-3 bg-light rounded-3 border mb-3">
+                    <label class="form-label small fw-bold text-primary mb-1">
+                        <i class="ri-search-line me-1"></i> Buscar y Agregar Producto o Servicio del Catálogo
+                    </label>
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-9 col-sm-12">
+                            <select id="select-product-search" class="form-select form-select-sm select2">
+                                <option value="">-- Escriba para buscar por nombre o descripción de producto/servicio... --</option>
+                                @foreach ($products as $p)
+                                    <option value="{{ $p->id }}" 
+                                            data-name="{{ $p->descripcion }}" 
+                                            data-price="{{ $p->precio_venta }}"
+                                            data-type="{{ (int)$p->opcion === 2 ? 'Servicio' : 'Producto' }}"
+                                            data-unit="{{ $p->unit?->descripcion ?? 'UND' }}">
+                                        [{{ (int)$p->opcion === 2 ? 'SERVICIO' : 'PRODUCTO' }}] {{ $p->descripcion }} - {{ $signo }} {{ number_format($p->precio_venta, 2) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3 col-sm-12">
+                            <button type="button" class="btn btn-primary btn-sm w-100" id="btn-add-selected-product">
+                                <i class="ri-add-circle-line me-1"></i> Agregar al Contrato
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-text small text-muted mt-1">
+                        <i class="ri-information-line"></i> Seleccione un producto o servicio para insertarlo en la lista. Puede editar la descripción, cantidad y precio de cada fila.
+                    </div>
                 </div>
 
                 <div class="table-responsive mb-3">
                     <table class="table table-bordered table-sm align-middle" id="table-contract-items">
                         <thead class="table-light">
                             <tr>
-                                <th width="5%" class="text-center">#</th>
-                                <th width="45%">Servicio / Producto</th>
-                                <th width="15%" class="text-center">Cantidad</th>
-                                <th width="18%" class="text-end">Precio Unit. ({{ $signo }})</th>
-                                <th width="12%" class="text-end">Subtotal ({{ $signo }})</th>
+                                <th width="4%" class="text-center">#</th>
+                                <th width="12%" class="text-center">Tipo</th>
+                                <th width="44%">Descripción Detallada del Servicio / Producto</th>
+                                <th width="12%" class="text-center">Cantidad</th>
+                                <th width="13%" class="text-end">Precio Unit. ({{ $signo }})</th>
+                                <th width="10%" class="text-end">Subtotal ({{ $signo }})</th>
                                 <th width="5%" class="text-center">Acción</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Initial Item Row -->
+                            <!-- Initial Rows based on Shipibo template -->
                             <tr class="item-row" data-index="0">
                                 <td class="text-center row-number">1</td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary-subtle text-primary item-type-badge">Servicio</span>
+                                </td>
                                 <td>
-                                    <select class="form-select form-select-sm mb-1 select-product-item">
-                                        <option value="">-- Servicio o Producto Personalizado --</option>
-                                        @foreach ($products as $p)
-                                            <option value="{{ $p->id }}" data-name="{{ $p->descripcion }}" data-price="{{ $p->precio_venta }}">
-                                                {{ $p->descripcion }} (S/ {{ number_format($p->precio_venta, 2) }})
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    <input type="text" name="items[0][descripcion]" class="form-control form-control-sm item-desc" placeholder="Descripción detallada del servicio o producto" value="Servicio Integral de Eventos" required />
+                                    <input type="text" name="items[0][descripcion]" class="form-control form-control-sm item-desc" placeholder="Descripción detallada" value="200 cócteles: Chilcano clásico/ maracuyá, Machu Picchu, Primavera y Mojito." required />
                                     <input type="hidden" name="items[0][idproducto]" class="item-product-id" value="" />
                                 </td>
                                 <td>
                                     <input type="number" step="0.01" min="0.01" name="items[0][cantidad]" class="form-control form-control-sm text-center item-qty" value="1" required />
                                 </td>
                                 <td>
-                                    <input type="number" step="0.01" min="0" name="items[0][precio_unitario]" class="form-control form-control-sm text-end item-price" value="500.00" required />
+                                    <input type="number" step="0.01" min="0" name="items[0][precio_unitario]" class="form-control form-control-sm text-end item-price" value="1200.00" required />
                                 </td>
                                 <td class="text-end fw-bold">
-                                    <span class="item-subtotal">500.00</span>
-                                    <input type="hidden" name="items[0][subtotal]" class="item-subtotal-input" value="500.00" />
+                                    <span class="item-subtotal">1200.00</span>
+                                    <input type="hidden" name="items[0][subtotal]" class="item-subtotal-input" value="1200.00" />
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-outline-danger btn-sm btn-remove-item" title="Quitar">
+                                        <i class="ri-delete-bin-line"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="item-row" data-index="1">
+                                <td class="text-center row-number">2</td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary-subtle text-primary item-type-badge">Servicio</span>
+                                </td>
+                                <td>
+                                    <input type="text" name="items[1][descripcion]" class="form-control form-control-sm item-desc" placeholder="Descripción detallada" value="1 barman - 1 asistente - Insumos - Barra Movil - Logística." required />
+                                    <input type="hidden" name="items[1][idproducto]" class="item-product-id" value="" />
+                                </td>
+                                <td>
+                                    <input type="number" step="0.01" min="0.01" name="items[1][cantidad]" class="form-control form-control-sm text-center item-qty" value="1" required />
+                                </td>
+                                <td>
+                                    <input type="number" step="0.01" min="0" name="items[1][precio_unitario]" class="form-control form-control-sm text-end item-price" value="400.00" required />
+                                </td>
+                                <td class="text-end fw-bold">
+                                    <span class="item-subtotal">400.00</span>
+                                    <input type="hidden" name="items[1][subtotal]" class="item-subtotal-input" value="400.00" />
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-outline-danger btn-sm btn-remove-item" title="Quitar">
+                                        <i class="ri-delete-bin-line"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="item-row" data-index="2">
+                                <td class="text-center row-number">3</td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary-subtle text-primary item-type-badge">Servicio</span>
+                                </td>
+                                <td>
+                                    <input type="text" name="items[2][descripcion]" class="form-control form-control-sm item-desc" placeholder="Descripción detallada" value="1 Mozo" required />
+                                    <input type="hidden" name="items[2][idproducto]" class="item-product-id" value="" />
+                                </td>
+                                <td>
+                                    <input type="number" step="0.01" min="0.01" name="items[2][cantidad]" class="form-control form-control-sm text-center item-qty" value="1" required />
+                                </td>
+                                <td>
+                                    <input type="number" step="0.01" min="0" name="items[2][precio_unitario]" class="form-control form-control-sm text-end item-price" value="150.00" required />
+                                </td>
+                                <td class="text-end fw-bold">
+                                    <span class="item-subtotal">150.00</span>
+                                    <input type="hidden" name="items[2][subtotal]" class="item-subtotal-input" value="150.00" />
                                 </td>
                                 <td class="text-center">
                                     <button type="button" class="btn btn-outline-danger btn-sm btn-remove-item" title="Quitar">

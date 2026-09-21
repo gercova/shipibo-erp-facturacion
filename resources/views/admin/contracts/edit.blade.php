@@ -166,40 +166,75 @@
         <!-- 3. PRODUCTS & SERVICES TABLE -->
         <div class="card custom-card pro-card mb-4">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
                     <div class="section-title mb-0 border-0 p-0">
-                        <i class="ri-shopping-cart-2-line"></i> 3. Lista de Servicios y Productos Contratados
+                        <i class="ri-shopping-cart-2-line"></i> 3. Lista de Servicios y Productos Contratados (Modelo Product)
                     </div>
-                    <button type="button" class="btn btn-sm btn-outline-primary" id="btn-add-item">
-                        <i class="ri-add-circle-line me-1"></i> Agregar Servicio / Ítem
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-add-item">
+                        <i class="ri-edit-line me-1"></i> Agregar Ítem Libre / Personalizado
                     </button>
+                </div>
+
+                <!-- Product/Service Select2 Search Bar -->
+                <div class="p-3 bg-light rounded-3 border mb-3">
+                    <label class="form-label small fw-bold text-primary mb-1">
+                        <i class="ri-search-line me-1"></i> Buscar y Agregar Producto o Servicio del Catálogo
+                    </label>
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-9 col-sm-12">
+                            <select id="select-product-search" class="form-select form-select-sm select2">
+                                <option value="">-- Escriba para buscar por nombre o descripción de producto/servicio... --</option>
+                                @foreach ($products as $p)
+                                    <option value="{{ $p->id }}" 
+                                            data-name="{{ $p->descripcion }}" 
+                                            data-price="{{ $p->precio_venta }}"
+                                            data-type="{{ (int)$p->opcion === 2 ? 'Servicio' : 'Producto' }}"
+                                            data-unit="{{ $p->unit?->descripcion ?? 'UND' }}">
+                                        [{{ (int)$p->opcion === 2 ? 'SERVICIO' : 'PRODUCTO' }}] {{ $p->descripcion }} - {{ $signo }} {{ number_format($p->precio_venta, 2) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3 col-sm-12">
+                            <button type="button" class="btn btn-primary btn-sm w-100" id="btn-add-selected-product">
+                                <i class="ri-add-circle-line me-1"></i> Agregar al Contrato
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-text small text-muted mt-1">
+                        <i class="ri-information-line"></i> Seleccione un producto o servicio para insertarlo en la lista. Puede editar la descripción, cantidad y precio de cada fila.
+                    </div>
                 </div>
 
                 <div class="table-responsive mb-3">
                     <table class="table table-bordered table-sm align-middle" id="table-contract-items">
                         <thead class="table-light">
                             <tr>
-                                <th width="5%" class="text-center">#</th>
-                                <th width="45%">Servicio / Producto</th>
-                                <th width="15%" class="text-center">Cantidad</th>
-                                <th width="18%" class="text-end">Precio Unit. ({{ $signo }})</th>
-                                <th width="12%" class="text-end">Subtotal ({{ $signo }})</th>
+                                <th width="4%" class="text-center">#</th>
+                                <th width="12%" class="text-center">Tipo</th>
+                                <th width="44%">Descripción Detallada del Servicio / Producto</th>
+                                <th width="12%" class="text-center">Cantidad</th>
+                                <th width="13%" class="text-end">Precio Unit. ({{ $signo }})</th>
+                                <th width="10%" class="text-end">Subtotal ({{ $signo }})</th>
                                 <th width="5%" class="text-center">Acción</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse ($contract->items as $idx => $item)
+                                @php
+                                    $itemType = 'Personalizado';
+                                    if ($item->product) {
+                                        $itemType = ((int)$item->product->opcion === 2) ? 'Servicio' : 'Producto';
+                                    } elseif ($item->idproducto) {
+                                        $itemType = 'Producto';
+                                    }
+                                @endphp
                                 <tr class="item-row" data-index="{{ $idx }}">
                                     <td class="text-center row-number">{{ $idx + 1 }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary-subtle text-primary item-type-badge">{{ $itemType }}</span>
+                                    </td>
                                     <td>
-                                        <select class="form-select form-select-sm mb-1 select-product-item">
-                                            <option value="">-- Servicio o Producto Personalizado --</option>
-                                            @foreach ($products as $p)
-                                                <option value="{{ $p->id }}" data-name="{{ $p->descripcion }}" data-price="{{ $p->precio_venta }}" {{ $item->idproducto == $p->id ? 'selected' : '' }}>
-                                                    {{ $p->descripcion }} (S/ {{ number_format($p->precio_venta, 2) }})
-                                                </option>
-                                            @endforeach
-                                        </select>
                                         <input type="text" name="items[{{ $idx }}][descripcion]" class="form-control form-control-sm item-desc" placeholder="Descripción detallada" value="{{ $item->descripcion }}" required />
                                         <input type="hidden" name="items[{{ $idx }}][idproducto]" class="item-product-id" value="{{ $item->idproducto }}" />
                                     </td>
@@ -222,6 +257,9 @@
                             @empty
                                 <tr class="item-row" data-index="0">
                                     <td class="text-center row-number">1</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary-subtle text-primary item-type-badge">Personalizado</span>
+                                    </td>
                                     <td>
                                         <input type="text" name="items[0][descripcion]" class="form-control form-control-sm item-desc" placeholder="Descripción detallada" value="Servicio Principal" required />
                                         <input type="hidden" name="items[0][idproducto]" class="item-product-id" value="" />
