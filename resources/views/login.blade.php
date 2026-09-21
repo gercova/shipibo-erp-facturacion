@@ -12,9 +12,7 @@
     <link rel="icon" href="{{ asset('assets/img/favicon-white.ico') }}" type="image/x-icon">
     <link rel="stylesheet" href="{{ asset('css/login.css') }}">
 </head>
-
 <body>
-
     <div class="login-wrapper">
         <!-- Form Area -->
         <div class="login-form-area">
