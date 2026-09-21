@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\AllProductsExport;
 use App\Exports\ProductsCatalogExport;
 use App\Http\Requests\ProductImportRequest;
 use App\Imports\ProductsCatalogImport;
@@ -96,7 +97,10 @@ class ProductController extends Controller
                         </div>
                         </div>';
             })
-            ->rawColumns(['descripcion', 'acciones'])
+            ->addColumn('checkbox', function (Product $product) {
+                return '<div class="form-check d-flex justify-content-center mb-0"><input type="checkbox" class="form-check-input check-product" value="' . $product->id . '" data-name="' . e($product->descripcion) . '"></div>';
+            })
+            ->rawColumns(['checkbox', 'descripcion', 'acciones'])
             ->toJson();
     }
 
@@ -350,37 +354,120 @@ class ProductController extends Controller
         if ($this->productHasCommercialUsage($product->id)) {
             return response()->json([
                 'status' => false,
-                'msg' => 'No se puede eliminar porque el producto ya fue utilizado en otros movimientos del sistema.',
+                'msg' => 'No se puede eliminar porque el producto ya cuenta con movimientos registrados (ventas, compras, cotizaciones o facturación).',
                 'type' => 'warning',
-            ], 422);
+            ]);
         }
 
-        $hasStock = StockProduct::query()
-            ->where('idproducto', $product->id)
-            ->where(function ($query) {
-                $query->whereNotNull('stock_actual')
-                    ->where('stock_actual', '>', 0);
-            })
-            ->exists();
+        try {
+            DB::transaction(function () use ($product) {
+                ProductPresentation::where('idproducto', $product->id)->delete();
+                StockProduct::where('idproducto', $product->id)->delete();
+                $product->delete();
+            });
 
-        if ($hasStock) {
+            return response()->json([
+                'status' => true,
+                'msg' => 'Producto eliminado correctamente',
+                'title' => '¡Bien!',
+                'type' => 'success',
+            ]);
+        } catch (\Throwable $e) {
             return response()->json([
                 'status' => false,
-                'msg' => 'No se puede eliminar porque el producto tiene stock registrado.',
+                'msg' => 'Ocurrió un error al eliminar el producto: ' . $e->getMessage(),
+                'type' => 'error',
+            ], 500);
+        }
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        if (! $request->ajax()) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Intente de nuevo',
                 'type' => 'warning',
-            ], 422);
+            ]);
         }
 
-        // Cascade: product_presentations is deleted via FK onDelete('cascade')
-        StockProduct::query()->where('idproducto', $product->id)->delete();
-        $product->delete();
+        $ids = $request->input('ids');
+        if (! is_array($ids) || empty($ids)) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'No se seleccionó ningún producto para eliminar.',
+                'type' => 'warning',
+            ]);
+        }
 
-        return response()->json([
-            'status' => true,
-            'msg' => 'Registro eliminado correctamente',
-            'title' => '¡Bien!',
-            'type' => 'success',
-        ]);
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+        if (empty($ids)) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Los identificadores seleccionados no son válidos.',
+                'type' => 'warning',
+            ]);
+        }
+
+        $products = Product::query()->whereIn('id', $ids)->get();
+        if ($products->isEmpty()) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'No se encontraron los productos seleccionados.',
+                'type' => 'warning',
+            ]);
+        }
+
+        $deletableIds = [];
+        $blockedCount = 0;
+
+        foreach ($products as $product) {
+            if ($this->productHasCommercialUsage($product->id)) {
+                $blockedCount++;
+            } else {
+                $deletableIds[] = $product->id;
+            }
+        }
+
+        if (empty($deletableIds)) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Ninguno de los productos seleccionados puede eliminarse porque todos cuentan con movimientos comerciales registrados (ventas, compras, cotizaciones o facturas).',
+                'type' => 'warning',
+                'blocked_count' => $blockedCount,
+            ]);
+        }
+
+        try {
+            DB::transaction(function () use ($deletableIds) {
+                ProductPresentation::whereIn('idproducto', $deletableIds)->delete();
+                StockProduct::whereIn('idproducto', $deletableIds)->delete();
+                Product::whereIn('id', $deletableIds)->delete();
+            });
+
+            $deletedCount = count($deletableIds);
+            $msg = $deletedCount === 1
+                ? 'Se eliminó 1 producto correctamente.'
+                : "Se eliminaron {$deletedCount} productos correctamente.";
+
+            if ($blockedCount > 0) {
+                $msg .= " ({$blockedCount} producto(s) no se eliminaron por contar con movimientos comerciales asociados).";
+            }
+
+            return response()->json([
+                'status' => true,
+                'msg' => $msg,
+                'deleted_count' => $deletedCount,
+                'blocked_count' => $blockedCount,
+                'type' => 'success',
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Error al procesar la eliminación masiva: ' . $e->getMessage(),
+                'type' => 'error',
+            ], 500);
+        }
     }
 
     public function savePresentations(Request $request)
@@ -570,7 +657,8 @@ class ProductController extends Controller
             || DetailBuy::query()->where('idproducto', $productId)->exists()
             || DetailBilling::query()->where('idproducto', $productId)->exists()
             || DetailQuote::query()->where('idproducto', $productId)->exists()
-            || DetailTransferOrder::query()->where('idproducto', $productId)->exists();
+            || DetailTransferOrder::query()->where('idproducto', $productId)->exists()
+            || DB::table('shipment_guide_items')->where('product_id', $productId)->exists();
     }
 
     private function normalizeNullableText(?string $value): ?string
@@ -604,6 +692,24 @@ class ProductController extends Controller
             ->get();
 
         return Excel::download(new ProductsCatalogExport($products), 'catalogo_productos.xlsx');
+    }
+
+    public function exportAllExcel()
+    {
+        $products = Product::query()
+            ->with([
+                'category',
+                'unit',
+                'igvTypeAffection',
+                'stockProducts.warehouse',
+                'presentations',
+            ])
+            ->orderBy('descripcion')
+            ->get();
+
+        $fileName = 'catalogo_productos_' . now()->format('Y-m-d_His') . '.xlsx';
+
+        return Excel::download(new AllProductsExport($products), $fileName);
     }
 
     public function upload(ProductImportRequest $request)
