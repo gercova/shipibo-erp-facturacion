@@ -23,6 +23,13 @@
                                 <span class="d-none d-sm-inline-block">Cargar Excel</span>
                             </span>
                     </button>
+
+                    <a href="{{ route('products.export_all_excel') }}" class="dt-button btn btn-outline-success waves-effect waves-light ml-2 mb-3" tabindex="0">
+                            <span>
+                                <i class="ri-file-excel-2-line align-middle"></i> 
+                                <span class="d-none d-sm-inline-block">Exportar Excel</span>
+                            </span>
+                    </a>
                 </div>
             </div>
         </div>
@@ -80,12 +87,38 @@
 
     <div class="row">
         <div class="col-12">
+            <!-- Barra contextual de acciones masivas -->
+            <div id="bulk-actions-container" class="alert alert-primary d-none py-2 px-3 mb-3 d-flex flex-wrap align-items-center justify-content-between shadow-sm rounded-3">
+                <div class="d-flex align-items-center me-3 my-1">
+                    <i class="ri-checkbox-multiple-line text-primary fs-5 me-2"></i>
+                    <span class="fw-semibold text-dark">
+                        <span id="selected-products-count" class="badge bg-primary rounded-pill px-2 py-1 me-1 fs-6">0</span> producto(s) seleccionado(s)
+                    </span>
+                    <span id="selected-across-pages-badge" class="badge bg-primary-subtle text-primary border border-primary-subtle ms-2 d-none">
+                        Múltiples páginas
+                    </span>
+                </div>
+                <div class="d-flex align-items-center gap-2 my-1">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-clear-selection">
+                        <i class="ri-close-line align-middle"></i> Limpiar selección
+                    </button>
+                    <button type="button" class="btn btn-sm btn-danger waves-effect waves-light" id="btn-bulk-delete">
+                        <i class="ri-delete-bin-line align-middle me-1"></i> Eliminar seleccionados
+                    </button>
+                </div>
+            </div>
+
             <div class="card custom-card pro-card">
                 <div class="card-body">
                     <div class="table-responsive">
                         <table id="table" class="table table-hover table-sm">
                             <thead>
                                 <tr>
+                                    <th scope="col" width="3%" class="text-center">
+                                        <div class="form-check d-flex justify-content-center mb-0">
+                                            <input type="checkbox" id="check-all-products" class="form-check-input" title="Seleccionar todos en esta página">
+                                        </div>
+                                    </th>
                                     <th scope="col">Descripci&oacute;n</th>
                                     <th scope="col" width="10%" class="text-center">Und.</th>
                                     <th scope="col" width="15%" class="text-center">Precio Compra</th>

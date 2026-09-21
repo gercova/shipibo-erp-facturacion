@@ -407,15 +407,165 @@
                 },
                 success: function(r) {
                     Swal.close();
-                    toast_msg(r.msg, r.type);
+                    toast_msg(r.msg, r.type || (r.status ? 'success' : 'warning'));
 
                     if (r.status) {
+                        if (window.selectedProductIds) {
+                            window.selectedProductIds.delete(parseInt(id, 10));
+                            syncBulkActionsUI();
+                        }
                         reload_table();
                     }
                 },
-                error: function() {
+                error: function(xhr) {
                     Swal.close();
-                    toastr.error('Hubo un error en la solicitud', 'Error');
+                    let msg = xhr.responseJSON && xhr.responseJSON.msg ? xhr.responseJSON.msg : 'Hubo un error en la solicitud';
+                    let type = xhr.responseJSON && xhr.responseJSON.type ? xhr.responseJSON.type : 'error';
+                    toast_msg(msg, type);
+                }
+            });
+        });
+    });
+
+    // ═══════════════════════════════════════════════════
+    // SELECCIÓN Y ELIMINACIÓN MASIVA (BULK DELETE)
+    // ═══════════════════════════════════════════════════
+
+    function syncBulkActionsUI() {
+        let count = window.selectedProductIds ? window.selectedProductIds.size : 0;
+        let $container = $('#bulk-actions-container');
+        let $countBadge = $('#selected-products-count');
+        let $acrossBadge = $('#selected-across-pages-badge');
+
+        $countBadge.text(count);
+
+        if (count > 0) {
+            $container.removeClass('d-none');
+        } else {
+            $container.addClass('d-none');
+        }
+
+        let $visibleCheckboxes = $('#table tbody .check-product');
+        let visibleCount = $visibleCheckboxes.length;
+        let checkedVisibleCount = 0;
+
+        $visibleCheckboxes.each(function() {
+            let pid = parseInt($(this).val(), 10);
+            if (window.selectedProductIds && window.selectedProductIds.has(pid)) {
+                $(this).prop('checked', true);
+                $(this).closest('tr').addClass('table-active');
+                checkedVisibleCount++;
+            } else {
+                $(this).prop('checked', false);
+                $(this).closest('tr').removeClass('table-active');
+            }
+        });
+
+        let $checkAll = $('#check-all-products');
+        if (visibleCount > 0 && checkedVisibleCount === visibleCount) {
+            $checkAll.prop('checked', true).prop('indeterminate', false);
+        } else if (checkedVisibleCount > 0) {
+            $checkAll.prop('checked', false).prop('indeterminate', true);
+        } else {
+            $checkAll.prop('checked', false).prop('indeterminate', false);
+        }
+
+        if (count > checkedVisibleCount) {
+            $acrossBadge.removeClass('d-none');
+        } else {
+            $acrossBadge.addClass('d-none');
+        }
+    }
+    window.syncBulkActionsUI = syncBulkActionsUI;
+
+    $(document).on('change', '.check-product', function() {
+        let pid = parseInt($(this).val(), 10);
+        if ($(this).is(':checked')) {
+            window.selectedProductIds.add(pid);
+            $(this).closest('tr').addClass('table-active');
+        } else {
+            window.selectedProductIds.delete(pid);
+            $(this).closest('tr').removeClass('table-active');
+        }
+        syncBulkActionsUI();
+    });
+
+    $(document).on('change', '#check-all-products', function() {
+        let isChecked = $(this).is(':checked');
+        $('#table tbody .check-product').each(function() {
+            let pid = parseInt($(this).val(), 10);
+            $(this).prop('checked', isChecked);
+            if (isChecked) {
+                window.selectedProductIds.add(pid);
+                $(this).closest('tr').addClass('table-active');
+            } else {
+                window.selectedProductIds.delete(pid);
+                $(this).closest('tr').removeClass('table-active');
+            }
+        });
+        syncBulkActionsUI();
+    });
+
+    $(document).on('click', '#btn-clear-selection', function() {
+        if (window.selectedProductIds) {
+            window.selectedProductIds.clear();
+        }
+        $('#check-all-products').prop('checked', false).prop('indeterminate', false);
+        $('#table tbody .check-product').prop('checked', false).closest('tr').removeClass('table-active');
+        syncBulkActionsUI();
+    });
+
+    $(document).on('click', '#btn-bulk-delete', function() {
+        let count = window.selectedProductIds ? window.selectedProductIds.size : 0;
+        if (count === 0) {
+            toast_msg('No hay productos seleccionados', 'warning');
+            return;
+        }
+
+        Swal.fire({
+            title: `¿Eliminar ${count} producto(s)?`,
+            text: 'Esta acción no se puede deshacer. Los productos que cuenten con movimientos comerciales asociados (ventas, compras o facturas) serán omitidos automáticamente.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, eliminar seleccionados',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            $.ajax({
+                url: "{{ route('products.bulk_delete') }}",
+                method: 'POST',
+                data: {
+                    _token: "{{ csrf_token() }}",
+                    ids: Array.from(window.selectedProductIds)
+                },
+                beforeSend: function() {
+                    Swal.fire({
+                        title: 'Eliminando productos...',
+                        text: 'Por favor, espere',
+                        allowOutsideClick: false,
+                        didOpen: () => Swal.showLoading()
+                    });
+                },
+                success: function(r) {
+                    Swal.close();
+                    toast_msg(r.msg, r.type || (r.status ? 'success' : 'warning'));
+
+                    if (r.status) {
+                        window.selectedProductIds.clear();
+                        syncBulkActionsUI();
+                        reload_table();
+                    }
+                },
+                error: function(xhr) {
+                    Swal.close();
+                    let msg = xhr.responseJSON && xhr.responseJSON.msg ? xhr.responseJSON.msg : 'Hubo un error en la eliminación masiva';
+                    let type = xhr.responseJSON && xhr.responseJSON.type ? xhr.responseJSON.type : 'error';
+                    toast_msg(msg, type);
                 }
             });
         });

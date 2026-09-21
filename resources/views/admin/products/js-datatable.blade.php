@@ -1,4 +1,6 @@
 <script>
+    window.selectedProductIds = new Set();
+
     function load_datatable() {
         let datatable = $('#table').DataTable({
             serverSide: true,
@@ -36,8 +38,16 @@
             "ajax": "{{ route('products.get') }}",
             "stripeClasses": [],
             "columns": [
-            { data: 'descripcion', name: 'descripcion' },
-            {
+                {
+                    data: 'checkbox',
+                    name: 'checkbox',
+                    orderable: false,
+                    searchable: false,
+                    className: 'text-center',
+                    width: '3%'
+                },
+                { data: 'descripcion', name: 'descripcion' },
+                {
                     data        : 'unidad',
                     name        : 'units.descripcion',
                     className   : 'text-center'
@@ -52,10 +62,13 @@
                     name        : 'products.precio_venta',
                     className   : 'text-center'
                 },
-            { data: 'acciones', name: 'acciones', orderable: false, searchable: false, className: 'text-center' },
+                { data: 'acciones', name: 'acciones', orderable: false, searchable: false, className: 'text-center' },
             ],
             drawCallback: function() {
                 $('.dataTables_paginate ul.pagination').addClass("pagination-sm");
+                if (typeof window.syncBulkActionsUI === 'function') {
+                    window.syncBulkActionsUI();
+                }
             }
         });
     }
