@@ -57,6 +57,11 @@ class Product extends Model
         return $this->hasMany(ProductPresentation::class, 'idproducto')->where('estado', true)->orderBy('id');
     }
 
+    public function stockProducts()
+    {
+        return $this->hasMany(StockProduct::class, 'idproducto');
+    }
+
     public function getEsAlquilableAttribute(): bool
     {
         return (bool) $this->rentable;
