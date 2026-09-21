@@ -12,6 +12,7 @@
                 url: "{{ route('contracts.get') }}",
                 type: "GET"
             },
+            autoWidth: false,
             columns: [
                 { data: 'contract_number', name: 'contracts.contract_number', className: 'text-center fw-bold' },
                 { data: 'fecha_evento', name: 'contracts.fecha_evento', className: 'text-center' },
@@ -19,7 +20,7 @@
                 { data: 'cliente', name: 'clients.nombres' },
                 { data: 'total', name: 'contracts.total', className: 'text-end fw-bold' },
                 { data: 'estado_badge', name: 'contracts.estado', className: 'text-center', orderable: false, searchable: false },
-                { data: 'acciones', name: 'acciones', className: 'text-center', orderable: false, searchable: false }
+                { data: 'acciones', name: 'acciones', className: 'text-center align-middle', orderable: false, searchable: false }
             ]
         });
 

@@ -473,37 +473,30 @@ $(document).ready(function() {
     } else {
         renderInstallments(buildDefaultSchedule(getContractTotal(), '50_50'));
     }
+    // Recalculate initial totals from table
+    recalculateTotals();
 
-    $('#btn-add-item').on('click', function() {
-        addItemRow();
-    });
-
-    function addItemRow(prodId = '', desc = '', qty = 1, price = 0) {
-        let optionsHtml = '<option value="">-- Servicio o Producto Personalizado --</option>';
-        if (window.productCatalog && window.productCatalog.length > 0) {
-            window.productCatalog.forEach(p => {
-                let selected = (prodId && prodId == p.id) ? 'selected' : '';
-                optionsHtml += `<option value="${p.id}" data-price="${p.precio_venta}" data-name="${p.descripcion}" ${selected}>${p.descripcion} (S/ ${parseFloat(p.precio_venta).toFixed(2)})</option>`;
-            });
-        }
-
+    function addProductToTable(prodId = '', desc = '', price = 0, type = 'Servicio', qty = 1) {
         let lineSubtotal = (qty * price).toFixed(2);
+        let badgeClass = (type === 'Servicio') 
+            ? 'bg-primary-subtle text-primary' 
+            : ((type === 'Producto') ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary');
 
         let rowHtml = `
             <tr class="item-row" data-index="${itemIndex}">
                 <td class="text-center row-number">${$('#table-contract-items tbody tr').length + 1}</td>
+                <td class="text-center">
+                    <span class="badge ${badgeClass} item-type-badge">${type}</span>
+                </td>
                 <td>
-                    <select class="form-select form-select-sm mb-1 select-product-item">
-                        ${optionsHtml}
-                    </select>
                     <input type="text" name="items[${itemIndex}][descripcion]" class="form-control form-control-sm item-desc" placeholder="Descripción detallada del servicio o producto" value="${desc}" required />
-                    <input type="hidden" name="items[${itemIndex}][idproducto]" class="item-product-id" value="${prodId}" />
+                    <input type="hidden" name="items[${itemIndex}][idproducto]" class="item-product-id" value="${prodId || ''}" />
                 </td>
                 <td>
                     <input type="number" step="0.01" min="0.01" name="items[${itemIndex}][cantidad]" class="form-control form-control-sm text-center item-qty" value="${qty}" required />
                 </td>
                 <td>
-                    <input type="number" step="0.01" min="0" name="items[${itemIndex}][precio_unitario]" class="form-control form-control-sm text-end item-price" value="${price}" required />
+                    <input type="number" step="0.01" min="0" name="items[${itemIndex}][precio_unitario]" class="form-control form-control-sm text-end item-price" value="${parseFloat(price).toFixed(2)}" required />
                 </td>
                 <td class="text-end fw-bold">
                     <span class="item-subtotal">${lineSubtotal}</span>
@@ -522,21 +515,43 @@ $(document).ready(function() {
         recalculateTotals();
     }
 
-    $(document).on('change', '.select-product-item', function() {
-        let row = $(this).closest('tr');
-        let selected = $(this).find('option:selected');
-        let prodId = $(this).val();
-
-        if (prodId) {
-            let name = selected.data('name');
-            let price = selected.data('price') || 0;
-            row.find('.item-desc').val(name);
-            row.find('.item-product-id').val(prodId);
-            row.find('.item-price').val(parseFloat(price).toFixed(2));
-        } else {
-            row.find('.item-product-id').val('');
+    // Add selected product from Select2
+    $('#btn-add-selected-product').on('click', function() {
+        let select = $('#select-product-search');
+        let prodId = select.val();
+        if (!prodId) {
+            toastr.warning('Por favor seleccione un producto o servicio del catálogo.');
+            return;
         }
-        recalculateTotals();
+
+        let selected = select.find('option:selected');
+        let name = selected.data('name') || selected.text().trim();
+        let price = parseFloat(selected.data('price')) || 0;
+        let type = selected.data('type') || 'Producto';
+
+        addProductToTable(prodId, name, price, type, 1);
+        select.val('').trigger('change');
+        toastr.success('Ítem añadido al contrato.');
+    });
+
+    // Auto-add on select change if valid value selected
+    $('#select-product-search').on('select2:select', function(e) {
+        let data = e.params.data;
+        if (!data || !data.id) return;
+
+        let selected = $(this).find('option:selected');
+        let name = selected.data('name') || selected.text().trim();
+        let price = parseFloat(selected.data('price')) || 0;
+        let type = selected.data('type') || 'Producto';
+
+        addProductToTable(data.id, name, price, type, 1);
+        $(this).val('').trigger('change');
+        toastr.success('Ítem añadido al contrato.');
+    });
+
+    // Add custom / free item
+    $('#btn-add-item').on('click', function() {
+        addProductToTable('', '', 0, 'Personalizado', 1);
     });
 
     $(document).on('input', '.item-qty, .item-price', function() {
