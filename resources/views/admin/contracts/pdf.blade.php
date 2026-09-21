@@ -5,609 +5,431 @@
     <title>{{ $contract->contract_number }} - {{ $contract->title }}</title>
 
     <style>
-        /* ==========================================================================
-           [FIXED BRANDING / ESTILO / MODIFICABLE]
-           CONFIGURACIÓN DE MARCA Y ESTILOS VISUALES (HS COCTELERÍA / HARRY SALAZAR)
-           Modifique esta sección cuando el cliente proporcione su manual de marca,
-           paleta de colores definitiva, o tipografías corporativas.
-           ========================================================================== */
-        :root {
-            --brand-primary: #0f172a;       /* Color primario (Azul noche elegante) */
-            --brand-secondary: #1e293b;     /* Color secundario / encabezados tabla */
-            --brand-accent: #b45309;        /* Tono dorado / coctelería premium */
-            --brand-accent-light: #fef3c7;  /* Fondo dorado suave para alertas */
-            --brand-text: #1e293b;          /* Color de texto principal */
-            --brand-muted: #64748b;         /* Color de texto atenuado / etiquetas */
-            --brand-border: #cbd5e1;        /* Bordes de tablas y contenedores */
-            --brand-bg-light: #f8fafc;      /* Fondo de filas alternas y cajas */
-        }
-
         @page {
-            margin: 15mm 14mm 15mm 14mm;
+            margin-top: 12mm;
+            margin-bottom: 12mm;
+            margin-left: 18mm;
+            margin-right: 18mm;
             size: a4 portrait;
         }
 
         * {
             box-sizing: border-box;
             font-family: 'Helvetica', 'Arial', sans-serif;
-            font-size: 9.5px;
-            color: #1e293b;
+            color: #111827;
         }
 
         body {
             margin: 0;
             padding: 0;
-            line-height: 1.42;
+            font-size: 9.8pt;
+            line-height: 1.45;
+            background-color: #ffffff;
+            position: relative;
         }
 
-        /* Cabecera / Membrete Corporativo */
-        .header-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 10px;
-            border-bottom: 2px solid #0f172a;
-            padding-bottom: 8px;
+        /* Lateral Shipibo Watermarks */
+        .watermark-left {
+            position: fixed;
+            top: 20px;
+            left: -130px;
+            width: 220px;
+            height: 950px;
+            opacity: 0.12;
+            z-index: -1000;
         }
 
-        .header-logo {
-            width: 25%;
-            vertical-align: middle;
+        .watermark-right {
+            position: fixed;
+            top: 20px;
+            right: -130px;
+            width: 220px;
+            height: 950px;
+            opacity: 0.12;
+            z-index: -1000;
+            transform: scaleX(-1);
         }
 
-        .header-logo img {
-            max-width: 140px;
-            max-height: 65px;
-            object-fit: contain;
-        }
-
-        .header-business {
-            width: 45%;
-            vertical-align: middle;
+        /* Header Logo & Title */
+        .header-logo-container {
             text-align: center;
-            padding: 0 10px;
-        }
-
-        .header-business .company-name {
-            font-size: 13px;
-            font-weight: bold;
-            color: #0f172a;
-            text-transform: uppercase;
-            margin-bottom: 2px;
-            letter-spacing: 0.5px;
-        }
-
-        .header-business .company-slogan {
-            font-size: 8px;
-            font-weight: bold;
-            color: #b45309;
-            text-transform: uppercase;
-            margin-bottom: 3px;
-        }
-
-        .header-business .company-info {
-            font-size: 8px;
-            color: #475569;
-        }
-
-        /* Recuadro RUC y Numeración de Contrato */
-        .header-box {
-            width: 30%;
-            vertical-align: middle;
-            text-align: center;
-            border: 2px solid #0f172a;
-            border-radius: 6px;
-            padding: 6px 4px;
-            background-color: #f8fafc;
-        }
-
-        .header-box .ruc-text {
-            font-size: 10.5px;
-            font-weight: bold;
-            color: #0f172a;
-            letter-spacing: 0.5px;
-            margin-bottom: 2px;
-        }
-
-        .header-box .doc-title {
-            font-size: 9.5px;
-            font-weight: bold;
-            background-color: #0f172a;
-            color: #ffffff;
-            padding: 3px 0;
-            text-transform: uppercase;
-            margin-bottom: 3px;
-        }
-
-        .header-box .doc-number {
-            font-size: 11px;
-            font-weight: bold;
-            color: #0f172a;
-        }
-
-        /* Bloque de Comparecientes / Partes Contratantes */
-        .parties-box {
-            width: 100%;
-            border: 1px solid #cbd5e1;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            background-color: #f8fafc;
-            padding: 7px 9px;
-        }
-
-        .parties-title {
-            font-size: 9.5px;
-            font-weight: bold;
-            color: #0f172a;
-            text-transform: uppercase;
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 3px;
-            margin-bottom: 5px;
-            letter-spacing: 0.3px;
-        }
-
-        .party-col {
-            width: 49%;
-            display: inline-block;
-            vertical-align: top;
-        }
-
-        .party-col p {
-            margin: 1.5px 0;
-            font-size: 8.5px;
-            color: #334155;
-        }
-
-        .party-col strong {
-            color: #0f172a;
-            font-weight: 700;
-        }
-
-        /* Ficha del Evento */
-        .event-details-bar {
-            width: 100%;
-            border: 1px solid #93c5fd;
-            background-color: #eff6ff;
-            border-radius: 5px;
-            padding: 5px 8px;
-            margin-bottom: 10px;
-        }
-
-        .event-details-bar table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .event-details-bar td {
-            font-size: 8.5px;
-        }
-
-        .event-details-bar strong {
-            color: #1e3a8a;
-        }
-
-        /* Títulos de Sección */
-        .section-heading {
-            font-size: 10px;
-            font-weight: bold;
-            color: #0f172a;
-            text-transform: uppercase;
-            margin: 8px 0 4px 0;
-            border-bottom: 1.5px solid #cbd5e1;
-            padding-bottom: 2px;
-            letter-spacing: 0.3px;
-        }
-
-        /* Tablas de Ítems y Cuotas */
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
+            margin-top: 0;
             margin-bottom: 8px;
         }
 
-        .items-table th {
-            background-color: #1e293b;
-            color: #ffffff;
-            font-size: 8.5px;
-            font-weight: bold;
-            padding: 4px 6px;
-            border: 1px solid #1e293b;
+        .header-logo-img {
+            max-width: 125px;
+            max-height: 100px;
+            object-fit: contain;
+        }
+
+        .contract-main-title {
             text-align: center;
-            text-transform: uppercase;
-        }
-
-        .items-table td {
-            padding: 4px 6px;
-            border: 1px solid #e2e8f0;
-            font-size: 8.5px;
-            vertical-align: middle;
-        }
-
-        .items-table tr:nth-child(even) {
-            background-color: #f8fafc;
-        }
-
-        /* Tabla de Totales */
-        .totals-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 10px;
-        }
-
-        .totals-words {
-            width: 58%;
-            vertical-align: top;
-            padding-right: 12px;
-        }
-
-        .words-box {
-            border: 1px solid #cbd5e1;
-            background-color: #f8fafc;
-            border-radius: 4px;
-            padding: 5px 7px;
-            font-size: 8px;
-        }
-
-        .totals-numbers {
-            width: 42%;
-            vertical-align: top;
-        }
-
-        .totals-numbers table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .totals-numbers td {
-            padding: 2.5px 6px;
-            font-size: 8.5px;
-        }
-
-        .totals-numbers .total-row {
-            background-color: #0f172a;
-            color: #ffffff;
+            font-size: 11.5pt;
             font-weight: bold;
-            font-size: 9.5px;
+            color: #000000;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-top: 4px;
+            margin-bottom: 12px;
         }
 
-        .totals-numbers .total-row td {
-            color: #ffffff;
-            padding: 3.5px 6px;
-        }
-
-        /* Caja de Garantía */
-        .guarantee-callout {
-            background-color: #fef3c7;
-            border: 1.5px solid #f59e0b;
-            border-radius: 4px;
-            padding: 5px 8px;
-            margin-bottom: 10px;
-            font-size: 8px;
-            color: #92400e;
-        }
-
-        .guarantee-callout strong {
-            color: #78350f;
-        }
-
-        /* Cláusulas Legales */
-        .clause-item {
-            margin-bottom: 6px;
+        /* Body Paragraphs */
+        p {
+            margin: 0 0 9px 0;
             text-align: justify;
+            text-justify: inter-word;
+            font-size: 9.6pt;
+            line-height: 1.42;
         }
 
-        .clause-title {
-            font-size: 9px;
+        strong {
+            color: #000000;
             font-weight: bold;
-            color: #0f172a;
-            margin-bottom: 1px;
-            text-transform: uppercase;
         }
 
-        .clause-body {
-            font-size: 8px;
-            color: #334155;
+        /* Bullet list for PRIMERO (Items) */
+        .bullet-list {
+            margin: 3px 0 9px 0;
+            padding-left: 6px;
+        }
+
+        .bullet-item {
+            margin-bottom: 2.5px;
+            font-size: 9.6pt;
             line-height: 1.38;
-            white-space: pre-wrap;
         }
 
-        /* Firmas de Conformidad */
-        .signatures-table {
+        /* Payment schedule lines for SEGUNDO */
+        .payment-list {
+            margin: 3px 0 6px 0;
+            padding-left: 0;
+        }
+
+        .payment-item {
+            margin-bottom: 2px;
+            font-size: 9.6pt;
+        }
+
+        /* Location and Date */
+        .contract-place-date {
+            text-align: right;
+            margin-top: 14px;
+            margin-bottom: 22px;
+            font-size: 9.8pt;
+        }
+
+        /* Signatures block */
+        .signatures-wrapper {
             width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 18px;
             page-break-inside: avoid;
         }
 
-        .signature-cell {
+        .signatures-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .sig-col {
             width: 50%;
-            vertical-align: top;
+            vertical-align: bottom;
             text-align: center;
-            padding: 0 20px;
+            padding: 0 15px;
         }
 
-        .signature-space {
-            height: 65px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 4px;
+        .sig-image-space {
+            height: 50px;
+            margin-bottom: 2px;
         }
 
-        .signature-img {
-            max-height: 60px;
+        .sig-image-space img {
+            max-height: 48px;
             max-width: 150px;
             object-fit: contain;
         }
 
-        .signature-line {
-            border-top: 1px solid #0f172a;
+        .sig-separator {
+            border-top: 1px solid #111827;
             width: 80%;
             margin: 0 auto 4px auto;
         }
 
-        .signature-name {
-            font-size: 8.5px;
+        .sig-person-name {
+            font-size: 9.8pt;
             font-weight: bold;
-            color: #0f172a;
-            text-transform: uppercase;
+            color: #000000;
+            margin-bottom: 1px;
         }
 
-        .signature-sub {
-            font-size: 7.5px;
-            color: #475569;
+        .sig-person-detail {
+            font-size: 8.8pt;
+            color: #1f2937;
         }
 
-        /* Pie de Página */
-        .footer {
+        /* Black Footer Bar */
+        .footer-bar {
             position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            font-size: 7.5px;
-            color: #94a3b8;
+            bottom: -12mm;
+            left: -18mm;
+            right: -18mm;
+            height: 28px;
+            background-color: #000000;
+            border-top: 2px solid #b45309;
+            padding: 0 15px;
+            z-index: 9999;
+        }
+
+        .footer-table {
+            width: 100%;
+            height: 28px;
+            border-collapse: collapse;
+        }
+
+        .footer-table td {
+            vertical-align: middle;
+            font-size: 8.2pt;
+            color: #ffffff;
+            white-space: nowrap;
+        }
+
+        .footer-label {
+            font-weight: bold;
+            color: #d4af37 !important;
+            letter-spacing: 0.3px;
+            padding-right: 8px;
+            width: 28%;
+        }
+
+        .footer-contact {
             text-align: center;
-            border-top: 1px solid #e2e8f0;
-            padding-top: 3px;
+            color: #ffffff !important;
+            padding: 0 6px;
+        }
+
+        .footer-icon-svg {
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 3px;
         }
     </style>
 </head>
 <body>
 
-    <!-- ==========================================================================
-         [FIXED BRANDING / ESTILO / MODIFICABLE]
-         CABECERA CORPORATIVA Y CAJA FISCAL
-         Fácilmente sustituible con el membrete oficial del cliente.
-         ========================================================================== -->
-    <table class="header-table">
-        <tr>
-            <td class="header-logo">
-                @if (!empty($logo) && file_exists(public_path('files/logos/' . $logo)))
-                    <img src="{{ public_path('files/logos/' . $logo) }}" alt="Logo" />
-                @elseif(!empty($business?->logo) && file_exists(public_path($business->logo)))
-                    <img src="{{ public_path($business->logo) }}" alt="Logo" />
-                @elseif(file_exists(public_path('files/empty_logo.png')))
-                    <img src="{{ public_path('files/empty_logo.png') }}" alt="Logo" />
-                @endif
-            </td>
-            <td class="header-business">
-                <div class="company-name">{{ $business?->nombre_comercial ?: ($business?->razon_social ?: 'HS COCTELERÍA') }}</div>
-                <div class="company-slogan">Barras Móviles, Coctelería de Autor y Catering para Eventos</div>
-                <div class="company-info">{{ $business?->direccion }}</div>
-                <div class="company-info">Teléf: {{ $business?->telefono ?: '-' }} | Email: {{ $business?->email ?: '-' }}</div>
-            </td>
-            <td class="header-box">
-                <div class="ruc-text">RUC N° {{ $business?->ruc ?: '00000000000' }}</div>
-                <div class="doc-title">{{ $contract->title ?: 'CONTRATO DE SERVICIOS' }}</div>
-                <div class="doc-number">N° {{ $contract->contract_number }}</div>
-            </td>
-        </tr>
-    </table>
+    <!-- Lateral Shipibo Watermarks (Kené) -->
+    @if (file_exists(public_path('files/shipibo_watermark.svg')))
+        <img src="{{ public_path('files/shipibo_watermark.svg') }}" class="watermark-left" alt="" />
+        <img src="{{ public_path('files/shipibo_watermark.svg') }}" class="watermark-right" alt="" />
+    @endif
 
-    <!-- ==========================================================================
-         [DATOS DINÁMICOS DEL SISTEMA / NO TOCAR]
-         BLOQUE DE COMPARECIENTES (PRESTADOR Y CLIENTE CONTRATANTE)
-         ========================================================================== -->
-    <div class="parties-box">
-        <div class="parties-title">Comparecientes / Partes Contratantes</div>
-        <div class="party-col">
-            <p><strong>PRESTADOR:</strong> {{ $contract->provider_name ?: ($business?->razon_social ?: $business?->nombre_comercial) }}</p>
-            <p><strong>RUC / DOC:</strong> {{ $contract->provider_document ?: $business?->ruc }}</p>
-            <p><strong>REPRESENTANTE:</strong> {{ $contract->provider_representative ?: ($business?->representante ?: 'Gerencia General') }}</p>
-        </div>
-        <div class="party-col" style="margin-left: 2%;">
-            <p><strong>CLIENTE CONTRATANTE:</strong> {{ $client?->nombres }}</p>
-            <p><strong>DOC. IDENTIDAD:</strong> {{ $client?->tipoDocumento?->descripcion ?: 'DNI/RUC' }}: {{ $client?->nro_documento }}</p>
-            <p><strong>DIRECCIÓN:</strong> {{ $client?->direccion ?: 'No especificada' }}</p>
-            <p><strong>CONTACTO:</strong> Tel: {{ $client?->telefono ?: '-' }} | Email: {{ $client?->email ?: '-' }}</p>
-        </div>
+    <!-- 1. Centered Logo -->
+    <div class="header-logo-container">
+        @if (!empty($logo) && file_exists(public_path('files/logos/' . $logo)))
+            <img src="{{ public_path('files/logos/' . $logo) }}" class="header-logo-img" alt="Logo" />
+        @elseif(!empty($business?->logo) && file_exists(public_path('files/logos/' . $business->logo)))
+            <img src="{{ public_path('files/logos/' . $business->logo) }}" class="header-logo-img" alt="Logo" />
+        @elseif(file_exists(public_path('files/logos/hardys-peru-investments-sac-20260921003702.png')))
+            <img src="{{ public_path('files/logos/hardys-peru-investments-sac-20260921003702.png') }}" class="header-logo-img" alt="Logo" />
+        @endif
     </div>
 
-    <!-- ==========================================================================
-         [DATOS DINÁMICOS DEL SISTEMA / NO TOCAR]
-         FICHA TÉCNICA DEL EVENTO
-         ========================================================================== -->
-    <div class="event-details-bar">
-        <table>
+    <!-- 2. Main Title -->
+    <div class="contract-main-title">
+        {{ $contract->title ?: 'CONTRATO DE PRESTACIÓN DE SERVICIOS' }}
+    </div>
+
+    <!-- 3. Legal Introduction Paragraph -->
+    @php
+        $providerRep = $contract->provider_representative ?: ($business?->representante ?: 'Harry Salazar García');
+        $providerDoc = $contract->provider_document ?: '46784193';
+        $providerCompany = $contract->provider_name ?: ($business?->razon_social ?: 'Hardys Perú Investments S.A.C.');
+        $providerRuc = $business?->ruc ?: '20612900591';
+        $providerAddress = $business?->direccion ?: 'Jr. Las Heliconias Mz J Lote 13 - Tarapoto';
+        
+        $clientName = $client?->nombres ?: 'Suiza Village S.A.C.';
+        $clientDocType = $client?->tipoDocumento?->descripcion ?: 'RUC';
+        $clientDocNum = $client?->nro_documento ?: '20610984666';
+
+        // Event and Emission dates in Spanish words
+        \Carbon\Carbon::setLocale('es');
+        $eventDateCarbon = $contract->fecha_evento ? \Carbon\Carbon::parse($contract->fecha_evento) : null;
+        $issueDateCarbon = $contract->fecha_emision ? \Carbon\Carbon::parse($contract->fecha_emision) : null;
+
+        $eventDateFull = $fecha_evento_texto ?: ($eventDateCarbon ? $eventDateCarbon->isoFormat('dddd D [de] MMMM [del] YYYY') : 'viernes 14 de agosto del 2026');
+        $issueDateFull = $fecha_emision_texto ?: ($issueDateCarbon ? $issueDateCarbon->isoFormat('DD [de] MMMM [del] YYYY') : '04 de agosto del 2026');
+
+        $lugarEvento = $contract->lugar_evento ?: 'Resort residencial Suiza Village';
+
+        // Filter operative clauses excluding legacy header duplicates
+        $operativeClauses = $clauses->filter(function($c) {
+            $t = mb_strtoupper($c->titulo, 'UTF-8');
+            return !str_contains($t, 'PARTES CONTRATANTES') && 
+                   !str_contains($t, 'OBJETO DEL CONTRATO') && 
+                   !str_contains($t, 'HORA Y LUGAR DEL EVENTO') && 
+                   !str_contains($t, 'PRECIO Y CONDICIONES DE PAGO');
+        });
+    @endphp
+
+    <p>
+        Conste por el presente documento un contrato de servicios de paquete de Open Bar, que celebran de una parte la persona natural <strong>{{ $providerRep }}</strong>, identificado con <strong>DNI n.° {{ $providerDoc }}</strong>, representante de <strong>{{ $providerCompany }}</strong> con <strong>RUC n.° {{ $providerRuc }}</strong>, con domicilio en {{ $providerAddress }}, que para el presente caso se llamará <strong>PROVEEDOR</strong>, y por la otra parte {{ strlen($clientDocNum) == 11 ? 'la empresa' : 'la persona' }} <strong>{{ $clientName }}</strong>, con <strong>{{ $clientDocType }} n.° {{ $clientDocNum }}</strong>, representada por el Sr. <strong>{{ $client?->representante ?: $clientName }}</strong>, identificado con <strong>DNI n.° {{ $client?->dni_representante ?: $clientDocNum }}</strong>, que para el presente caso se llamará el <strong>CLIENTE</strong>, previo diálogo de convenio con sus intereses, formalizan el negocio bajo los siguientes términos:
+    </p>
+
+    <!-- 4. PRIMERO: Servicios y Productos Contratados -->
+    <p>
+        <strong>PRIMERO:</strong> EL PROVEEDOR se compromete a brindar el siguiente servicio, para el día {{ $eventDateFull }} - Lugar: {{ $lugarEvento }}.
+    </p>
+
+    <div class="bullet-list">
+        @forelse ($items as $item)
+            @php
+                $desc = trim($item->descripcion);
+                if (!str_starts_with($desc, '-')) {
+                    $desc = '- ' . $desc;
+                }
+            @endphp
+            <div class="bullet-item">{{ $desc }}</div>
+        @empty
+            <div class="bullet-item">- 200 cócteles: Chilcano clásico/ maracuyá, Machu Picchu, Primavera y Mojito.</div>
+            <div class="bullet-item">- 1 barman - 1 asistente - Insumos - Barra Movil - Logística.</div>
+            <div class="bullet-item">- 1 Mozo</div>
+        @endforelse
+    </div>
+
+    <!-- 5. SEGUNDO: Precio y Cronograma de Pagos -->
+    @php
+        $totalFormattedNum = (int)$contract->total == $contract->total 
+            ? number_format($contract->total, 0) 
+            : number_format($contract->total, 2);
+    @endphp
+
+    <p>
+        <strong>SEGUNDO:</strong> El precio pactado entre las partes por el servicio es de {{ $numero_letras }} {{ (int)$contract->total }}/100 SOLES ({{ $signo }} {{ $totalFormattedNum }}), lo cual será cancelado de la siguiente manera:
+    </p>
+
+    <div class="payment-list">
+        @if ($installments->isNotEmpty())
+            @foreach ($installments as $idx => $inst)
+                @php
+                    $instMontoFormatted = (int)$inst->monto == $inst->monto 
+                        ? number_format($inst->monto, 0) 
+                        : number_format($inst->monto, 2);
+                    $instDate = $inst->fecha_vencimiento ? \Carbon\Carbon::parse($inst->fecha_vencimiento)->format('d/m/Y') : '';
+                    
+                    $label = $inst->descripcion;
+                    if (empty($label) || str_contains(strtolower($label), 'cuota')) {
+                        $label = ($idx == 0) ? 'Primer pago' : 'Segundo pago';
+                    }
+                    
+                    $cond = '';
+                    if ($idx == 0) {
+                        $cond = ', a la firma del contrato';
+                    } elseif ($loop->last) {
+                        $cond = ', antes de iniciar el servicio.';
+                    }
+                @endphp
+                <div class="payment-item">
+                    {{ $label }}: {{ $signo }} {{ $instMontoFormatted }} - {{ $instDate }}{{ $cond }}
+                </div>
+            @endforeach
+        @else
+            @php
+                $half = $contract->total / 2;
+                $halfFormatted = (int)$half == $half ? number_format($half, 0) : number_format($half, 2);
+                $dEmision = $contract->fecha_emision ? \Carbon\Carbon::parse($contract->fecha_emision)->format('d/m/Y') : '';
+                $dEvento = $contract->fecha_evento ? \Carbon\Carbon::parse($contract->fecha_evento)->format('d/m/Y') : '';
+            @endphp
+            <div class="payment-item">Primer pago: {{ $signo }} {{ $halfFormatted }} - {{ $dEmision }}, a la firma del contrato</div>
+            <div class="payment-item">Segundo pago: {{ $signo }} {{ $halfFormatted }} – {{ $dEvento }}, antes de iniciar el servicio.</div>
+        @endif
+    </div>
+
+    <p style="margin-top: 6px;">
+        La cual será abonada a la Cuenta Corriente Soles en Interbank: <strong>750-3006347253</strong> - CCI: <strong>003-750-003006347253-71</strong> - <strong>Hardys Perú Investments S.A.C.</strong> o al número del representante <strong>980 034 767</strong> (Yape o Plin).
+    </p>
+
+    <!-- 6. TERCERO, CUARTO y Demás Cláusulas Legales -->
+    @if ($operativeClauses->isNotEmpty())
+        @foreach ($operativeClauses as $clause)
+            @php
+                $t = trim($clause->titulo);
+                $c = trim($clause->contenido);
+                if (!str_ends_with($t, ':')) {
+                    $t .= ':';
+                }
+            @endphp
+            <p>
+                <strong>{{ $t }}</strong> {{ $c }}
+            </p>
+        @endforeach
+    @else
+        <p>
+            <strong>TERCERO:</strong> Se empezará a brindar el servicio una vez culminada la ceremonia protocolar o, en su defecto, previa coordinación directa con el cliente.
+        </p>
+
+        <p>
+            <strong>CUARTO:</strong> La cancelación del evento no implica la devolución del dinero; puede canjear el servicio para otra fecha que esté a disposición del proveedor.
+        </p>
+    @endif
+
+    <!-- 7. Cierre Formal y Fecha de Emisión -->
+    <p style="margin-top: 14px;">
+        En virtud, estando las partes enteradas del contenido de todas las cláusulas del presente contrato, en señal de conformidad proceden a firmar.
+    </p>
+
+    <div class="contract-place-date">
+        Tarapoto, {{ $issueDateFull }}
+    </div>
+
+    <!-- 8. Bloque de Firmas -->
+    <div class="signatures-wrapper">
+        <table class="signatures-table">
             <tr>
-                <td width="30%"><strong>FECHA DEL EVENTO:</strong> {{ \Carbon\Carbon::parse($contract->fecha_evento)->format('d/m/Y') }}</td>
-                <td width="20%"><strong>HORA:</strong> {{ $contract->hora_evento ? \Carbon\Carbon::parse($contract->hora_evento)->format('H:i A') : 'Por coordinar' }}</td>
-                <td width="50%"><strong>LUGAR / LOCAL:</strong> {{ $contract->lugar_evento ?: 'Lugar acordado por las partes' }}</td>
+                <td class="sig-col">
+                    <div class="sig-image-space">
+                        @if (!empty($contract->firma_proveedor) && file_exists(public_path($contract->firma_proveedor)))
+                            <img src="{{ public_path($contract->firma_proveedor) }}" alt="Firma Proveedor" />
+                        @elseif(file_exists(public_path('files/contracts/signatures/sig_client_1789969806_6ab0c58ebb375.png')))
+                            <!-- Trazo gráfico representativo de firma -->
+                            <img src="{{ public_path('files/contracts/signatures/sig_client_1789969806_6ab0c58ebb375.png') }}" alt="Firma Proveedor" />
+                        @endif
+                    </div>
+                    <div class="sig-separator"></div>
+                    <div class="sig-person-name">{{ $providerRep }}</div>
+                    <div class="sig-person-detail">Rep. {{ $business?->nombre_comercial ?: 'Shipibo Bar & Eventos' }}</div>
+                </td>
+                <td class="sig-col">
+                    <div class="sig-image-space">
+                        @if (!empty($contract->firma_cliente) && file_exists(public_path($contract->firma_cliente)))
+                            <img src="{{ public_path($contract->firma_cliente) }}" alt="Firma Cliente" />
+                        @endif
+                    </div>
+                    <div class="sig-separator"></div>
+                    <div class="sig-person-name">{{ $client?->representante ?: $clientName }}</div>
+                    <div class="sig-person-detail">DNI: {{ $client?->dni_representante ?: $clientDocNum }}</div>
+                </td>
             </tr>
         </table>
     </div>
 
-    <!-- ==========================================================================
-         [DATOS DINÁMICOS DEL SISTEMA / NO TOCAR]
-         DETALLE DE SERVICIOS Y PRODUCTOS CONTRATADOS
-         ========================================================================== -->
-    <div class="section-heading">Detalle de Servicios de Barra, Cristalería y Menaje Contratados</div>
-    <table class="items-table">
-        <thead>
+    <!-- 9. Franja Inferior Oscura con Contacto -->
+    <div class="footer-bar">
+        <table class="footer-table">
             <tr>
-                <th width="5%">#</th>
-                <th>Descripción del Servicio / Insumo / Cristalería</th>
-                <th width="12%">Cantidad</th>
-                <th width="16%">Precio Unit.</th>
-                <th width="16%">Importe</th>
+                <td class="footer-label">CONSULTAS Y COTIZACIONES:</td>
+                <td class="footer-contact">
+                    <svg class="footer-icon-svg" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="#d4af37"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-1.57 1.97c-2.83-1.35-5.43-3.9-6.63-6.82l1.97-1.61a.996.996 0 0 0 .26-1.03c-.36-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z"/></svg>
+                    +51 {{ $business?->telefono ?: '980 034 767' }}
+                </td>
+                <td class="footer-contact">
+                    <svg class="footer-icon-svg" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="#d4af37"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                    {{ $business?->nombre_comercial ?: 'Shipibo Bar & Eventos' }}
+                </td>
+                <td class="footer-contact" style="text-align: right; padding-right: 15px;">
+                    <svg class="footer-icon-svg" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="#d4af37"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                    {{ $business?->email ?: 'shipiboevents@gmail.com' }}
+                </td>
             </tr>
-        </thead>
-        <tbody>
-            @foreach ($items as $idx => $item)
-                <tr>
-                    <td style="text-align: center;">{{ $idx + 1 }}</td>
-                    <td>{{ $item->descripcion }}</td>
-                    <td style="text-align: center;">{{ number_format($item->cantidad, 2) }}</td>
-                    <td style="text-align: right;">{{ $signo }} {{ number_format($item->precio_unitario, 2) }}</td>
-                    <td style="text-align: right; font-weight: bold;">{{ $signo }} {{ number_format($item->subtotal, 2) }}</td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
-
-    <!-- ==========================================================================
-         [DATOS DINÁMICOS DEL SISTEMA / NO TOCAR]
-         TOTALES Y MONTO EN LETRAS
-         ========================================================================== -->
-    <table class="totals-table">
-        <tr>
-            <td class="totals-words">
-                <div class="words-box">
-                    <strong>SON:</strong> {{ $numero_letras }} CON 00/100 {{ $moneda }}
-                    @if (!empty($contract->observaciones))
-                        <div style="margin-top: 4px; border-top: 1px dashed #cbd5e1; padding-top: 2px;">
-                            <strong>CONDICIONES / OBSERVACIONES ADICIONALES:</strong><br>
-                            {{ $contract->observaciones }}
-                        </div>
-                    @endif
-                </div>
-            </td>
-            <td class="totals-numbers">
-                <table>
-                    <tr>
-                        <td style="text-align: right; color: #475569;">SUBTOTAL:</td>
-                        <td style="text-align: right; font-weight: bold; width: 45%;">{{ $signo }} {{ number_format($contract->subtotal, 2) }}</td>
-                    </tr>
-                    @if ($contract->igv > 0)
-                    <tr>
-                        <td style="text-align: right; color: #475569;">I.G.V. (18%):</td>
-                        <td style="text-align: right; font-weight: bold;">{{ $signo }} {{ number_format($contract->igv, 2) }}</td>
-                    </tr>
-                    @endif
-                    <tr class="total-row">
-                        <td style="text-align: right;">TOTAL GENERAL:</td>
-                        <td style="text-align: right;">{{ $signo }} {{ number_format($contract->total, 2) }}</td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
-
-    <!-- ==========================================================================
-         [DATOS DINÁMICOS DEL SISTEMA / NO TOCAR]
-         CRONOGRAMA DE PAGOS (50% ANTICIPO Y CUOTAS)
-         ========================================================================== -->
-    @if ($contract->installments && $contract->installments->count() > 0)
-    <div class="section-heading">Cronograma de Pagos y Condiciones Financieras</div>
-    <table class="items-table" style="margin-bottom: 8px;">
-        <thead>
-            <tr>
-                <th width="6%">N°</th>
-                <th width="40%">Concepto / Cuota</th>
-                <th width="10%">%</th>
-                <th width="22%">Fecha de Vencimiento</th>
-                <th width="22%">Monto</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach ($contract->installments as $inst)
-                <tr>
-                    <td style="text-align: center;">{{ $inst->numero_cuota }}</td>
-                    <td>
-                        {{ $inst->descripcion }}
-                        @if ($inst->estado == 1)
-                            <span style="color: #16a34a; font-weight: bold; font-size: 7.5px;"> [CANCELADO]</span>
-                        @endif
-                    </td>
-                    <td style="text-align: center;">{{ number_format($inst->porcentaje, 1) }}%</td>
-                    <td style="text-align: center; font-weight: bold;">{{ \Carbon\Carbon::parse($inst->fecha_vencimiento)->format('d/m/Y') }}</td>
-                    <td style="text-align: right; font-weight: bold;">{{ $signo }} {{ number_format($inst->monto, 2) }}</td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
-    @endif
-
-    <!-- ==========================================================================
-         [FIXED BRANDING / ESTILO / MODIFICABLE]
-         LLAMADO DEL FONDO DE GARANTÍA (20%) - CLÁUSULA OCTAVA
-         Texto legal estipulado para respaldo de cristalería y barras móviles.
-         ========================================================================== -->
-    <div class="guarantee-callout">
-        <strong>FONDO DE GARANTÍA CONTRACTUAL POR CRISTALERÍA Y EQUIPAMIENTO (20%):</strong>
-        Conforme a la Cláusula Octava del presente documento, el fondo de garantía fijado es de 
-        <strong>{{ $signo }} {{ number_format($contract->total * 0.20, 2) }}</strong>. 
-        Dicho importe respalda eventuales roturas, pérdidas o daños en cristalería, herramientas de barra y estaciones móviles, y será reintegrado al cliente tras la verificación conforme en el desmontaje del evento mediante el Acta de Checklist correspondiente.
-    </div>
-
-    <!-- ==========================================================================
-         [DATOS DINÁMICOS DEL SISTEMA / NO TOCAR]
-         CLÁUSULAS CONTRACTUALES DINÁMICAS (ALIMENTADAS POR EL EDITOR DE CLÁUSULAS)
-         El usuario puede modificar, agregar o precargar cláusulas desde el formulario.
-         NO HARDCODEAR TEXTOS LEGALES AQUÍ PARA MANTENER LA FLEXIBILIDAD.
-         ========================================================================== -->
-    <div class="section-heading">Términos y Cláusulas Contractuales</div>
-    @foreach ($clauses as $clause)
-        <div class="clause-item">
-            <div class="clause-title">{{ $clause->titulo }}</div>
-            <div class="clause-body">{{ $clause->contenido }}</div>
-        </div>
-    @endforeach
-
-    <!-- ==========================================================================
-         [DATOS DINÁMICOS DEL SISTEMA / NO TOCAR]
-         FIRMAS DIGITALES Y CONFORMIDAD LEGAL
-         Soporta firma digital vía Canvas o subida de imagen de cliente y prestador.
-         ========================================================================== -->
-    <table class="signatures-table">
-        <tr>
-            <!-- Firma Prestador -->
-            <td class="signature-cell">
-                <div class="signature-space">
-                    @if (!empty($contract->firma_proveedor) && file_exists(public_path($contract->firma_proveedor)))
-                        <img src="{{ public_path($contract->firma_proveedor) }}" class="signature-img" alt="Firma Prestador" />
-                    @else
-                        <div style="color: #94a3b8; font-size: 8px; font-style: italic; padding-top: 25px;">[ Sello y Firma Autorizada ]</div>
-                    @endif
-                </div>
-                <div class="signature-line"></div>
-                <div class="signature-name">{{ $contract->provider_name ?: ($business?->razon_social ?: $business?->nombre_comercial) }}</div>
-                <div class="signature-sub">EL PRESTADOR DE SERVICIOS</div>
-                <div class="signature-sub">RUC: {{ $contract->provider_document ?: $business?->ruc }}</div>
-            </td>
-
-            <!-- Firma Cliente Contratante -->
-            <td class="signature-cell">
-                <div class="signature-space">
-                    @if (!empty($contract->firma_cliente) && file_exists(public_path($contract->firma_cliente)))
-                        <img src="{{ public_path($contract->firma_cliente) }}" class="signature-img" alt="Firma Digital Cliente" />
-                    @else
-                        <div style="color: #94a3b8; font-size: 8px; font-style: italic; padding-top: 25px;">[ Firma del Cliente Contratante ]</div>
-                    @endif
-                </div>
-                <div class="signature-line"></div>
-                <div class="signature-name">{{ $client?->nombres }}</div>
-                <div class="signature-sub">EL CLIENTE CONTRATANTE</div>
-                <div class="signature-sub">{{ $client?->tipoDocumento?->descripcion ?: 'DOC' }}: {{ $client?->nro_documento }}</div>
-            </td>
-        </tr>
-    </table>
-
-    <!-- ==========================================================================
-         [FIXED BRANDING / ESTILO / MODIFICABLE]
-         PIE DE PÁGINA Y NOTA LEGAL
-         ========================================================================== -->
-    <div class="footer">
-        Contrato de Servicios para Eventos emitido el {{ \Carbon\Carbon::parse($contract->fecha_emision)->format('d/m/Y') }} | Documento privado con valor legal según el Código Civil Peruano | {{ $business?->nombre_comercial ?: 'HS Coctelería' }}
+        </table>
     </div>
 
 </body>
