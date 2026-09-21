@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 800" width="250" height="800">
+  <defs>
+    <style>
+      .kene-line {
+        fill: none;
+        stroke: #b8af9f;
+        stroke-width: 8;
+        stroke-linecap: square;
+        stroke-linejoin: miter;
+      }
+      .kene-thick {
+        fill: none;
+        stroke: #a39988;
+        stroke-width: 14;
+        stroke-linecap: square;
+        stroke-linejoin: miter;
+      }
+    </style>
+  </defs>
+
+  <!-- Side Kené pattern consisting of concentric 45 degree diamond bands -->
+  <g transform="translate(40, 200)">
+    <polygon points="0,-160 160,0 0,160 -160,0" class="kene-thick" />
+    <polygon points="0,-125 125,0 0,125 -125,0" class="kene-line" />
+    <polygon points="0,-90 90,0 0,90 -90,0" class="kene-thick" />
+    <polygon points="0,-55 55,0 0,55 -55,0" class="kene-line" />
+    <polygon points="0,-20 20,0 0,20 -20,0" class="kene-thick" />
+    
+    <!-- Step meanders connecting diamonds -->
+    <polyline points="0,-160 -60,-160 -60,-240" class="kene-line" />
+    <polyline points="160,0 160,60 240,60" class="kene-line" />
+    <polyline points="0,160 -60,160 -60,240" class="kene-line" />
+  </g>
+
+  <g transform="translate(40, 600)">
+    <polygon points="0,-160 160,0 0,160 -160,0" class="kene-thick" />
+    <polygon points="0,-125 125,0 0,125 -125,0" class="kene-line" />
+    <polygon points="0,-90 90,0 0,90 -90,0" class="kene-thick" />
+    <polygon points="0,-55 55,0 0,55 -55,0" class="kene-line" />
+  </g>
+
+  <g transform="translate(40, -100)">
+    <polygon points="0,-160 160,0 0,160 -160,0" class="kene-thick" />
+    <polygon points="0,-125 125,0 0,125 -125,0" class="kene-line" />
+    <polygon points="0,-90 90,0 0,90 -90,0" class="kene-thick" />
+  </g>
+</svg>
