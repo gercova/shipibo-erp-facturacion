@@ -113,10 +113,10 @@ class ContractController extends Controller
             ->addColumn('acciones', function ($row) {
                 $id = $row->id;
                 $btn = '<div class="dropdown">
-                            <a href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <a href="#" role="button" id="dropdownContracts' . $id . '" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2 18H9V20H2V18ZM2 11H11V13H2V11ZM2 4H22V6H2V4ZM20.674 13.0251L21.8301 12.634L22.8301 14.366L21.914 15.1711C21.9704 15.4386 22 15.7158 22 16C22 16.2842 21.9704 16.5614 21.914 16.8289L22.8301 17.634L21.8301 19.366L20.674 18.9749C20.2635 19.3441 19.7763 19.6295 19.2391 19.8044L19 21H17L16.7609 19.8044C16.2237 19.6295 15.7365 19.3441 15.326 18.9749L14.1699 19.366L13.1699 17.634L14.086 16.8289C14.0296 16.5614 14 16.2842 14 16C14 15.7158 14.0296 15.4386 14.086 15.1711L13.1699 14.366L14.1699 12.634L15.326 13.0251C15.7365 12.6559 16.2237 12.3705 16.7609 12.1956L17 11H19L19.2391 12.1956C19.7763 12.3705 20.2635 12.6559 20.674 13.0251ZM18 18C19.1046 18 20 17.1046 20 16C20 14.8954 19.1046 14 18 14C16.8954 14 16 14.8954 16 16C16 17.1046 16.8954 18 18 18Z"></path></svg>
                             </a>
-                            <div class="dropdown-menu dropdown-menu-end">
+                            <div class="dropdown-menu" aria-labelledby="dropdownContracts' . $id . '">
                                 <a class="dropdown-item btn-detail-contract" data-id="' . $id . '" href="javascript:void(0);">
                                     <i class="ri-eye-line me-2"></i> Ver detalle
                                 </a>
@@ -148,7 +148,7 @@ class ContractController extends Controller
     {
         $business       = Business::first();
         $clients        = Client::orderBy('nombres', 'asc')->get();
-        $products       = Product::where('opcion', 1)->orderBy('descripcion', 'asc')->get();
+        $products       = Product::with(['unit'])->orderBy('descripcion', 'asc')->get();
         $typeDocuments  = IdentityDocumentType::where('estado', 1)->orderBy('descripcion')->get();
         $nextNumber     = $this->generateNextContractNumber();
         $defaultClauses = $this->getDefaultClauseTemplates($business);
@@ -320,7 +320,7 @@ class ContractController extends Controller
 
         $business       = Business::first();
         $clients        = Client::orderBy('nombres', 'asc')->get();
-        $products       = Product::where('opcion', 1)->orderBy('descripcion', 'asc')->get();
+        $products       = Product::with(['unit'])->orderBy('descripcion', 'asc')->get();
         $typeDocuments  = IdentityDocumentType::where('estado', 1)->orderBy('descripcion')->get();
 
         return view('admin.contracts.edit', [
@@ -669,11 +669,18 @@ class ContractController extends Controller
 
     protected function generatePdfFile($contractId): string
     {
-        $contract = Contract::with(['client.tipoDocumento', 'items', 'clauses', 'installments'])->findOrFail($contractId);
+        $contract = Contract::with(['client.tipoDocumento', 'items.product', 'clauses', 'installments'])->findOrFail($contractId);
         $business = Business::first();
 
         $formatter = new NumeroALetras();
         $numeroLetras = $formatter->toWords($contract->total, 2);
+
+        \Carbon\Carbon::setLocale('es');
+        $eventDate = $contract->fecha_evento ? \Carbon\Carbon::parse($contract->fecha_evento) : null;
+        $issueDate = $contract->fecha_emision ? \Carbon\Carbon::parse($contract->fecha_emision) : null;
+
+        $fechaEventoTexto = $eventDate ? $eventDate->isoFormat('dddd D [de] MMMM [del] YYYY') : '';
+        $fechaEmisionTexto = $issueDate ? $issueDate->isoFormat('DD [de] MMMM [del] YYYY') : '';
 
         $data = [
             'contract' => $contract,
@@ -684,6 +691,8 @@ class ContractController extends Controller
             'business' => $business,
             'logo' => $business?->logo,
             'numero_letras' => $numeroLetras,
+            'fecha_evento_texto' => $fechaEventoTexto,
+            'fecha_emision_texto' => $fechaEmisionTexto,
             'signo' => $this->signo_pais(),
             'moneda' => $contract->moneda ?: $this->moneda_pais(),
         ];
@@ -834,41 +843,14 @@ class ContractController extends Controller
 
     protected function getDefaultClauseTemplates($business): array
     {
-        $companyName = $business?->razon_social ?: ($business?->nombre_comercial ?: 'LA EMPRESA');
-        $ruc = $business?->ruc ?: '---';
-
         return [
             [
-                'titulo' => 'PRIMERA: PARTES CONTRATANTES',
-                'contenido' => "El presente contrato se celebra entre {$companyName}, con RUC N° {$ruc} (en adelante, EL PRESTADOR), y la persona natural o jurídica individualizada en la sección de datos generales (en adelante, EL CLIENTE). Ambas partes declaran contar con plena capacidad civil y legal para suscribir este instrumento."
+                'titulo' => 'TERCERO: PROTOCOLO DE INICIO DEL SERVICIO',
+                'contenido' => 'Se empezará a brindar el servicio una vez culminada la ceremonia protocolar o, en su defecto, previa coordinación directa con el cliente.'
             ],
             [
-                'titulo' => 'SEGUNDA: OBJETO DEL CONTRATO',
-                'contenido' => 'EL PRESTADOR se compromete a brindar a favor de EL CLIENTE los servicios y/o productos especificados y detallados en la tabla de ítems del presente contrato, con los más altos estándares de calidad, profesionalismo y puntualidad.'
-            ],
-            [
-                'titulo' => 'TERCERA: DE LA FECHA, HORA Y LUGAR DEL EVENTO',
-                'contenido' => 'Los servicios contratados se prestarán estrictamente en la fecha, horario y ubicación o local señalados expresamente en la carátula y cláusulas de este contrato. Cualquier cambio de fecha o dirección requerirá acuerdo previo por escrito con un mínimo de anticipación de 7 días calendario y estará sujeto a disponibilidad.'
-            ],
-            [
-                'titulo' => 'CUARTA: DEL PRECIO Y CONDICIONES DE PAGO',
-                'contenido' => 'El costo total de la prestación asciende al monto indicado en el resumen de valores de este contrato. Se cancelará según las condiciones acordadas: un adelanto para reserva de fecha y el saldo restante antes o al inicio de la ejecución del evento o entrega de los bienes contratados.'
-            ],
-            [
-                'titulo' => 'QUINTA: OBLIGACIONES DE LAS PARTES',
-                'contenido' => 'EL PRESTADOR se compromete a disponer del personal calificado, materiales, equipos y logística necesarios para el cumplimiento oportuno del servicio. EL CLIENTE se compromete a facilitar el acceso oportuno al recinto del evento, conexiones técnicas indispensables y cumplir con el cronograma de pagos convenido.'
-            ],
-            [
-                'titulo' => 'SEXTA: POLÍTICA DE CANCELACIÓN Y PENALIDADES',
-                'contenido' => 'En caso de que EL CLIENTE decida resolver o cancelar el servicio de forma unilateral, los montos entregados como anticipo o reserva no serán reembolsables, constituyendo indemnización por gastos operativos y bloqueo de agenda. Si la cancelación ocurriere por fuerza mayor comprobada, las partes coordinarán una nueva fecha dentro de los 60 días siguientes.'
-            ],
-            [
-                'titulo' => 'SÉPTIMA: CONFORMIDAD Y JURISDICCIÓN',
-                'contenido' => 'Ambas partes expresan su absoluta conformidad con el contenido de todas y cada una de las cláusulas del presente contrato, el cual firman de manera digital o presencial. Para cualquier controversia no resuelta de mutuo acuerdo, las partes se someten expresamente a la jurisdicción y competencia de los jueces y tribunales correspondientes.'
-            ],
-            [
-                'titulo' => 'OCTAVA: DE LA GARANTÍA POR PÉRDIDAS O DAÑOS (20%)',
-                'contenido' => 'EL CLIENTE se compromete a constituir o asumir un fondo de garantía equivalente al 20% del valor total del contrato, destinado a cubrir eventuales roturas, pérdidas, extravíos o deterioros de cristalería, barras móviles, utensilios, equipos de coctelería o menaje suministrados durante el evento. Dicho monto o saldo remanente será liquidado o reintegrado a EL CLIENTE una vez culminado el evento e inventariado el material conforme por ambas partes.'
+                'titulo' => 'CUARTO: POLÍTICA DE CANCELACIÓN Y REPROGRAMACIÓN',
+                'contenido' => 'La cancelación del evento no implica la devolución del dinero; puede canjear el servicio para otra fecha que esté a disposición del proveedor.'
             ]
         ];
     }
