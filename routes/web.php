@@ -144,6 +144,8 @@ Route::controller(ProductController::class)->prefix('products')->middleware(['au
     Route::post('/upload-excel'       , 'upload')->name('products.upload_excel');
     Route::get('/download-excel'      , 'download')->name('products.download_excel');
     Route::post('/view-detail'        , 'view_detail')->name('products.view_detail');
+    Route::post('/bulk-delete'        , 'bulkDelete')->name('products.bulk_delete');
+    Route::get('/export-all-excel'    , 'exportAllExcel')->name('products.export_all_excel');
     Route::post('/save-presentations' , 'savePresentations')->name('products.save_presentations');
 });
 
