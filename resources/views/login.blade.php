@@ -26,7 +26,7 @@
                 @endif
             </div>
 
-            <h2 class="fw-bold mb-1" style="color: #212529;">Bienvenido a {{ $business->nombre_comercial }}</h2>
+            <h2 class="fw-bold mb-1" style="color: #212529;">{{ $business->nombre_comercial }}</h2>
             <p class="text-muted mb-4" style="font-size: 0.95rem;">Ingresa tus credenciales para continuar.</p>
 
             <form method="POST" action="{{ route('login.login') }}" novalidate>
@@ -101,8 +101,7 @@
     </div>
 
     <script src="{{ asset('ajax/libs/font-awesome/6.3.0/js/all.min.js') }}" defer></script>
-    <script src="{{ asset('js/popper.min.js') }}"></script>
-    <script src="{{ asset('js/bootstrap.min.js') }}"></script>
+    <script src="{{ asset('npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js') }}"></script>
     <script>
         (function() {
             const btn = document.getElementById('togglePassword');
