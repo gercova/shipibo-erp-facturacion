@@ -5,17 +5,17 @@
         .contracts-list-card,
         .contracts-list-card .card-body,
         .contracts-list-card .table-responsive {
-            overflow: visible;
-        }
-
-        .contracts-list-card .dropdown,
-        .contracts-list-card td,
-        .contracts-list-card th {
-            position: relative;
+            overflow: visible !important;
         }
 
         .contracts-list-card .dropdown-menu {
-            z-index: 1055;
+            z-index: 1060 !important;
+        }
+
+        @media (max-width: 767.98px) {
+            .contracts-list-card .table-responsive {
+                overflow-x: auto !important;
+            }
         }
 
         #table_wrapper .form-control,
