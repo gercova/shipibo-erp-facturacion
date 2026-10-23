@@ -172,6 +172,8 @@
                     'admin.clients',
                     'admin.quotes',
                     'admin.contracts',
+                    'admin.packages',
+                    'admin.preliminary_orders',
                     'admin.pos',
                     'admin.sale_notes',
                     'admin.billings',
@@ -191,6 +193,7 @@
                     'report.billings.sales_register',
                     'report.billings.billing_documents',
                     'report.billings.credit_notes',
+                    'admin.reports.contracts',
                 ]);
                 $canConfiguracion = $authUser?->canany([
                     'admin.business',
@@ -317,6 +320,8 @@
                                     @can('admin.contracts')
                                         <a class="nav-link {{ request()->is('contracts') || (request()->is('contracts/*') && !request()->is('contracts/preliminary-orders*')) ? 'active' : '' }}"
                                             href="{{ route('admin.contracts') }}">Contratos Formales</a>
+                                    @endcan
+                                    @can('admin.preliminary_orders')
                                         <a class="nav-link {{ request()->is('contracts/preliminary-orders*') ? 'active' : '' }} d-flex justify-content-between align-items-center"
                                             href="{{ route('admin.contracts.preliminary_orders') }}">
                                             <span>Cola Pedidos Web</span>
@@ -327,6 +332,8 @@
                                                 <span class="badge bg-danger rounded-pill">{{ $pendingWebOrders }}</span>
                                             @endif
                                         </a>
+                                    @endcan
+                                    @can('admin.contracts')
                                         <a class="nav-link {{ request()->is('event-checklists*') ? 'active' : '' }}"
                                             href="{{ route('admin.event_checklists') }}">Checklists de Eventos</a>
                                         <a class="nav-link {{ request()->is('cocktail-menu*') ? 'active' : '' }}"
@@ -459,11 +466,18 @@
                             <div class="collapse {{ request()->routeIs('report.sales.index') ||
                             request()->routeIs('report.sales.by_product.index') ||
                             request()->routeIs('report.payments.index') ||
-                            request()->routeIs('report.billings.*')
+                            request()->routeIs('report.billings.*') ||
+                            request()->is('contracts/reports*')
                                 ? 'show'
-                                : '' }} }}"
+                                : '' }}"
                                 id="collapseReports" data-bs-parent="#accordionSidenav">
                                 <nav class="sidenav-menu-nested nav accordion" id="accordionSidenavReports">
+                                    @can('admin.reports.contracts')
+                                        <a class="nav-link {{ request()->is('contracts/reports*') ? 'active' : '' }}"
+                                            href="{{ route('admin.reports.contracts.index') }}">
+                                            Reportes de Contratos
+                                        </a>
+                                    @endcan
                                     <a class="nav-link {{ request()->routeIs('report.billings.*') ? '' : 'collapsed' }}"
                                         href="javascript:void(0);" data-bs-toggle="collapse"
                                         data-bs-target="#collapseBillingReports" aria-expanded="false"

@@ -25,6 +25,7 @@ class RoleSeeder extends Seeder
                 'admin.quotes' => 'Gestionar cotizaciones',
                 'admin.contracts' => 'Gestionar contratos',
                 'admin.packages' => 'Gestionar paquetes y cartas de eventos',
+                'admin.preliminary_orders' => 'Gestionar pedidos web preliminares',
                 'admin.pos' => 'Usar punto de venta',
                 'admin.sale_notes' => 'Gestionar notas de venta',
                 'admin.billings' => 'Gestionar comprobantes',
@@ -58,6 +59,7 @@ class RoleSeeder extends Seeder
                 'report.billings.sales_register' => 'Ver registro de ventas',
                 'report.billings.billing_documents' => 'Ver reporte de documentos emitidos',
                 'report.billings.credit_notes' => 'Ver reporte de notas de credito',
+                'admin.reports.contracts' => 'Ver reportes analiticos de contratos',
             ],
         ];
 
@@ -87,6 +89,8 @@ class RoleSeeder extends Seeder
             'admin.clients',
             'admin.quotes',
             'admin.contracts',
+            'admin.packages',
+            'admin.preliminary_orders',
             'admin.pos',
             'admin.sale_notes',
             'admin.billings',
@@ -107,6 +111,7 @@ class RoleSeeder extends Seeder
             'report.billings.sales_register',
             'report.billings.billing_documents',
             'report.billings.credit_notes',
+            'admin.reports.contracts',
         ]);
     }
 }

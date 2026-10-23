@@ -59,9 +59,9 @@ Route::controller(LoginController::class)->prefix('login')->group(function () {
 | Flujo Público de Pedidos Web - Menú Digital (Ley N° 29733)
 |--------------------------------------------------------------------------
 */
-Route::controller(PublicOrderController::class)->prefix('pedido')->group(function () {
+Route::controller(PublicOrderController::class)->prefix('pedido')->middleware(['headers.security'])->group(function () {
     Route::get('/', 'index')->name('public.orders.index');
-    Route::post('/simular', 'simulate')->name('public.orders.simulate');
+    Route::post('/simular', 'simulate')->middleware('throttle:public_simulation')->name('public.orders.simulate');
     Route::post('/confirmar', 'store')->middleware('throttle:public_orders')->name('public.orders.store');
     Route::get('/confirmacion/{tracking_code}', 'confirmation')->name('public.orders.confirmation');
 });
@@ -257,7 +257,7 @@ Route::controller(ContractController::class)->prefix('contracts')->middleware(['
     Route::post('/{id}/adjustments', 'store_adjustment')->name('admin.contracts.store_adjustment');
 });
 
-Route::controller(ContractReportController::class)->prefix('contracts/reports')->middleware(['auth'])->group(function () {
+Route::controller(ContractReportController::class)->prefix('contracts/reports')->middleware(['auth', 'can:admin.reports.contracts'])->group(function () {
     Route::get('/', 'index')->name('admin.reports.contracts.index');
     Route::get('/status-data', 'getContractsByStatus')->name('admin.reports.contracts.status_data');
     Route::get('/installments-due-data', 'getInstallmentsDue')->name('admin.reports.contracts.installments_due_data');
@@ -267,7 +267,7 @@ Route::controller(ContractReportController::class)->prefix('contracts/reports')-
     Route::get('/preliminaries-data', 'getPreliminaryTransactions')->name('admin.reports.contracts.preliminaries_data');
 });
 
-Route::controller(PreliminaryOrderController::class)->prefix('contracts/preliminary-orders')->middleware(['auth', 'can:admin.contracts'])->group(function () {
+Route::controller(PreliminaryOrderController::class)->prefix('contracts/preliminary-orders')->middleware(['auth', 'can:admin.preliminary_orders'])->group(function () {
     Route::get('/', 'index')->name('admin.contracts.preliminary_orders');
     Route::get('/get', 'get')->name('admin.contracts.preliminary_orders.get');
     Route::match(['get', 'post'], '/detail', 'detail')->name('admin.contracts.preliminary_orders.detail');

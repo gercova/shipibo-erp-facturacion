@@ -19,9 +19,7 @@ class PreliminaryOrderAdminTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
         $this->adminUser = User::first();
-
         // Create a test preliminary contract
         $docTypeId = \App\Models\IdentityDocumentType::where('codigo', '0')->value('id') ?? 1;
         $client = Client::firstOrCreate(
@@ -154,5 +152,23 @@ class PreliminaryOrderAdminTest extends TestCase
 
         $response->assertStatus(422);
         $response->assertJson(['status' => false]);
+    }
+
+    /**
+     * User without admin.preliminary_orders permission receives 403 Forbidden.
+     */
+    public function test_user_without_permission_cannot_access_preliminary_orders(): void
+    {
+        $unauthorizedUser = User::create([
+            'nombres' => 'Usuario Sin Permisos',
+            'user' => 'sinpermisos_'.\Illuminate\Support\Str::random(6),
+            'password' => bcrypt('password123'),
+            'estado' => 1,
+            'idcaja' => 1,
+            'idalmacen' => 1,
+        ]);
+
+        $response = $this->actingAs($unauthorizedUser)->get('/contracts/preliminary-orders');
+        $response->assertStatus(403);
     }
 }

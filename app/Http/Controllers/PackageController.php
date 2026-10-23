@@ -183,7 +183,6 @@ class PackageController extends Controller
     public function save(Request $request): JsonResponse
     {
         $id = (int) $request->input('id', 0);
-
         $rules = [
             'name' => 'required|string|max:150',
             'price_mode' => 'required|in:fixed,per_guest,tiered',

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\SimulatePublicOrderRequest;
+use App\Http\Requests\StorePublicOrderRequest;
 use App\Models\Business;
 use App\Models\Client;
 use App\Models\CocktailMenuCategory;
@@ -16,7 +18,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 
 class PublicOrderController extends Controller
@@ -45,11 +46,12 @@ class PublicOrderController extends Controller
         $business = Business::first();
         $signo = $business && ! empty($business->simbolo) ? $business->simbolo : 'S/';
 
-        // Consent text for Law 29733 (Personal Data Protection)
-        $consentText = config(
-            'shipibo.consent_text_law_29733',
-            'Autorizo expresamente a MYTEMS E.I.R.L. (Shipibo Coctelería) a utilizar mi nombre y teléfono exclusivamente para contactarme y coordinar la cotización de este evento, conforme a la Ley N° 29733 de Protección de Datos Personales. Mis datos no serán transferidos a terceros.'
-        );
+        // Versioned consent text for Law 29733 (Personal Data Protection)
+        $consentVersion = config('shipibo.consent_version', 'v1.0');
+        $consentDictionary = config('shipibo.consent_text_law_29733', []);
+        $consentText = is_array($consentDictionary)
+            ? ($consentDictionary[$consentVersion] ?? reset($consentDictionary))
+            : (string) $consentDictionary;
 
         return view('public.orders.index', [
             'packages' => $packages,
@@ -57,42 +59,27 @@ class PublicOrderController extends Controller
             'business' => $business,
             'signo' => $signo,
             'consentText' => $consentText,
+            'consentVersion' => $consentVersion,
         ]);
     }
 
     /**
      * Recalculate price dynamically on server without saving.
      */
-    public function simulate(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'package_id' => 'required|integer|exists:packages,id',
-            'guests' => 'required|integer|min:1',
-            'extras' => 'nullable|array',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => false,
-                'msg' => $validator->errors()->first(),
-            ], 422);
-        }
-
+    public function simulate(SimulatePublicOrderRequest $request): JsonResponse {
         try {
-            $packageId = (int) $request->input('package_id');
-            $guests = (int) $request->input('guests');
-            $extras = (array) $request->input('extras', []);
-
-            $result = $this->calculator->calculate($packageId, $guests, $extras);
-
+            $packageId  = (int) $request->input('package_id');
+            $guests     = (int) $request->input('guests');
+            $extras     = (array) $request->input('extras', []);
+            $result     = $this->calculator->calculate($packageId, $guests, $extras);
             return response()->json([
                 'status' => true,
-                'data' => $result,
+                'data'   => $result,
             ]);
         } catch (GuestOutOfRangeException|TierOverlapException $e) {
             return response()->json([
                 'status' => false,
-                'msg' => $e->getMessage(),
+                'msg'    => $e->getMessage(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
@@ -105,58 +92,9 @@ class PublicOrderController extends Controller
     /**
      * Store preliminary order (Law 29733 compliant, minimal PII, server-side pricing).
      */
-    public function store(Request $request): JsonResponse
+    public function store(StorePublicOrderRequest $request): JsonResponse
     {
-        // 1. Anti-abuse: Honeypot check
-        if (! empty($request->input('_hp_website'))) {
-            return response()->json([
-                'status' => false,
-                'msg' => 'Solicitud inválida detectada.',
-            ], 422);
-        }
-
-        // 2. Validation
-        $validator = Validator::make($request->all(), [
-            'nombre' => [
-                'required',
-                'string',
-                'min:2',
-                'max:100',
-                'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\'-]{2,100}$/u',
-            ],
-            'telefono' => [
-                'required',
-                'string',
-                'regex:/^(\+?51)?9\d{8}$/',
-            ],
-            'consent' => ['accepted'],
-            'package_id' => ['required', 'integer', 'exists:packages,id'],
-            'guests' => ['required', 'integer', 'min:1'],
-            'fecha_evento' => ['required', 'date', 'after_or_equal:today'],
-            'event_type' => ['nullable', 'string', 'max:100'],
-            'extras' => ['nullable', 'array'],
-        ], [
-            'nombre.required' => 'Por favor ingrese su nombre para identificarse.',
-            'nombre.min' => 'El nombre debe contener al menos 2 caracteres.',
-            'nombre.max' => 'El nombre no puede exceder los 100 caracteres.',
-            'nombre.regex' => 'El nombre contiene caracteres no permitidos.',
-            'telefono.required' => 'Debe ingresar un número de teléfono celular.',
-            'telefono.regex' => 'Ingrese un número celular peruano válido (9 dígitos, comenzando con 9).',
-            'consent.accepted' => 'Debe aceptar la cláusula de tratamiento de datos personales (Ley N° 29733) para continuar.',
-            'package_id.required' => 'Debe seleccionar un paquete de coctelería.',
-            'guests.required' => 'Especifique el número estimado de invitados.',
-            'fecha_evento.required' => 'Indique la fecha tentativa de su evento.',
-            'fecha_evento.after_or_equal' => 'La fecha del evento debe ser hoy o una fecha posterior.',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => false,
-                'msg' => $validator->errors()->first(),
-            ], 422);
-        }
-
-        // 3. Normalization
+        // 1. Normalization
         $rawPhone = preg_replace('/[^\d]/', '', (string) $request->input('telefono'));
         $normalizedPhone = str_starts_with($rawPhone, '51') && strlen($rawPhone) === 11
             ? substr($rawPhone, 2)
@@ -223,6 +161,8 @@ class PublicOrderController extends Controller
                 'tracking_code' => $trackingCode,
                 'guest_count' => $guests,
                 'event_type' => $eventType,
+                'consent_version' => config('shipibo.consent_version', 'v1.0'),
+                'consent_accepted_at' => now(),
             ]);
 
             // 7. Save Contract Items

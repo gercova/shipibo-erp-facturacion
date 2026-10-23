@@ -3,13 +3,16 @@
 return [
     /*
     |--------------------------------------------------------------------------
-    | Consent Text for Ley N° 29733 (Personal Data Protection)
+    | Versioned Consent Text for Ley N° 29733 (Personal Data Protection)
     |--------------------------------------------------------------------------
     */
-    'consent_text_law_29733' => env(
-        'SHIPIBO_CONSENT_TEXT_LAW_29733',
-        'Autorizo expresamente a MYTEMS E.I.R.L. (Shipibo Coctelería) a utilizar mi nombre y teléfono exclusivamente para contactarme y coordinar la cotización de este evento, conforme a la Ley N° 29733 de Protección de Datos Personales. Mis datos no serán transferidos a terceros.'
-    ),
+    'consent_version' => env('SHIPIBO_CONSENT_VERSION', 'v1.0'),
+    'consent_text_law_29733' => [
+        'v1.0' => env(
+            'SHIPIBO_CONSENT_TEXT_LAW_29733_V1',
+            'Autorizo expresamente a MYTEMS E.I.R.L. (Shipibo Coctelería) a utilizar mi nombre y teléfono exclusivamente para contactarme y coordinar la cotización de este evento, conforme a la Ley N° 29733 de Protección de Datos Personales. Mis datos no serán transferidos a terceros.'
+        ),
+    ],
 
     /*
     |--------------------------------------------------------------------------

@@ -353,4 +353,23 @@ class RevenueReconciliationTest extends TestCase
         $this->getJson(route('admin.reports.contracts.revenue_payment_data'))->assertStatus(200);
         $this->getJson(route('admin.reports.contracts.preliminaries_data'))->assertStatus(200);
     }
+
+    /**
+     * 7. Contract Reports endpoints require admin.reports.contracts permission.
+     */
+    public function test_contract_reports_endpoints_require_permission(): void
+    {
+        $unauthorizedUser = User::create([
+            'nombres' => 'Usuario No Autorizado',
+            'user' => 'noauth_'.\Illuminate\Support\Str::random(6),
+            'password' => bcrypt('password123'),
+            'estado' => 1,
+            'idcaja' => 1,
+            'idalmacen' => 1,
+        ]);
+
+        $this->actingAs($unauthorizedUser);
+        $this->get(route('admin.reports.contracts.index'))->assertStatus(403);
+        $this->getJson(route('admin.reports.contracts.status_data'))->assertStatus(403);
+    }
 }
