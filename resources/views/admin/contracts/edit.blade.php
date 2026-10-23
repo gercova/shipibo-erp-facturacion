@@ -1,5 +1,4 @@
 @extends('admin.layout')
-
 @section('styles')
     <style>
         .section-title {
@@ -45,7 +44,6 @@
         }
     </style>
 @endsection
-
 @section('content')
 <header class="page-header page-header-compact page-header-light border-bottom bg-white mb-4">
     <div class="container-xl px-4">
@@ -66,11 +64,9 @@
         </div>
     </div>
 </header>
-
 <div class="container-xl px-4 mt-2">
     <form id="form-contract" action="{{ route('admin.update_contract', $contract->id) }}" method="POST" enctype="multipart/form-data">
         @csrf
-
         <!-- 1. GENERAL INFORMATION & PARTIES -->
         <div class="card custom-card pro-card mb-4">
             <div class="card-body">
@@ -112,7 +108,6 @@
                             </select>
                         </div>
                     </div>
-
                     <!-- Provider Details -->
                     <div class="col-md-6">
                         <div class="p-3 bg-light rounded-3 border">
@@ -135,7 +130,6 @@
                 </div>
             </div>
         </div>
-
         <!-- 2. EVENT DETAILS -->
         <div class="card custom-card pro-card mb-4">
             <div class="card-body">
@@ -162,7 +156,6 @@
                 </div>
             </div>
         </div>
-
         <!-- 3. PRODUCTS & SERVICES TABLE -->
         <div class="card custom-card pro-card mb-4">
             <div class="card-body">
@@ -174,7 +167,6 @@
                         <i class="ri-edit-line me-1"></i> Agregar Ítem Libre / Personalizado
                     </button>
                 </div>
-
                 <!-- Product/Service Select2 Search Bar -->
                 <div class="p-3 bg-light rounded-3 border mb-3">
                     <label class="form-label small fw-bold text-primary mb-1">
@@ -205,7 +197,6 @@
                         <i class="ri-information-line"></i> Seleccione un producto o servicio para insertarlo en la lista. Puede editar la descripción, cantidad y precio de cada fila.
                     </div>
                 </div>
-
                 <div class="table-responsive mb-3">
                     <table class="table table-bordered table-sm align-middle" id="table-contract-items">
                         <thead class="table-light">
@@ -284,7 +275,6 @@
                         </tbody>
                     </table>
                 </div>
-
                 <!-- Totals & IGV Box -->
                 <div class="row justify-content-end">
                     <div class="col-md-5">
@@ -314,7 +304,6 @@
                 </div>
             </div>
         </div>
-
         <!-- 4. PAYMENT SCHEDULE & CREDIT FINANCING -->
         <div class="card custom-card pro-card mb-4">
             <div class="card-body">
@@ -324,7 +313,10 @@
                     </div>
                     <div class="d-flex flex-wrap gap-2 mt-2 mt-md-0">
                         <div class="btn-group btn-group-sm" role="group">
-                            <button type="button" class="btn btn-outline-primary btn-quick-split active" data-split="50_50">
+                            <button type="button" class="btn btn-outline-primary btn-quick-split active" data-split="20_80">
+                                20% Reserva + 80% Saldo
+                            </button>
+                            <button type="button" class="btn btn-outline-primary btn-quick-split" data-split="50_50">
                                 50% Inicial + 50% Saldo
                             </button>
                             <button type="button" class="btn btn-outline-primary btn-quick-split" data-split="50_25_25">
@@ -339,17 +331,15 @@
                         </button>
                     </div>
                 </div>
-
                 <div class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center justify-content-between">
                     <div class="small">
                         <i class="ri-information-line me-1"></i>
-                        <strong>Esquema Estándar para Eventos:</strong> Se establece un <strong>adelanto inicial del 50%</strong> para reserva de fecha y el saldo restante amortizado en cuotas con fecha límite hasta la ejecución del evento.
+                        <strong>Esquema Estándar para Eventos:</strong> Se establece un <strong>adelanto inicial del 20%</strong> para reserva de fecha y el saldo restante amortizado en cuotas con fecha límite hasta la ejecución del evento.
                     </div>
                     <div class="badge bg-white text-info border border-info fw-bold py-1 px-2">
                         Crédito Configurable
                     </div>
                 </div>
-
                 <div class="table-responsive mb-3">
                     <table class="table table-bordered table-sm align-middle" id="table-contract-installments">
                         <thead class="table-light">
@@ -376,7 +366,6 @@
                         </tfoot>
                     </table>
                 </div>
-
                 <!-- Validation and Guarantee info cards -->
                 <div class="row g-3 align-items-center">
                     <div class="col-md-7">
@@ -403,7 +392,69 @@
                 </div>
             </div>
         </div>
-
+        <!-- 4.1 POST-EVENT ADJUSTMENTS (B3) -->
+        <div class="card custom-card pro-card mb-4 border-warning-subtle shadow-sm">
+            <div class="card-body">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                    <div>
+                        <div class="section-title mb-0 border-0 p-0 text-warning-emphasis">
+                            <i class="ri-scales-3-line"></i> 4.1. Ajustes Posteriores al Evento (Roturas, Faltantes, Consumos)
+                        </div>
+                        <p class="text-muted small mb-0">Auditoría inmutable de cargos adicionales que ajustan el saldo de la última cuota pendiente, cumpliendo la Regla 6 del PDR.</p>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-warning fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalContractAdjustment">
+                            <i class="ri-add-circle-line me-1"></i> Registrar Ajuste Post-Evento
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm align-middle mb-0" id="table-adjustments-history">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="14%">Fecha y Hora</th>
+                                <th width="18%">Tipo de Ajuste</th>
+                                <th>Descripción / Detalle</th>
+                                <th width="18%">Cuota Imputada</th>
+                                <th width="15%" class="text-end">Monto ({{ $signo }})</th>
+                                <th width="14%">Registrado Por</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($contract->adjustments as $adj)
+                                <tr>
+                                    <td class="small">{{ $adj->created_at->format('d/m/Y H:i') }}</td>
+                                    <td>{!! $adj->type_badge !!}</td>
+                                    <td class="small">{{ $adj->description }}</td>
+                                    <td class="small text-muted">{{ $adj->installment ? 'Cuota #' . $adj->installment->numero_cuota . ' (' . $adj->installment->descripcion . ')' : 'Total General' }}</td>
+                                    <td class="text-end fw-bold {{ $adj->amount >= 0 ? 'text-danger' : 'text-success' }}">
+                                        {{ $adj->amount >= 0 ? '+' : '' }}{{ $signo }} {{ number_format($adj->amount, 2) }}
+                                    </td>
+                                    <td class="small text-muted">{{ $adj->user?->nombres ?: 'Sistema' }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-3 small">
+                                        <i class="ri-checkbox-circle-line text-success me-1"></i> Sin ajustes posteriores al evento registrados.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                        @if ($contract->adjustments->isNotEmpty())
+                            <tfoot class="table-light fw-bold">
+                                <tr>
+                                    <td colspan="4" class="text-end">Total Ajustes Post-Evento Acumulados:</td>
+                                    <td class="text-end text-danger fs-14">
+                                        {{ $signo }} {{ number_format($contract->adjustments->sum('amount'), 2) }}
+                                    </td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        @endif
+                    </table>
+                </div>
+            </div>
+        </div>
         <!-- 5. CONTRACT CLAUSES -->
         <div class="card custom-card pro-card mb-4">
             <div class="card-body">
@@ -417,7 +468,6 @@
                         </button>
                     </div>
                 </div>
-
                 <div id="clauses-container">
                     @foreach ($contract->clauses as $idx => $clause)
                         <div class="card mb-3 clause-card border" data-index="{{ $idx }}">
@@ -452,7 +502,6 @@
                 </div>
             </div>
         </div>
-
         <!-- 6. DIGITAL SIGNATURE -->
         <div class="card custom-card pro-card mb-4">
             <div class="card-body">
@@ -477,7 +526,6 @@
                             </button>
                         </div>
                     </div>
-
                     <div class="col-md-5">
                         <div class="p-3 bg-light rounded-3 border h-100">
                             <label class="form-label small fw-bold text-dark">
@@ -511,7 +559,6 @@
                 </div>
             </div>
         </div>
-
         <!-- 7. OBSERVATIONS & STATUS & SUBMIT -->
         <div class="card custom-card pro-card mb-4">
             <div class="card-body">
@@ -533,7 +580,6 @@
                         </select>
                     </div>
                 </div>
-
                 <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
                     <a href="{{ route('admin.contracts') }}" class="btn btn-secondary">
                         Cancelar
@@ -546,14 +592,51 @@
         </div>
     </form>
 </div>
-
 @include('admin.contracts.modals')
 @endsection
-
 @section('scripts')
 <script>
     window.productCatalog = @json($products ?? []);
     window.existingInstallments = @json($contract->installments ?? []);
+
+    $(function() {
+        $('#form-contract-adjustment').on('submit', function(e) {
+            e.preventDefault();
+            const form = $(this);
+            const submitBtn = $('#btn-submit-adjustment');
+
+            submitBtn.prop('disabled', true).html('<i class="ri-loader-4-line ri-spin me-1"></i> Aplicando...');
+
+            $.ajax({
+                url: form.attr('action'),
+                method: 'POST',
+                data: form.serialize(),
+                success: function(res) {
+                    if (res.status) {
+                        $('#modalContractAdjustment').modal('hide');
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Ajuste Registrado!',
+                            text: res.msg,
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire('Atención', res.msg, 'warning');
+                        submitBtn.prop('disabled', false).html('<i class="ri-check-line me-1"></i> Aplicar Ajuste Inmutable');
+                    }
+                },
+                error: function(xhr) {
+                    let msg = 'Ocurrió un error al registrar el ajuste.';
+                    if (xhr.responseJSON && xhr.responseJSON.msg) {
+                        msg = xhr.responseJSON.msg;
+                    }
+                    Swal.fire('Error', msg, 'error');
+                    submitBtn.prop('disabled', false).html('<i class="ri-check-line me-1"></i> Aplicar Ajuste Inmutable');
+                }
+            });
+        });
+    });
 </script>
 @include('admin.contracts.js-form')
 @endsection

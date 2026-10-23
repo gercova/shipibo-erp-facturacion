@@ -15,7 +15,6 @@
                     <h5 id="modal-contract-title" class="fw-bold mb-0 text-dark"></h5>
                     <span id="modal-status-badge" class="badge bg-success"></span>
                 </div>
-
                 <!-- Parties Info Grid -->
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
@@ -39,7 +38,6 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Event Details -->
                 <div class="card mb-4 border-dashed">
                     <div class="card-body p-3 bg-white">
@@ -59,7 +57,6 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Contracted Services / Products Table -->
                 <h6 class="fw-bold mb-2 text-dark"><i class="ri-shopping-bag-3-line me-1"></i> Servicios y Productos Contratados</h6>
                 <div class="table-responsive mb-3">
@@ -90,7 +87,6 @@
                         </tfoot>
                     </table>
                 </div>
-
                 <!-- Payment Schedule & Credit Installments Section -->
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <h6 class="fw-bold mb-0 text-dark">
@@ -102,7 +98,6 @@
                         </span>
                     </div>
                 </div>
-
                 <div class="table-responsive mb-3">
                     <table class="table table-bordered table-sm align-middle" id="modal-table-installments">
                         <thead class="table-light">
@@ -131,7 +126,6 @@
                         </tfoot>
                     </table>
                 </div>
-
                 <!-- 20% Guarantee info banner -->
                 <div class="p-2 rounded-3 border bg-warning-subtle border-warning text-dark small mb-3">
                     <div class="d-flex justify-content-between align-items-center">
@@ -144,12 +138,10 @@
                         Estipulado para cubrir eventuales roturas o pérdidas de cristalería, barras móviles y utensilios de coctelería. Liquidable al término del evento.
                     </span>
                 </div>
-
                 <!-- Clauses Section -->
                 <h6 class="fw-bold mb-2 text-dark"><i class="ri-article-line me-1"></i> Cláusulas del Contrato</h6>
                 <div id="modal-clauses-container" class="p-3 bg-light rounded-3 border mb-4" style="max-height: 250px; overflow-y: auto;">
                 </div>
-
                 <!-- Signature Section -->
                 <div id="modal-signature-wrapper" class="mb-2 text-center p-3 border rounded-3 bg-white">
                     <span class="text-muted small d-block mb-2 fw-bold">FIRMA DIGITAL DEL CLIENTE</span>
@@ -257,12 +249,10 @@
                             <span class="fw-bold fs-5 text-success" id="pay-installment-amount"></span>
                         </div>
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Fecha de Pago <span class="text-danger">*</span></label>
                         <input type="date" name="fecha_pago" id="pay-installment-date" class="form-control form-control-sm" value="{{ date('Y-m-d') }}" required />
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Método de Pago <span class="text-danger">*</span></label>
                         <select name="metodo_pago" id="pay-installment-method" class="form-select form-select-sm" required>
@@ -276,7 +266,6 @@
                             <option value="Otro">Otro</option>
                         </select>
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label small fw-bold">N° de Operación / Referencia</label>
                         <input type="text" name="referencia_pago" id="pay-installment-reference" class="form-control form-control-sm" placeholder="Ej: OP-9823412" />
@@ -291,6 +280,70 @@
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-success btn-sm" id="btn-submit-pay-installment">
                         <i class="ri-check-line me-1"></i> Confirmar Pago
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Post-Event Adjustment (B3 / Rule 6 Compliance) -->
+<div class="modal fade" id="modalContractAdjustment" tabindex="-1" aria-labelledby="modalContractAdjustmentLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title fw-bold d-flex align-items-center" id="modalContractAdjustmentLabel">
+                    <i class="ri-scales-3-line me-2"></i> Registrar Ajuste Post-Evento
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="form-contract-adjustment" method="POST" action="{{ isset($contract) ? route('admin.contracts.store_adjustment', $contract->id) : '#' }}">
+                @csrf
+                <div class="modal-body p-4">
+                    <div class="alert alert-warning-subtle border border-warning-subtle p-3 mb-3 small">
+                        <i class="ri-shield-check-line me-1 fw-bold text-warning-emphasis"></i>
+                        <strong>Auditoría Inmutable:</strong> Este registro quedará grabado en la historia del contrato y en el PDF oficial A4. No podrá ser eliminado ni modificado. La cuota pendiente se incrementará automáticamente cumpliendo la Regla 6 del PDR.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Tipo de Ajuste <span class="text-danger">*</span></label>
+                        <select name="type" class="form-select form-select-sm" required id="adj-type">
+                            <option value="breakage" selected>Rotura de Menaje / Cristalería</option>
+                            <option value="missing_item">Ítem Faltante / No Devuelto</option>
+                            <option value="additional_consumption">Consumo Adicional</option>
+                            <option value="discount">Descuento Comercial</option>
+                            <option value="manual">Ajuste Manual</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Monto del Ajuste (S/) <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">{{ $signo ?? 'S/' }}</span>
+                            <input type="number" step="0.01" min="0.01" name="amount" class="form-control fw-bold" placeholder="0.00" required id="adj-amount" />
+                        </div>
+                        <span class="form-text text-muted small" style="font-size: 0.75rem;">Para descuentos ingrese el valor positivo; el sistema aplicará la reducción.</span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Descripción / Detalle del Ajuste <span class="text-danger">*</span></label>
+                        <textarea name="description" class="form-control form-control-sm" rows="3" required placeholder="Ej: Rotura de 4 copas globo de cristal y 2 vasos highball durante el servicio." id="adj-desc"></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Cuota a Imputar</label>
+                        <select name="installment_id" class="form-select form-select-sm" id="adj-installment-id">
+                            <option value="">-- Última Cuota Pendiente (Por Defecto) --</option>
+                            @if (isset($contract) && $contract->installments)
+                                @foreach ($contract->installments->where('estado', \App\Models\ContractInstallment::STATUS_PENDING) as $inst)
+                                    <option value="{{ $inst->id }}">
+                                        Cuota #{{ $inst->numero_cuota }} - {{ $inst->descripcion }} (Saldo: {{ $signo ?? 'S/' }} {{ number_format($inst->monto, 2) }})
+                                    </option>
+                                @endforeach
+                            @endif
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning btn-sm fw-bold" id="btn-submit-adjustment">
+                        <i class="ri-check-line me-1"></i> Aplicar Ajuste Inmutable
                     </button>
                 </div>
             </form>

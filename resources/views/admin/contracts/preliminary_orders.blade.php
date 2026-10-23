@@ -179,6 +179,79 @@
         </div>
     </div>
 </div>
+
+{{-- Modal Formalize Contract (B3) --}}
+<div class="modal fade" id="modalFormalizeOrder" tabindex="-1" aria-labelledby="modalFormalizeOrderTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white py-3 px-4">
+                <h5 class="modal-title fw-bold" id="modalFormalizeOrderTitle">
+                    <i class="ri-shield-check-line me-2"></i> Formalizar a Contrato Oficial (CON)
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form id="formFormalizeOrder">
+                @csrf
+                <input type="hidden" name="contract_id" id="formalize-contract-id" />
+                <div class="modal-body p-4">
+                    <div class="alert alert-info border p-3 mb-3 small">
+                        <i class="ri-information-line me-1 fw-bold"></i>
+                        Para asignar validez legal y el correlativo oficial <strong>CON-{{ date('Y') }}-XXXX</strong>, se requiere completar los datos de identidad y domicilio fiscal/físico del cliente. Se generará el cronograma estándar (20% Reserva + 80% Saldo).
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Código Actual de la Solicitud</label>
+                        <input type="text" id="formalize-display-code" class="form-control form-control-sm bg-light" readonly />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Razón Social / Nombre Completo <span class="text-danger">*</span></label>
+                        <input type="text" name="nombres" id="formalize-client-name" class="form-control form-control-sm" required />
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold">Tipo Doc. <span class="text-danger">*</span></label>
+                            <select name="iddoc" id="formalize-doc-type" class="form-select form-select-sm" required>
+                                @foreach ($typeDocuments as $td)
+                                    <option value="{{ $td->id }}" data-codigo="{{ $td->codigo }}" {{ $td->codigo == '1' ? 'selected' : '' }}>
+                                        {{ $td->descripcion }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-7">
+                            <label class="form-label small fw-bold">N° Documento (DNI/RUC) <span class="text-danger">*</span></label>
+                            <input type="text" name="nro_documento" id="formalize-doc-number" class="form-control form-control-sm" required placeholder="DNI: 8 dígitos / RUC: 11 dígitos" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Dirección Física / Domicilio <span class="text-danger">*</span></label>
+                        <input type="text" name="direccion" id="formalize-address" class="form-control form-control-sm" required placeholder="Ej: Jr. San Martín 450, Tarapoto" />
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Teléfono / WhatsApp</label>
+                            <input type="text" name="telefono" id="formalize-phone" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Email (Opcional)</label>
+                            <input type="email" name="email" id="formalize-email" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-4">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fw-bold" id="btnSubmitFormalize">
+                        <i class="ri-check-line me-1"></i> Formalizar y Generar CON
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('scripts')
@@ -244,6 +317,60 @@
                 }
             }).fail(function() {
                 $('#modalOrderDetailBody').html('<div class="alert alert-danger">Error al cargar datos del pedido.</div>');
+            });
+        });
+
+        // Open Formalize Modal
+        $(document).on('click', '.btn-formalize-preliminary', function() {
+            const id = $(this).data('id');
+            const code = $(this).data('code');
+            const name = $(this).data('name');
+            const phone = $(this).data('phone');
+
+            $('#formalize-contract-id').val(id);
+            $('#formalize-display-code').val(code);
+            $('#formalize-client-name').val(name);
+            $('#formalize-phone').val(phone);
+            $('#formalize-doc-number').val('');
+            $('#formalize-address').val('');
+
+            $('#modalFormalizeOrder').modal('show');
+        });
+
+        // Submit Formalization
+        $('#formFormalizeOrder').on('submit', function(e) {
+            e.preventDefault();
+            const id = $('#formalize-contract-id').val();
+            const submitBtn = $('#btnSubmitFormalize');
+
+            submitBtn.prop('disabled', true).html('<i class="ri-loader-4-line ri-spin me-1"></i> Formalizando...');
+
+            $.ajax({
+                url: "/contracts/" + id + "/formalize",
+                method: 'POST',
+                data: $(this).serialize(),
+                success: function(res) {
+                    if (res.status) {
+                        $('#modalFormalizeOrder').modal('hide');
+                        tableOrders.ajax.reload(null, false);
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Contrato Formalizado!',
+                            text: res.msg,
+                        });
+                    } else {
+                        Swal.fire('Atención', res.msg, 'warning');
+                    }
+                    submitBtn.prop('disabled', false).html('<i class="ri-check-line me-1"></i> Formalizar y Generar CON');
+                },
+                error: function(xhr) {
+                    let msg = 'Ocurrió un error al formalizar el contrato.';
+                    if (xhr.responseJSON && xhr.responseJSON.msg) {
+                        msg = xhr.responseJSON.msg;
+                    }
+                    Swal.fire('Error', msg, 'error');
+                    submitBtn.prop('disabled', false).html('<i class="ri-check-line me-1"></i> Formalizar y Generar CON');
+                }
             });
         });
 

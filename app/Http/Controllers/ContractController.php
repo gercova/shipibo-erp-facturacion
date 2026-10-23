@@ -10,9 +10,10 @@ use App\Models\ContractInstallment;
 use App\Models\ContractItem;
 use App\Models\IdentityDocumentType;
 use App\Models\Product;
-use App\Models\Warehouse;
+use App\Services\Contracts\ContractAdjustmentService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -63,24 +64,24 @@ class ContractController extends Controller
             $cols = $request->input('columns');
 
             // Contract number filter
-            if (!empty($cols[0]['search']['value'])) {
-                $contracts->where('contracts.contract_number', 'LIKE', '%' . $cols[0]['search']['value'] . '%');
+            if (! empty($cols[0]['search']['value'])) {
+                $contracts->where('contracts.contract_number', 'LIKE', '%'.$cols[0]['search']['value'].'%');
             }
             // Event date filter
-            if (!empty($cols[1]['search']['value'])) {
+            if (! empty($cols[1]['search']['value'])) {
                 $contracts->whereDate('contracts.fecha_evento', $cols[1]['search']['value']);
             }
             // Document filter
-            if (!empty($cols[2]['search']['value'])) {
-                $contracts->where('clients.nro_documento', 'LIKE', '%' . $cols[2]['search']['value'] . '%');
+            if (! empty($cols[2]['search']['value'])) {
+                $contracts->where('clients.nro_documento', 'LIKE', '%'.$cols[2]['search']['value'].'%');
             }
             // Client filter
-            if (!empty($cols[3]['search']['value'])) {
-                $contracts->where('clients.nombres', 'LIKE', '%' . $cols[3]['search']['value'] . '%');
+            if (! empty($cols[3]['search']['value'])) {
+                $contracts->where('clients.nombres', 'LIKE', '%'.$cols[3]['search']['value'].'%');
             }
             // Total filter
-            if (!empty($cols[4]['search']['value'])) {
-                $contracts->where('contracts.total', 'LIKE', '%' . $cols[4]['search']['value'] . '%');
+            if (! empty($cols[4]['search']['value'])) {
+                $contracts->where('contracts.total', 'LIKE', '%'.$cols[4]['search']['value'].'%');
             }
             // Status filter
             if (isset($cols[5]['search']['value']) && $cols[5]['search']['value'] !== '') {
@@ -91,53 +92,56 @@ class ContractController extends Controller
         return datatables()
             ->of($contracts)
             ->editColumn('fecha_evento', function ($row) {
-                $time = $row->hora_evento ? ' ' . Carbon::parse($row->hora_evento)->format('H:i') : '';
-                return Carbon::parse($row->fecha_evento)->format('d/m/Y') . $time;
+                $time = $row->hora_evento ? ' '.Carbon::parse($row->hora_evento)->format('H:i') : '';
+
+                return Carbon::parse($row->fecha_evento)->format('d/m/Y').$time;
             })
             ->editColumn('fecha_emision', function ($row) {
                 return Carbon::parse($row->fecha_emision)->format('d/m/Y');
             })
             ->editColumn('total', function ($row) {
-                return $this->signo_pais() . ' ' . number_format($row->total, 2);
+                return $this->signo_pais().' '.number_format($row->total, 2);
             })
             ->addColumn('estado_badge', function ($row) {
                 $html = '<div class="d-flex flex-column align-items-center gap-1">';
-                $html .= '<div>' . $row->status_badge . '</div>';
+                $html .= '<div>'.$row->status_badge.'</div>';
                 $financialBadge = $row->financial_alert_badge;
                 if ($financialBadge) {
-                    $html .= '<div>' . $financialBadge . '</div>';
+                    $html .= '<div>'.$financialBadge.'</div>';
                 }
                 $html .= '</div>';
+
                 return $html;
             })
             ->addColumn('acciones', function ($row) {
                 $id = $row->id;
                 $btn = '<div class="dropdown">
-                            <a href="#" role="button" id="dropdownContracts' . $id . '" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <a href="#" role="button" id="dropdownContracts'.$id.'" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2 18H9V20H2V18ZM2 11H11V13H2V11ZM2 4H22V6H2V4ZM20.674 13.0251L21.8301 12.634L22.8301 14.366L21.914 15.1711C21.9704 15.4386 22 15.7158 22 16C22 16.2842 21.9704 16.5614 21.914 16.8289L22.8301 17.634L21.8301 19.366L20.674 18.9749C20.2635 19.3441 19.7763 19.6295 19.2391 19.8044L19 21H17L16.7609 19.8044C16.2237 19.6295 15.7365 19.3441 15.326 18.9749L14.1699 19.366L13.1699 17.634L14.086 16.8289C14.0296 16.5614 14 16.2842 14 16C14 15.7158 14.0296 15.4386 14.086 15.1711L13.1699 14.366L14.1699 12.634L15.326 13.0251C15.7365 12.6559 16.2237 12.3705 16.7609 12.1956L17 11H19L19.2391 12.1956C19.7763 12.3705 20.2635 12.6559 20.674 13.0251ZM18 18C19.1046 18 20 17.1046 20 16C20 14.8954 19.1046 14 18 14C16.8954 14 16 14.8954 16 16C16 17.1046 16.8954 18 18 18Z"></path></svg>
                             </a>
-                            <div class="dropdown-menu" aria-labelledby="dropdownContracts' . $id . '">
-                                <a class="dropdown-item btn-detail-contract" data-id="' . $id . '" href="javascript:void(0);">
+                            <div class="dropdown-menu" aria-labelledby="dropdownContracts'.$id.'">
+                                <a class="dropdown-item btn-detail-contract" data-id="'.$id.'" href="javascript:void(0);">
                                     <i class="ri-eye-line me-2"></i> Ver detalle
                                 </a>
-                                <a class="dropdown-item btn-print-contract" data-id="' . $id . '" href="javascript:void(0);">
+                                <a class="dropdown-item btn-print-contract" data-id="'.$id.'" href="javascript:void(0);">
                                     <i class="ri-printer-line me-2"></i> Imprimir A4
                                 </a>
-                                <a class="dropdown-item" href="' . route('admin.contracts.download', $id) . '" target="_blank">
+                                <a class="dropdown-item" href="'.route('admin.contracts.download', $id).'" target="_blank">
                                     <i class="ri-download-2-line me-2"></i> Descargar PDF
                                 </a>
-                                <a class="dropdown-item" href="' . route('admin.edit_contract', $id) . '">
+                                <a class="dropdown-item" href="'.route('admin.edit_contract', $id).'">
                                     <i class="ri-edit-line me-2"></i> Editar
                                 </a>
-                                <a class="dropdown-item text-primary" href="' . route('admin.event_checklists.generate', $id) . '">
+                                <a class="dropdown-item text-primary" href="'.route('admin.event_checklists.generate', $id).'">
                                     <i class="ri-checkbox-multiple-line me-2"></i> Checklist del Evento
                                 </a>
                                 <div class="dropdown-divider"></div>
-                                <a class="dropdown-item text-danger btn-delete-contract" data-id="' . $id . '" href="javascript:void(0);">
+                                <a class="dropdown-item text-danger btn-delete-contract" data-id="'.$id.'" href="javascript:void(0);">
                                     <i class="ri-delete-bin-line me-2"></i> Eliminar
                                 </a>
                             </div>
                         </div>';
+
                 return $btn;
             })
             ->rawColumns(['estado_badge', 'acciones'])
@@ -146,46 +150,46 @@ class ContractController extends Controller
 
     public function create()
     {
-        $business       = Business::first();
-        $clients        = Client::orderBy('nombres', 'asc')->get();
-        $products       = Product::with(['unit'])->orderBy('descripcion', 'asc')->get();
-        $typeDocuments  = IdentityDocumentType::where('estado', 1)->orderBy('descripcion')->get();
-        $nextNumber     = $this->generateNextContractNumber();
+        $business = Business::first();
+        $clients = Client::orderBy('nombres', 'asc')->get();
+        $products = Product::with(['unit'])->orderBy('descripcion', 'asc')->get();
+        $typeDocuments = IdentityDocumentType::where('estado', 1)->orderBy('descripcion')->get();
+        $nextNumber = $this->generateNextContractNumber();
         $defaultClauses = $this->getDefaultClauseTemplates($business);
 
         return view('admin.contracts.create', [
-            'business'          => $business,
-            'clients'           => $clients,
-            'products'          => $products,
-            'typeDocuments'     => $typeDocuments,
-            'nextNumber'        => $nextNumber,
-            'defaultClauses'    => $defaultClauses,
-            'signo'             => $this->signo_pais(),
-            'moneda'            => $this->moneda_pais(),
+            'business' => $business,
+            'clients' => $clients,
+            'products' => $products,
+            'typeDocuments' => $typeDocuments,
+            'nextNumber' => $nextNumber,
+            'defaultClauses' => $defaultClauses,
+            'signo' => $this->signo_pais(),
+            'moneda' => $this->moneda_pais(),
         ]);
     }
 
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), Contract::validationRules(), [
-            'idcliente.required'        => 'Debe seleccionar un cliente contratante.',
-            'contract_number.required'  => 'El número de contrato es obligatorio.',
-            'contract_number.unique'    => 'Este número de contrato ya ha sido registrado.',
-            'fecha_evento.required'     => 'La fecha del evento es obligatoria.',
-            'fecha_emision.required'    => 'La fecha de emisión del contrato es obligatoria.',
-            'items.required'            => 'Debe agregar al menos un servicio o producto al contrato.',
-            'items.min'                 => 'Debe agregar al menos un servicio o producto al contrato.',
-            'items.*.descripcion.required'      => 'La descripción del servicio/producto es obligatoria.',
-            'items.*.cantidad.required'         => 'La cantidad debe ser mayor a 0.',
-            'items.*.precio_unitario.required'  => 'El precio unitario es obligatorio.',
+            'idcliente.required' => 'Debe seleccionar un cliente contratante.',
+            'contract_number.required' => 'El número de contrato es obligatorio.',
+            'contract_number.unique' => 'Este número de contrato ya ha sido registrado.',
+            'fecha_evento.required' => 'La fecha del evento es obligatoria.',
+            'fecha_emision.required' => 'La fecha de emisión del contrato es obligatoria.',
+            'items.required' => 'Debe agregar al menos un servicio o producto al contrato.',
+            'items.min' => 'Debe agregar al menos un servicio o producto al contrato.',
+            'items.*.descripcion.required' => 'La descripción del servicio/producto es obligatoria.',
+            'items.*.cantidad.required' => 'La cantidad debe ser mayor a 0.',
+            'items.*.precio_unitario.required' => 'El precio unitario es obligatorio.',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'status'    => false,
-                'msg'       => $validator->errors()->first(),
-                'errors'    => $validator->errors(),
-                'type'      => 'warning'
+                'status' => false,
+                'msg' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+                'type' => 'warning',
             ], 422);
         }
 
@@ -198,25 +202,25 @@ class ContractController extends Controller
             $itemsData = $request->input('items', []);
             $subtotal = 0;
             foreach ($itemsData as $item) {
-                $qty        = floatval($item['cantidad'] ?? 1);
-                $price      = floatval($item['precio_unitario'] ?? 0);
-                $subtotal   += ($qty * $price);
+                $qty = floatval($item['cantidad'] ?? 1);
+                $price = floatval($item['precio_unitario'] ?? 0);
+                $subtotal += ($qty * $price);
             }
 
             // In typical Peruvian services, check if IGV applies or total equals subtotal
-            $applyIgv   = $request->boolean('apply_igv', false);
-            $igv        = $applyIgv ? round($subtotal * 0.18, 2) : 0.00;
-            $total      = $subtotal + $igv;
+            $applyIgv = $request->boolean('apply_igv', false);
+            $igv = $applyIgv ? round($subtotal * 0.18, 2) : 0.00;
+            $total = $subtotal + $igv;
 
             // Validate installments if provided
             $installmentsData = $request->input('installments', []);
-            if (!empty($installmentsData)) {
-                $sumInstallments = round((float) collect($installmentsData)->sum(fn($i) => floatval($i['monto'] ?? 0)), 2);
+            if (! empty($installmentsData)) {
+                $sumInstallments = round((float) collect($installmentsData)->sum(fn ($i) => floatval($i['monto'] ?? 0)), 2);
                 if (abs($sumInstallments - $total) > 0.05) {
                     return response()->json([
-                        'status'    => false,
-                        'msg'       => 'La suma de las cuotas (' . number_format($sumInstallments, 2) . ') debe coincidir con el total del contrato (' . number_format($total, 2) . ').',
-                        'type'      => 'warning'
+                        'status' => false,
+                        'msg' => 'La suma de las cuotas ('.number_format($sumInstallments, 2).') debe coincidir con el total del contrato ('.number_format($total, 2).').',
+                        'type' => 'warning',
                     ], 422);
                 }
             }
@@ -230,33 +234,33 @@ class ContractController extends Controller
                     'client'
                 );
             } elseif ($request->hasFile('signature_client_file')) {
-                $file       = $request->file('signature_client_file');
-                $filename   = 'sig_client_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $file = $request->file('signature_client_file');
+                $filename = 'sig_client_'.time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
                 $file->move(public_path('files/contracts/signatures'), $filename);
-                $clientSignatureFile = 'files/contracts/signatures/' . $filename;
+                $clientSignatureFile = 'files/contracts/signatures/'.$filename;
             }
 
             $contract = Contract::create([
-                'contract_number'           => $request->input('contract_number'),
-                'title'                     => $request->input('title', 'CONTRATO DE PRESTACIÓN DE SERVICIOS'),
-                'idcliente'                 => $request->input('idcliente'),
-                'provider_name'             => $request->input('provider_name') ?: ($business?->razon_social ?: $business?->nombre_comercial),
-                'provider_document'         => $request->input('provider_document') ?: $business?->ruc,
-                'provider_representative'   => $request->input('provider_representative') ?: $business?->representante,
-                'fecha_evento'              => $request->input('fecha_evento'),
-                'hora_evento'               => $request->input('hora_evento'),
-                'lugar_evento'              => $request->input('lugar_evento'),
-                'fecha_emision'             => $request->input('fecha_emision'),
-                'fecha_vencimiento'         => $request->input('fecha_vencimiento'),
-                'subtotal'                  => $subtotal,
-                'igv'                       => $igv,
-                'total'                     => $total,
-                'moneda'                    => $request->input('moneda', $this->moneda_pais()),
-                'observaciones'             => $request->input('observaciones'),
-                'firma_cliente'             => $clientSignatureFile,
-                'estado'                    => $request->input('estado', Contract::STATUS_SIGNED),
-                'idusuario'                 => Auth::id(),
-                'idalmacen'                 => $this->currentWarehouseId(),
+                'contract_number' => $request->input('contract_number'),
+                'title' => $request->input('title', 'CONTRATO DE PRESTACIÓN DE SERVICIOS'),
+                'idcliente' => $request->input('idcliente'),
+                'provider_name' => $request->input('provider_name') ?: ($business?->razon_social ?: $business?->nombre_comercial),
+                'provider_document' => $request->input('provider_document') ?: $business?->ruc,
+                'provider_representative' => $request->input('provider_representative') ?: $business?->representante,
+                'fecha_evento' => $request->input('fecha_evento'),
+                'hora_evento' => $request->input('hora_evento'),
+                'lugar_evento' => $request->input('lugar_evento'),
+                'fecha_emision' => $request->input('fecha_emision'),
+                'fecha_vencimiento' => $request->input('fecha_vencimiento'),
+                'subtotal' => $subtotal,
+                'igv' => $igv,
+                'total' => $total,
+                'moneda' => $request->input('moneda', $this->moneda_pais()),
+                'observaciones' => $request->input('observaciones'),
+                'firma_cliente' => $clientSignatureFile,
+                'estado' => $request->input('estado', Contract::STATUS_SIGNED),
+                'idusuario' => Auth::id(),
+                'idalmacen' => $this->currentWarehouseId(),
             ]);
 
             // Save Items
@@ -266,12 +270,12 @@ class ContractController extends Controller
                 $lineSubtotal = round($qty * $price, 2);
 
                 ContractItem::create([
-                    'contract_id'       => $contract->id,
-                    'idproducto'        => !empty($item['idproducto']) ? $item['idproducto'] : null,
-                    'descripcion'       => $item['descripcion'],
-                    'cantidad'          => $qty,
-                    'precio_unitario'   => $price,
-                    'subtotal'          => $lineSubtotal,
+                    'contract_id' => $contract->id,
+                    'idproducto' => ! empty($item['idproducto']) ? $item['idproducto'] : null,
+                    'descripcion' => $item['descripcion'],
+                    'cantidad' => $qty,
+                    'precio_unitario' => $price,
+                    'subtotal' => $lineSubtotal,
                 ]);
             }
 
@@ -279,12 +283,12 @@ class ContractController extends Controller
             $clausesData = $request->input('clauses', []);
             $order = 1;
             foreach ($clausesData as $clause) {
-                if (!empty($clause['titulo']) && !empty($clause['contenido'])) {
+                if (! empty($clause['titulo']) && ! empty($clause['contenido'])) {
                     ContractClause::create([
-                        'contract_id'   => $contract->id,
-                        'titulo'        => trim($clause['titulo']),
-                        'contenido'     => trim($clause['contenido']),
-                        'orden'         => $order++,
+                        'contract_id' => $contract->id,
+                        'titulo' => trim($clause['titulo']),
+                        'contenido' => trim($clause['contenido']),
+                        'orden' => $order++,
                     ]);
                 }
             }
@@ -298,72 +302,73 @@ class ContractController extends Controller
             $pdfFileName = $this->generatePdfFile($contract->id);
 
             return response()->json([
-                'status'    => true,
-                'msg'       => 'Contrato registrado y firmado exitosamente.',
-                'id'        => $contract->id,
-                'pdf'       => $pdfFileName,
+                'status' => true,
+                'msg' => 'Contrato registrado y firmado exitosamente.',
+                'id' => $contract->id,
+                'pdf' => $pdfFileName,
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();
+
             return response()->json([
-                'status'    => false,
-                'msg'       => 'Ocurrió un error al guardar el contrato: ' . $e->getMessage(),
-                'type'      => 'error'
+                'status' => false,
+                'msg' => 'Ocurrió un error al guardar el contrato: '.$e->getMessage(),
+                'type' => 'error',
             ], 500);
         }
     }
 
     public function edit($id)
     {
-        $contract = Contract::with(['client', 'items.product', 'clauses', 'installments'])->find($id);
-        abort_if(!$contract, 404);
+        $contract = Contract::with(['client', 'items.product', 'clauses', 'installments', 'adjustments.installment', 'adjustments.user'])->find($id);
+        abort_if(! $contract, 404);
 
-        $business       = Business::first();
-        $clients        = Client::orderBy('nombres', 'asc')->get();
-        $products       = Product::with(['unit'])->orderBy('descripcion', 'asc')->get();
-        $typeDocuments  = IdentityDocumentType::where('estado', 1)->orderBy('descripcion')->get();
+        $business = Business::first();
+        $clients = Client::orderBy('nombres', 'asc')->get();
+        $products = Product::with(['unit'])->orderBy('descripcion', 'asc')->get();
+        $typeDocuments = IdentityDocumentType::where('estado', 1)->orderBy('descripcion')->get();
 
         return view('admin.contracts.edit', [
-            'contract'      => $contract,
-            'business'      => $business,
-            'clients'       => $clients,
-            'products'      => $products,
+            'contract' => $contract,
+            'business' => $business,
+            'clients' => $clients,
+            'products' => $products,
             'typeDocuments' => $typeDocuments,
-            'signo'         => $this->signo_pais(),
-            'moneda'        => $this->moneda_pais(),
+            'signo' => $this->signo_pais(),
+            'moneda' => $this->moneda_pais(),
         ]);
     }
 
     public function update(Request $request, $id)
     {
         $contract = Contract::find($id);
-        if (!$contract) {
+        if (! $contract) {
             return response()->json([
-                'status'    => false,
-                'msg'       => 'El contrato no existe.',
-                'type'      => 'warning'
+                'status' => false,
+                'msg' => 'El contrato no existe.',
+                'type' => 'warning',
             ], 404);
         }
 
         $validator = Validator::make($request->all(), Contract::validationRules($id), [
-            'idcliente.required'        => 'Debe seleccionar un cliente contratante.',
-            'contract_number.required'  => 'El número de contrato es obligatorio.',
-            'contract_number.unique'    => 'Este número de contrato ya ha sido registrado.',
-            'fecha_evento.required'     => 'La fecha del evento es obligatoria.',
-            'fecha_emision.required'    => 'La fecha de emisión del contrato es obligatoria.',
-            'items.required'            => 'Debe agregar al menos un servicio o producto al contrato.',
-            'items.min'                 => 'Debe agregar al menos un servicio o producto al contrato.',
-            'items.*.descripcion.required'      => 'La descripción del servicio/producto es obligatoria.',
-            'items.*.cantidad.required'         => 'La cantidad debe ser mayor a 0.',
-            'items.*.precio_unitario.required'  => 'El precio unitario es obligatorio.',
+            'idcliente.required' => 'Debe seleccionar un cliente contratante.',
+            'contract_number.required' => 'El número de contrato es obligatorio.',
+            'contract_number.unique' => 'Este número de contrato ya ha sido registrado.',
+            'fecha_evento.required' => 'La fecha del evento es obligatoria.',
+            'fecha_emision.required' => 'La fecha de emisión del contrato es obligatoria.',
+            'items.required' => 'Debe agregar al menos un servicio o producto al contrato.',
+            'items.min' => 'Debe agregar al menos un servicio o producto al contrato.',
+            'items.*.descripcion.required' => 'La descripción del servicio/producto es obligatoria.',
+            'items.*.cantidad.required' => 'La cantidad debe ser mayor a 0.',
+            'items.*.precio_unitario.required' => 'El precio unitario es obligatorio.',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'status'    => false,
-                'msg'       => $validator->errors()->first(),
-                'errors'    => $validator->errors(),
-                'type'      => 'warning'
+                'status' => false,
+                'msg' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+                'type' => 'warning',
             ], 422);
         }
 
@@ -374,26 +379,26 @@ class ContractController extends Controller
 
             // Calculate item subtotal and totals
             $itemsData = $request->input('items', []);
-            $subtotal  = 0;
+            $subtotal = 0;
             foreach ($itemsData as $item) {
-                $qty        = floatval($item['cantidad'] ?? 1);
-                $price      = floatval($item['precio_unitario'] ?? 0);
-                $subtotal   += ($qty * $price);
+                $qty = floatval($item['cantidad'] ?? 1);
+                $price = floatval($item['precio_unitario'] ?? 0);
+                $subtotal += ($qty * $price);
             }
 
             $applyIgv = $request->boolean('apply_igv', false);
-            $igv      = $applyIgv ? round($subtotal * 0.18, 2) : 0.00;
-            $total    = $subtotal + $igv;
+            $igv = $applyIgv ? round($subtotal * 0.18, 2) : 0.00;
+            $total = $subtotal + $igv;
 
             // Validate installments if provided
             $installmentsData = $request->input('installments', []);
-            if (!empty($installmentsData)) {
-                $sumInstallments = round((float) collect($installmentsData)->sum(fn($i) => floatval($i['monto'] ?? 0)), 2);
+            if (! empty($installmentsData)) {
+                $sumInstallments = round((float) collect($installmentsData)->sum(fn ($i) => floatval($i['monto'] ?? 0)), 2);
                 if (abs($sumInstallments - $total) > 0.05) {
                     return response()->json([
-                        'status'    => false,
-                        'msg'       => 'La suma de las cuotas (' . number_format($sumInstallments, 2) . ') debe coincidir con el total del contrato (' . number_format($total, 2) . ').',
-                        'type'      => 'warning'
+                        'status' => false,
+                        'msg' => 'La suma de las cuotas ('.number_format($sumInstallments, 2).') debe coincidir con el total del contrato ('.number_format($total, 2).').',
+                        'type' => 'warning',
                     ], 422);
                 }
             }
@@ -415,9 +420,9 @@ class ContractController extends Controller
                     File::delete(public_path($clientSignatureFile));
                 }
                 $file = $request->file('signature_client_file');
-                $filename = 'sig_client_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $filename = 'sig_client_'.time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
                 $file->move(public_path('files/contracts/signatures'), $filename);
-                $clientSignatureFile = 'files/contracts/signatures/' . $filename;
+                $clientSignatureFile = 'files/contracts/signatures/'.$filename;
             }
 
             $contract->update([
@@ -450,7 +455,7 @@ class ContractController extends Controller
 
                 ContractItem::create([
                     'contract_id' => $contract->id,
-                    'idproducto' => !empty($item['idproducto']) ? $item['idproducto'] : null,
+                    'idproducto' => ! empty($item['idproducto']) ? $item['idproducto'] : null,
                     'descripcion' => $item['descripcion'],
                     'cantidad' => $qty,
                     'precio_unitario' => $price,
@@ -463,7 +468,7 @@ class ContractController extends Controller
             $clausesData = $request->input('clauses', []);
             $order = 1;
             foreach ($clausesData as $clause) {
-                if (!empty($clause['titulo']) && !empty($clause['contenido'])) {
+                if (! empty($clause['titulo']) && ! empty($clause['contenido'])) {
                     ContractClause::create([
                         'contract_id' => $contract->id,
                         'titulo' => trim($clause['titulo']),
@@ -489,10 +494,11 @@ class ContractController extends Controller
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();
+
             return response()->json([
                 'status' => false,
-                'msg' => 'Ocurrió un error al actualizar el contrato: ' . $e->getMessage(),
-                'type' => 'error'
+                'msg' => 'Ocurrió un error al actualizar el contrato: '.$e->getMessage(),
+                'type' => 'error',
             ], 500);
         }
     }
@@ -502,11 +508,11 @@ class ContractController extends Controller
         $id = $request->input('id');
         $contract = Contract::find($id);
 
-        if (!$contract) {
+        if (! $contract) {
             return response()->json([
                 'status' => false,
                 'msg' => 'El contrato no existe o ya fue eliminado.',
-                'type' => 'warning'
+                'type' => 'warning',
             ], 404);
         }
 
@@ -520,7 +526,7 @@ class ContractController extends Controller
             }
 
             // Delete generated PDF if exists
-            $pdfPath = public_path('files/contracts/' . $contract->contract_number . '.pdf');
+            $pdfPath = public_path('files/contracts/'.$contract->contract_number.'.pdf');
             if (File::exists($pdfPath)) {
                 File::delete($pdfPath);
             }
@@ -534,8 +540,8 @@ class ContractController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'status' => false,
-                'msg' => 'Error al eliminar el contrato: ' . $e->getMessage(),
-                'type' => 'error'
+                'msg' => 'Error al eliminar el contrato: '.$e->getMessage(),
+                'type' => 'error',
             ], 500);
         }
     }
@@ -545,11 +551,11 @@ class ContractController extends Controller
         $id = (int) $request->input('id');
         $contract = Contract::with(['client.tipoDocumento', 'items', 'clauses', 'installments'])->find($id);
 
-        if (!$contract) {
+        if (! $contract) {
             return response()->json([
                 'status' => false,
                 'msg' => 'El contrato no existe.',
-                'type' => 'warning'
+                'type' => 'warning',
             ], 404);
         }
 
@@ -592,11 +598,11 @@ class ContractController extends Controller
     public function pay_installment(Request $request, $id)
     {
         $installment = ContractInstallment::with('contract')->find($id);
-        if (!$installment) {
+        if (! $installment) {
             return response()->json([
                 'status' => false,
                 'msg' => 'La cuota no existe o ya fue eliminada.',
-                'type' => 'warning'
+                'type' => 'warning',
             ], 404);
         }
 
@@ -613,7 +619,7 @@ class ContractController extends Controller
             return response()->json([
                 'status' => false,
                 'msg' => $validator->errors()->first(),
-                'type' => 'warning'
+                'type' => 'warning',
             ], 422);
         }
 
@@ -630,9 +636,134 @@ class ContractController extends Controller
 
         return response()->json([
             'status' => true,
-            'msg' => 'Pago de la cuota #' . $installment->numero_cuota . ' registrado exitosamente.',
+            'msg' => 'Pago de la cuota #'.$installment->numero_cuota.' registrado exitosamente.',
             'installment' => $installment,
         ]);
+    }
+
+    /**
+     * Formalize a preliminary or draft contract into an active contract (CON-YYYY-XXXX).
+     */
+    public function formalize(Request $request, $id, ContractAdjustmentService $adjustmentService): JsonResponse
+    {
+        $contract = Contract::with(['client', 'installments'])->find($id);
+        if (! $contract) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'El contrato especificado no existe.',
+                'type' => 'warning',
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'iddoc' => 'required|exists:identity_document_types,id',
+            'nro_documento' => 'required|string',
+            'direccion' => 'required|string|min:3',
+            'nombres' => 'nullable|string|max:150',
+            'installments' => 'nullable|array',
+        ], [
+            'iddoc.required' => 'Debe seleccionar el tipo de documento del cliente.',
+            'nro_documento.required' => 'El número de documento (DNI/RUC) es obligatorio para formalizar.',
+            'direccion.required' => 'La dirección física del cliente es obligatoria para formalizar.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'msg' => $validator->errors()->first(),
+                'type' => 'warning',
+            ], 422);
+        }
+
+        try {
+            $formalized = $adjustmentService->formalizeContract(
+                $contract,
+                $request->only(['iddoc', 'nro_documento', 'direccion', 'nombres', 'telefono', 'email']),
+                $request->input('installments')
+            );
+
+            // Re-generate official PDF
+            $this->generatePdfFile($formalized->id);
+
+            return response()->json([
+                'status' => true,
+                'msg' => "¡Contrato formalizado exitosamente bajo el código oficial {$formalized->contract_number}!",
+                'contract_number' => $formalized->contract_number,
+                'contract_id' => $formalized->id,
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            $errors = $ve->validator->errors()->all();
+
+            return response()->json([
+                'status' => false,
+                'msg' => implode(' ', $errors),
+                'type' => 'warning',
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Error al formalizar contrato: '.$e->getMessage(),
+                'type' => 'danger',
+            ], 422);
+        }
+    }
+
+    /**
+     * Register a post-event adjustment (breakage, missing item, additional consumption, discount, manual).
+     */
+    public function store_adjustment(Request $request, $id, ContractAdjustmentService $adjustmentService): JsonResponse
+    {
+        $contract = Contract::with(['installments', 'adjustments'])->find($id);
+        if (! $contract) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'El contrato especificado no existe.',
+                'type' => 'warning',
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'amount' => 'required|numeric|not_in:0',
+            'type' => 'required|in:breakage,missing_item,additional_consumption,discount,manual',
+            'description' => 'required|string|max:500',
+            'installment_id' => 'nullable|exists:contract_installments,id',
+            'product_id' => 'nullable|exists:products,id',
+            'checklist_item_id' => 'nullable|integer',
+        ], [
+            'amount.required' => 'Debe ingresar el monto del ajuste.',
+            'amount.not_in' => 'El monto del ajuste no puede ser cero.',
+            'type.required' => 'Debe seleccionar el tipo de ajuste.',
+            'type.in' => 'El tipo de ajuste seleccionado no es válido.',
+            'description.required' => 'Debe ingresar la descripción o detalle del ajuste.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'msg' => $validator->errors()->first(),
+                'type' => 'warning',
+            ], 422);
+        }
+
+        try {
+            $adjustment = $adjustmentService->applyAdjustment($contract, $request->all(), Auth::user());
+
+            // Re-generate official PDF with adjustments section
+            $this->generatePdfFile($contract->id);
+
+            return response()->json([
+                'status' => true,
+                'msg' => 'Ajuste posterior al evento registrado exitosamente.',
+                'adjustment' => $adjustment,
+                'contract_total' => $contract->fresh()->total,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'msg' => $e->getMessage(),
+                'type' => 'danger',
+            ], 422);
+        }
     }
 
     public function print_a4(Request $request)
@@ -640,11 +771,11 @@ class ContractController extends Controller
         $id = (int) $request->input('id');
         $contract = Contract::find($id);
 
-        if (!$contract) {
+        if (! $contract) {
             return response()->json([
                 'status' => false,
                 'msg' => 'El contrato no existe.',
-                'type' => 'warning'
+                'type' => 'warning',
             ], 404);
         }
 
@@ -659,20 +790,20 @@ class ContractController extends Controller
     public function download_pdf($id)
     {
         $contract = Contract::find($id);
-        abort_if(!$contract, 404);
+        abort_if(! $contract, 404);
 
         $fileName = $this->generatePdfFile($contract->id);
-        $filePath = public_path('files/contracts/' . $fileName);
+        $filePath = public_path('files/contracts/'.$fileName);
 
-        return response()->download($filePath, $contract->contract_number . '.pdf');
+        return response()->download($filePath, $contract->contract_number.'.pdf');
     }
 
     protected function generatePdfFile($contractId): string
     {
-        $contract = Contract::with(['client.tipoDocumento', 'items.product', 'clauses', 'installments'])->findOrFail($contractId);
+        $contract = Contract::with(['client.tipoDocumento', 'items.product', 'clauses', 'installments', 'adjustments.installment'])->findOrFail($contractId);
         $business = Business::first();
 
-        $formatter = new NumeroALetras();
+        $formatter = new NumeroALetras;
         $numeroLetras = $formatter->toWords($contract->total, 2);
 
         \Carbon\Carbon::setLocale('es');
@@ -688,6 +819,7 @@ class ContractController extends Controller
             'items' => $contract->items,
             'clauses' => $contract->clauses,
             'installments' => $contract->installments,
+            'adjustments' => $contract->adjustments,
             'business' => $business,
             'logo' => $business?->logo,
             'numero_letras' => $numeroLetras,
@@ -698,13 +830,13 @@ class ContractController extends Controller
         ];
 
         $folder = public_path('files/contracts');
-        if (!File::isDirectory($folder)) {
+        if (! File::isDirectory($folder)) {
             File::makeDirectory($folder, 0777, true, true);
         }
 
-        $fileName = $contract->contract_number . '.pdf';
+        $fileName = $contract->contract_number.'.pdf';
         $pdf = Pdf::loadView('admin.contracts.pdf', $data)->setPaper('A4', 'portrait');
-        $pdf->save($folder . '/' . $fileName);
+        $pdf->save($folder.'/'.$fileName);
 
         return $fileName;
     }
@@ -712,7 +844,7 @@ class ContractController extends Controller
     protected function saveSignatureFromBase64(string $dataUrl, string $contractNumber, string $prefix = 'client'): string
     {
         $folder = public_path('files/contracts/signatures');
-        if (!File::isDirectory($folder)) {
+        if (! File::isDirectory($folder)) {
             File::makeDirectory($folder, 0777, true, true);
         }
 
@@ -726,12 +858,12 @@ class ContractController extends Controller
 
         $decodedData = base64_decode($dataUrl);
         $safeNumber = preg_replace('/[^A-Za-z0-9_\-]/', '_', $contractNumber);
-        $filename = 'sig_' . $prefix . '_' . $safeNumber . '_' . time() . '.' . $type;
-        $filePath = $folder . '/' . $filename;
+        $filename = 'sig_'.$prefix.'_'.$safeNumber.'_'.time().'.'.$type;
+        $filePath = $folder.'/'.$filename;
 
         file_put_contents($filePath, $decodedData);
 
-        return 'files/contracts/signatures/' . $filename;
+        return 'files/contracts/signatures/'.$filename;
     }
 
     protected function generateNextContractNumber(): string
@@ -747,7 +879,7 @@ class ContractController extends Controller
             $correlativo = 1;
         }
 
-        return sprintf("CON-%s-%04d", $year, $correlativo);
+        return sprintf('CON-%s-%04d', $year, $correlativo);
     }
 
     protected function syncInstallments(Contract $contract, array $installmentsData, float $total, string $fechaEmision, ?string $fechaEvento): void
@@ -774,7 +906,7 @@ class ContractController extends Controller
                     'monto' => $monto2,
                     'fecha_vencimiento' => $dueDate2,
                     'estado' => 0,
-                ]
+                ],
             ];
         }
 
@@ -800,16 +932,18 @@ class ContractController extends Controller
 
         foreach ($installmentsData as $inst) {
             $monto = round(floatval($inst['monto'] ?? 0), 2);
-            if ($monto <= 0) continue;
+            if ($monto <= 0) {
+                continue;
+            }
 
-            $fechaVenc = !empty($inst['fecha_vencimiento']) ? $inst['fecha_vencimiento'] : $fechaEmision;
-            $desc = !empty($inst['descripcion']) ? trim($inst['descripcion']) : ($order === 1 ? 'Adelanto Inicial (50%)' : "Cuota {$order}");
-            $porcentaje = !empty($inst['porcentaje']) ? floatval($inst['porcentaje']) : ($total > 0 ? round(($monto / $total) * 100, 2) : 0);
+            $fechaVenc = ! empty($inst['fecha_vencimiento']) ? $inst['fecha_vencimiento'] : $fechaEmision;
+            $desc = ! empty($inst['descripcion']) ? trim($inst['descripcion']) : ($order === 1 ? 'Adelanto Inicial (50%)' : "Cuota {$order}");
+            $porcentaje = ! empty($inst['porcentaje']) ? floatval($inst['porcentaje']) : ($total > 0 ? round(($monto / $total) * 100, 2) : 0);
 
             // Restore paid status if matched by installment number
             $isPreviouslyPaid = isset($existingPaidMap[$order]);
             $estado = $isPreviouslyPaid ? $existingPaidMap[$order]['estado'] : intval($inst['estado'] ?? 0);
-            $fechaPago = $isPreviouslyPaid ? $existingPaidMap[$order]['fecha_pago'] : (!empty($inst['fecha_pago']) ? $inst['fecha_pago'] : null);
+            $fechaPago = $isPreviouslyPaid ? $existingPaidMap[$order]['fecha_pago'] : (! empty($inst['fecha_pago']) ? $inst['fecha_pago'] : null);
             $metodoPago = $isPreviouslyPaid ? $existingPaidMap[$order]['metodo_pago'] : ($inst['metodo_pago'] ?? null);
             $referenciaPago = $isPreviouslyPaid ? $existingPaidMap[$order]['referencia_pago'] : ($inst['referencia_pago'] ?? null);
             $observaciones = $isPreviouslyPaid ? $existingPaidMap[$order]['observaciones'] : ($inst['observaciones'] ?? null);
@@ -846,12 +980,12 @@ class ContractController extends Controller
         return [
             [
                 'titulo' => 'TERCERO: PROTOCOLO DE INICIO DEL SERVICIO',
-                'contenido' => 'Se empezará a brindar el servicio una vez culminada la ceremonia protocolar o, en su defecto, previa coordinación directa con el cliente.'
+                'contenido' => 'Se empezará a brindar el servicio una vez culminada la ceremonia protocolar o, en su defecto, previa coordinación directa con el cliente.',
             ],
             [
                 'titulo' => 'CUARTO: POLÍTICA DE CANCELACIÓN Y REPROGRAMACIÓN',
-                'contenido' => 'La cancelación del evento no implica la devolución del dinero; puede canjear el servicio para otra fecha que esté a disposición del proveedor.'
-            ]
+                'contenido' => 'La cancelación del evento no implica la devolución del dinero; puede canjear el servicio para otra fecha que esté a disposición del proveedor.',
+            ],
         ];
     }
 }

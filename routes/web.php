@@ -250,6 +250,8 @@ Route::controller(ContractController::class)->prefix('contracts')->middleware(['
     Route::post('/print-a4', 'print_a4')->name('admin.print_contract_a4');
     Route::get('/{id}/download', 'download_pdf')->name('admin.contracts.download');
     Route::post('/installments/{id}/pay', 'pay_installment')->name('admin.contracts.pay_installment');
+    Route::post('/{id}/formalize', 'formalize')->name('admin.contracts.formalize');
+    Route::post('/{id}/adjustments', 'store_adjustment')->name('admin.contracts.store_adjustment');
 });
 
 Route::controller(PreliminaryOrderController::class)->prefix('contracts/preliminary-orders')->middleware(['auth', 'can:admin.contracts'])->group(function () {

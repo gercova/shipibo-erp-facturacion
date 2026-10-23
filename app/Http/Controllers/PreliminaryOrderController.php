@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Contract;
+use App\Models\IdentityDocumentType;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,9 +27,12 @@ class PreliminaryOrderController extends Controller
             'monto_total' => (float) Contract::where('status', Contract::STATUS_STR_PRELIMINAR)->sum('total'),
         ];
 
+        $typeDocuments = IdentityDocumentType::where('estado', 1)->orderBy('descripcion')->get();
+
         return view('admin.contracts.preliminary_orders', [
             'kpis' => $kpis,
             'signo' => $this->signo_pais(),
+            'typeDocuments' => $typeDocuments,
         ]);
     }
 
@@ -120,17 +124,25 @@ class PreliminaryOrderController extends Controller
                         </a>';
             })
             ->addColumn('acciones', function (Contract $contract) {
-                $btnConvert = $contract->status === Contract::STATUS_STR_PRELIMINAR
-                    ? '<button type="button" class="btn btn-sm btn-success btn-convert-draft" data-id="'.$contract->id.'" data-code="'.e($contract->contract_number).'" title="Convertir a Borrador CON">
-                            <i class="ri-arrow-right-up-line me-1"></i> Convertir a Borrador
-                       </button>'
-                    : '<span class="text-muted small"><i class="ri-check-line me-1"></i>Ya formalizado</span>';
+                $btnActions = '';
+                if ($contract->status === Contract::STATUS_STR_PRELIMINAR || $contract->status === Contract::STATUS_STR_BORRADOR) {
+                    $btnActions .= '<button type="button" class="btn btn-sm btn-primary btn-formalize-preliminary" data-id="'.$contract->id.'" data-code="'.e($contract->contract_number).'" data-name="'.e($contract->client?->nombres).'" data-phone="'.e($contract->client?->telefono).'" title="Formalizar Contrato (Vigente)">
+                            <i class="ri-shield-check-line me-1"></i> Formalizar
+                        </button>';
+                    if ($contract->status === Contract::STATUS_STR_PRELIMINAR) {
+                        $btnActions .= '<button type="button" class="btn btn-sm btn-outline-success btn-convert-draft" data-id="'.$contract->id.'" data-code="'.e($contract->contract_number).'" title="Convertir a Borrador CON">
+                                <i class="ri-draft-line me-1"></i> A Borrador
+                            </button>';
+                    }
+                } else {
+                    $btnActions .= '<span class="text-success small fw-semibold"><i class="ri-checkbox-circle-line me-1"></i>Vigente</span>';
+                }
 
                 return '<div class="d-flex gap-1 justify-content-center align-items-center">
                             <button type="button" class="btn btn-sm btn-outline-info btn-view-detail" data-id="'.$contract->id.'" title="Ver Detalle de Ítems">
                                 <i class="ri-eye-line"></i>
                             </button>
-                            '.$btnConvert.'
+                            '.$btnActions.'
                         </div>';
             })
             ->rawColumns(['codigo_preliminar', 'cliente_info', 'fecha_evento', 'guest_count', 'total', 'status_badge', 'whatsapp_action', 'acciones'])

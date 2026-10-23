@@ -182,11 +182,30 @@ $(document).ready(function() {
         return $('input[name="fecha_emision"]').val() || '{{ date("Y-m-d") }}';
     }
 
-    function buildDefaultSchedule(total, splitMode = '50_50') {
+    function buildDefaultSchedule(total, splitMode = '20_80') {
         let issueDate = getIssueDate();
         let eventDate = getEventDate();
 
-        if (splitMode === '50_50') {
+        if (splitMode === '20_80') {
+            let m1 = Math.round(total * 0.20 * 100) / 100;
+            let m2 = Math.round((total - m1) * 100) / 100;
+            return [
+                {
+                    numero_cuota: 1,
+                    descripcion: 'Adelanto Inicial / Reserva (20%)',
+                    porcentaje: 20,
+                    fecha_vencimiento: issueDate,
+                    monto: m1.toFixed(2),
+                },
+                {
+                    numero_cuota: 2,
+                    descripcion: 'Saldo Final (80%)',
+                    porcentaje: 80,
+                    fecha_vencimiento: eventDate,
+                    monto: m2.toFixed(2),
+                }
+            ];
+        } else if (splitMode === '50_50') {
             let m1 = Math.round(total * 0.50 * 100) / 100;
             let m2 = Math.round((total - m1) * 100) / 100;
             return [

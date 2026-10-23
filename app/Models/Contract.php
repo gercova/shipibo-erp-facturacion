@@ -16,6 +16,7 @@ class Contract extends Model
 
     protected $fillable = [
         'contract_number',
+        'preliminary_number',
         'title',
         'idcliente',
         'provider_name',
@@ -60,6 +61,8 @@ class Contract extends Model
     const STATUS_DRAFT = 0;
 
     const STATUS_SIGNED = 1;
+
+    const STATUS_ACTIVE = 1;
 
     const STATUS_COMPLETED = 2;
 
@@ -109,6 +112,11 @@ class Contract extends Model
     public function installments(): HasMany
     {
         return $this->hasMany(ContractInstallment::class, 'contract_id')->orderBy('numero_cuota', 'asc');
+    }
+
+    public function adjustments(): HasMany
+    {
+        return $this->hasMany(ContractAdjustment::class, 'contract_id')->orderBy('created_at', 'asc');
     }
 
     public function checklists(): HasMany
@@ -235,5 +243,22 @@ class Contract extends Model
         } while (self::where('tracking_code', $code)->exists());
 
         return $code;
+    }
+
+    public static function generateFormalContractNumber(?int $year = null): string
+    {
+        $year = $year ?: (int) date('Y');
+        $latest = self::where('contract_number', 'LIKE', "CON-{$year}-%")
+            ->orderBy('id', 'desc')
+            ->lockForUpdate()
+            ->first();
+
+        if ($latest && preg_match('/CON-\d{4}-(\d+)/', (string) $latest->contract_number, $matches)) {
+            $correlativo = intval($matches[1]) + 1;
+        } else {
+            $correlativo = 1;
+        }
+
+        return sprintf('CON-%s-%04d', $year, $correlativo);
     }
 }

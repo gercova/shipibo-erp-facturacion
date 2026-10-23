@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>{{ $contract->contract_number }} - {{ $contract->title }}</title>
-
     <style>
         @page {
             margin-top: 12mm;
@@ -240,25 +239,25 @@
 
     <!-- 3. Legal Introduction Paragraph -->
     @php
-        $providerRep = $contract->provider_representative ?: ($business?->representante ?: 'Harry Salazar García');
-        $providerDoc = $contract->provider_document ?: '46784193';
-        $providerCompany = $contract->provider_name ?: ($business?->razon_social ?: 'Hardys Perú Investments S.A.C.');
-        $providerRuc = $business?->ruc ?: '20612900591';
-        $providerAddress = $business?->direccion ?: 'Jr. Las Heliconias Mz J Lote 13 - Tarapoto';
+        $providerRep        = $contract->provider_representative ?: ($business?->representante ?: 'Harry Salazar García');
+        $providerDoc        = $contract->provider_document ?: '46784193';
+        $providerCompany    = $contract->provider_name ?: ($business?->razon_social ?: 'Hardys Perú Investments S.A.C.');
+        $providerRuc        = $business?->ruc ?: '20612900591';
+        $providerAddress    = $business?->direccion ?: 'Jr. Las Heliconias Mz J Lote 13 - Tarapoto';
         
-        $clientName = $client?->nombres ?: 'Suiza Village S.A.C.';
-        $clientDocType = $client?->tipoDocumento?->descripcion ?: 'RUC';
-        $clientDocNum = $client?->nro_documento ?: '20610984666';
+        $clientName     = $client?->nombres ?: 'Suiza Village S.A.C.';
+        $clientDocType  = $client?->tipoDocumento?->descripcion ?: 'RUC';
+        $clientDocNum   = $client?->nro_documento ?: '20610984666';
 
         // Event and Emission dates in Spanish words
         \Carbon\Carbon::setLocale('es');
         $eventDateCarbon = $contract->fecha_evento ? \Carbon\Carbon::parse($contract->fecha_evento) : null;
         $issueDateCarbon = $contract->fecha_emision ? \Carbon\Carbon::parse($contract->fecha_emision) : null;
 
-        $eventDateFull = $fecha_evento_texto ?: ($eventDateCarbon ? $eventDateCarbon->isoFormat('dddd D [de] MMMM [del] YYYY') : 'viernes 14 de agosto del 2026');
-        $issueDateFull = $fecha_emision_texto ?: ($issueDateCarbon ? $issueDateCarbon->isoFormat('DD [de] MMMM [del] YYYY') : '04 de agosto del 2026');
+        $eventDateFull  = $fecha_evento_texto ?: ($eventDateCarbon ? $eventDateCarbon->isoFormat('dddd D [de] MMMM [del] YYYY') : 'viernes 14 de agosto del 2026');
+        $issueDateFull  = $fecha_emision_texto ?: ($issueDateCarbon ? $issueDateCarbon->isoFormat('DD [de] MMMM [del] YYYY') : '04 de agosto del 2026');
 
-        $lugarEvento = $contract->lugar_evento ?: 'Resort residencial Suiza Village';
+        $lugarEvento    = $contract->lugar_evento ?: 'Resort residencial Suiza Village';
 
         // Filter operative clauses excluding legacy header duplicates
         $operativeClauses = $clauses->filter(function($c) {
@@ -273,7 +272,6 @@
     <p>
         Conste por el presente documento un contrato de servicios de paquete de Open Bar, que celebran de una parte la persona natural <strong>{{ $providerRep }}</strong>, identificado con <strong>DNI n.° {{ $providerDoc }}</strong>, representante de <strong>{{ $providerCompany }}</strong> con <strong>RUC n.° {{ $providerRuc }}</strong>, con domicilio en {{ $providerAddress }}, que para el presente caso se llamará <strong>PROVEEDOR</strong>, y por la otra parte {{ strlen($clientDocNum) == 11 ? 'la empresa' : 'la persona' }} <strong>{{ $clientName }}</strong>, con <strong>{{ $clientDocType }} n.° {{ $clientDocNum }}</strong>, representada por el Sr. <strong>{{ $client?->representante ?: $clientName }}</strong>, identificado con <strong>DNI n.° {{ $client?->dni_representante ?: $clientDocNum }}</strong>, que para el presente caso se llamará el <strong>CLIENTE</strong>, previo diálogo de convenio con sus intereses, formalizan el negocio bajo los siguientes términos:
     </p>
-
     <!-- 4. PRIMERO: Servicios y Productos Contratados -->
     <p>
         <strong>PRIMERO:</strong> EL PROVEEDOR se compromete a brindar el siguiente servicio, para el día {{ $eventDateFull }} - Lugar: {{ $lugarEvento }}.
@@ -333,10 +331,10 @@
             @endforeach
         @else
             @php
-                $half = $contract->total / 2;
-                $halfFormatted = (int)$half == $half ? number_format($half, 0) : number_format($half, 2);
-                $dEmision = $contract->fecha_emision ? \Carbon\Carbon::parse($contract->fecha_emision)->format('d/m/Y') : '';
-                $dEvento = $contract->fecha_evento ? \Carbon\Carbon::parse($contract->fecha_evento)->format('d/m/Y') : '';
+                $half           = $contract->total / 2;
+                $halfFormatted  = (int)$half == $half ? number_format($half, 0) : number_format($half, 2);
+                $dEmision       = $contract->fecha_emision ? \Carbon\Carbon::parse($contract->fecha_emision)->format('d/m/Y') : '';
+                $dEvento        = $contract->fecha_evento ? \Carbon\Carbon::parse($contract->fecha_evento)->format('d/m/Y') : '';
             @endphp
             <div class="payment-item">Primer pago: {{ $signo }} {{ $halfFormatted }} - {{ $dEmision }}, a la firma del contrato</div>
             <div class="payment-item">Segundo pago: {{ $signo }} {{ $halfFormatted }} – {{ $dEvento }}, antes de iniciar el servicio.</div>
@@ -346,6 +344,39 @@
     <p style="margin-top: 6px;">
         La cual será abonada a la Cuenta Corriente Soles en Interbank: <strong>750-3006347253</strong> - CCI: <strong>003-750-003006347253-71</strong> - <strong>Hardys Perú Investments S.A.C.</strong> o al número del representante <strong>980 034 767</strong> (Yape o Plin).
     </p>
+
+    <!-- Post-Event Adjustments Section (B3 / Rule 6 Compliance) -->
+    @if (isset($adjustments) && $adjustments->isNotEmpty())
+        <div style="margin-top: 10px; margin-bottom: 12px; border: 1px solid #d4af37; background-color: #fdfbf7; padding: 7px 10px; border-radius: 4px;">
+            <div style="font-weight: bold; color: #b45309; font-size: 8.8pt; margin-bottom: 4px; text-transform: uppercase;">
+                Ajustes Posteriores al Evento (Roturas / Faltantes / Consumos Adicionales):
+            </div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 7.8pt;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #cbd5e1; color: #475569; text-align: left;">
+                        <th style="padding: 2px 4px; width: 14%;">Fecha</th>
+                        <th style="padding: 2px 4px; width: 22%;">Tipo de Ajuste</th>
+                        <th style="padding: 2px 4px;">Descripción</th>
+                        <th style="padding: 2px 4px; width: 16%;">Cuota Imputada</th>
+                        <th style="padding: 2px 4px; text-align: right; width: 16%;">Monto Ajustado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($adjustments as $adj)
+                        <tr style="border-bottom: 1px dashed #e2e8f0;">
+                            <td style="padding: 3px 4px;">{{ $adj->created_at->format('d/m/Y') }}</td>
+                            <td style="padding: 3px 4px; font-weight: bold;">{{ $adj->type_label }}</td>
+                            <td style="padding: 3px 4px;">{{ $adj->description }}</td>
+                            <td style="padding: 3px 4px;">{{ $adj->installment ? 'Cuota #' . $adj->installment->numero_cuota : 'Total Contrato' }}</td>
+                            <td style="padding: 3px 4px; text-align: right; font-weight: bold; color: {{ $adj->amount >= 0 ? '#b45309' : '#15803d' }};">
+                                {{ $adj->amount >= 0 ? '+' : '' }}{{ $signo }} {{ number_format($adj->amount, 2) }}
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
 
     <!-- 6. TERCERO, CUARTO y Demás Cláusulas Legales -->
     @if ($operativeClauses->isNotEmpty())
