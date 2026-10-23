@@ -6,7 +6,10 @@ use App\Models\ArchingCash;
 use App\Models\Billing;
 use App\Models\Business;
 use App\Models\Cash;
+use App\Models\CashMovement;
+use App\Models\ContractInstallment;
 use App\Models\DetailPayment;
+use App\Models\Expense;
 use App\Models\SaleNote;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -48,7 +51,7 @@ class ArchingCashController extends Controller
                 $query->whereDate('arching_cashes.fecha_inicio', $request->input('filter_date'));
             })
             ->when($request->filled('filter_responsible'), function ($query) use ($request) {
-                $query->where('users.nombres', 'like', '%' . trim((string) $request->input('filter_responsible')) . '%');
+                $query->where('users.nombres', 'like', '%'.trim((string) $request->input('filter_responsible')).'%');
             })
             ->when($request->filled('filter_cash'), function ($query) use ($request) {
                 $query->where('arching_cashes.idcaja', (int) $request->input('filter_cash'));
@@ -64,23 +67,23 @@ class ArchingCashController extends Controller
                 return optional($archingCash->fecha_inicio)->format('d/m/Y') ?: '-';
             })
             ->addColumn('responsable', function ($archingCash) {
-                return '<div class="fw-semibold">' . e(mb_strtoupper((string) $archingCash->usuario)) . '</div>';
+                return '<div class="fw-semibold">'.e(mb_strtoupper((string) $archingCash->usuario)).'</div>';
             })
             ->addColumn('caja_info', function ($archingCash) {
                 return '<div class="ac-cash-cell">'
-                    . '<div class="ac-cash-name">' . e((string) $archingCash->caja) . '</div>'
-                    . '<small class="ac-cash-warehouse">' . e((string) (Auth::user()->activeWarehouse?->descripcion ?: 'Almacen activo')) . '</small>'
-                    . '</div>';
+                    .'<div class="ac-cash-name">'.e((string) $archingCash->caja).'</div>'
+                    .'<small class="ac-cash-warehouse">'.e((string) (Auth::user()->activeWarehouse?->descripcion ?: 'Almacen activo')).'</small>'
+                    .'</div>';
             })
             ->addColumn('monto_apertura', function ($archingCash) {
-                return '<span class="fw-semibold">' . e($this->signo_pais() . ' ' . number_format((float) $archingCash->monto_inicial, 2, '.', '')) . '</span>';
+                return '<span class="fw-semibold">'.e($this->signo_pais().' '.number_format((float) $archingCash->monto_inicial, 2, '.', '')).'</span>';
             })
             ->addColumn('monto_cierre', function ($archingCash) {
                 if ((int) $archingCash->estado === 1) {
                     return '<span class="text-muted">Pendiente</span>';
                 }
 
-                return '<span class="fw-semibold">' . e($this->signo_pais() . ' ' . number_format((float) $archingCash->monto_final, 2, '.', '')) . '</span>';
+                return '<span class="fw-semibold">'.e($this->signo_pais().' '.number_format((float) $archingCash->monto_final, 2, '.', '')).'</span>';
             })
             ->addColumn('estado_badge', function ($archingCash) {
                 if ((int) $archingCash->estado === 1) {
@@ -91,30 +94,30 @@ class ArchingCashController extends Controller
             })
             ->addColumn('acciones', function ($archingCash) {
                 $closeAction = (int) $archingCash->estado === 1
-                    ? '<a class="dropdown-item btn-close-arching" data-id="' . (int) $archingCash->id . '" href="javascript:void(0);">
+                    ? '<a class="dropdown-item btn-close-arching" data-id="'.(int) $archingCash->id.'" href="javascript:void(0);">
                             <i class="ri-lock-line me-2 text-danger"></i>
                             <span>Cerrar caja</span>
                        </a>'
                     : '';
 
                 return '<div class="dropdown">
-                            <a href="#" role="button" id="dropdownArching' . (int) $archingCash->id . '" data-bs-toggle="dropdown" aria-expanded="false">
+                            <a href="#" role="button" id="dropdownArching'.(int) $archingCash->id.'" data-bs-toggle="dropdown" aria-expanded="false">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2 18H9V20H2V18ZM2 11H11V13H2V11ZM2 4H22V6H2V4ZM20.674 13.0251L21.8301 12.634L22.8301 14.366L21.914 15.1711C21.9704 15.4386 22 15.7158 22 16C22 16.2842 21.9704 16.5614 21.914 16.8289L22.8301 17.634L21.8301 19.366L20.674 18.9749C20.2635 19.3441 19.7763 19.6295 19.2391 19.8044L19 21H17L16.7609 19.8044C16.2237 19.6295 15.7365 19.3441 15.326 18.9749L14.1699 19.366L13.1699 17.634L14.086 16.8289C14.0296 16.5614 14 16.2842 14 16C14 15.7158 14.0296 15.4386 14.086 15.1711L13.1699 14.366L14.1699 12.634L15.326 13.0251C15.7365 12.6559 16.2237 12.3705 16.7609 12.1956L17 11H19L19.2391 12.1956C19.7763 12.3705 20.2635 12.6559 20.674 13.0251ZM18 18C19.1046 18 20 17.1046 20 16C20 14.8954 19.1046 14 18 14C16.8954 14 16 14.8954 16 16C16 17.1046 16.8954 18 18 18Z"></path></svg>
                             </a>
-                            <div class="dropdown-menu" aria-labelledby="dropdownArching' . (int) $archingCash->id . '">
-                                <a class="dropdown-item btn-view-summary" data-id="' . (int) $archingCash->id . '" href="javascript:void(0);">
+                            <div class="dropdown-menu" aria-labelledby="dropdownArching'.(int) $archingCash->id.'">
+                                <a class="dropdown-item btn-view-summary" data-id="'.(int) $archingCash->id.'" href="javascript:void(0);">
                                     <i class="ri-eye-line me-2"></i>
                                     <span>Resumen</span>
                                 </a>
-                                <a class="dropdown-item btn-view-movements" data-id="' . (int) $archingCash->id . '" href="javascript:void(0);">
+                                <a class="dropdown-item btn-view-movements" data-id="'.(int) $archingCash->id.'" href="javascript:void(0);">
                                     <i class="ri-file-list-3-line me-2"></i>
                                     <span>Movimientos</span>
                                 </a>
-                                <a class="dropdown-item btn-print-summary" data-id="' . (int) $archingCash->id . '" href="javascript:void(0);">
+                                <a class="dropdown-item btn-print-summary" data-id="'.(int) $archingCash->id.'" href="javascript:void(0);">
                                     <i class="ri-printer-line me-2"></i>
                                     <span>Ticket</span>
                                 </a>'
-                                . $closeAction .
+                                .$closeAction.
                             '</div>
                         </div>';
             })
@@ -124,11 +127,11 @@ class ArchingCashController extends Controller
 
     public function save(Request $request)
     {
-        if (! $request->ajax()) {
+        if (! $request->ajax() && ! $request->expectsJson()) {
             return response()->json([
                 'status' => false,
                 'msg' => 'Intente de nuevo',
-                'type' => 'warning'
+                'type' => 'warning',
             ]);
         }
 
@@ -137,7 +140,7 @@ class ArchingCashController extends Controller
             return response()->json([
                 'status' => false,
                 'msg' => 'Debe ingresar un monto inicial valido.',
-                'type' => 'warning'
+                'type' => 'warning',
             ], 422);
         }
 
@@ -148,22 +151,29 @@ class ArchingCashController extends Controller
             return response()->json([
                 'status' => false,
                 'msg' => 'El usuario no tiene una caja asignada.',
-                'type' => 'warning'
+                'type' => 'warning',
             ], 422);
         }
 
-        $openArching = ArchingCash::query()
+        $openArchingForCash = ArchingCash::query()
             ->where('idcaja', $cash->id)
-            ->where('idusuario', $user->id)
             ->where('estado', 1)
-            ->latest('id')
             ->first();
 
-        if ($openArching) {
+        $openArchingForUser = ArchingCash::query()
+            ->where('idusuario', $user->id)
+            ->where('estado', 1)
+            ->first();
+
+        if ($openArchingForCash || $openArchingForUser) {
+            $msg = $openArchingForUser
+                ? 'El usuario ya cuenta con una sesión de arqueo abierta. Primero debe cerrarla antes de aperturar una nueva.'
+                : 'La caja seleccionada ya cuenta con una sesión de arqueo abierta por otro usuario.';
+
             return response()->json([
                 'status' => false,
-                'msg' => 'Primero debe cerrar la caja actual.',
-                'type' => 'warning'
+                'msg' => $msg,
+                'type' => 'warning',
             ], 422);
         }
 
@@ -182,7 +192,7 @@ class ArchingCashController extends Controller
         return response()->json([
             'status' => true,
             'msg' => 'Caja aperturada correctamente.',
-            'type' => 'success'
+            'type' => 'success',
         ]);
     }
 
@@ -192,7 +202,7 @@ class ArchingCashController extends Controller
             return response()->json([
                 'status' => false,
                 'msg' => 'Intente de nuevo',
-                'type' => 'warning'
+                'type' => 'warning',
             ]);
         }
 
@@ -201,7 +211,7 @@ class ArchingCashController extends Controller
             return response()->json([
                 'status' => false,
                 'msg' => 'El arqueo no existe.',
-                'type' => 'warning'
+                'type' => 'warning',
             ], 404);
         }
 
@@ -228,7 +238,7 @@ class ArchingCashController extends Controller
             return response()->json([
                 'status' => false,
                 'msg' => 'Intente de nuevo',
-                'type' => 'warning'
+                'type' => 'warning',
             ]);
         }
 
@@ -237,7 +247,7 @@ class ArchingCashController extends Controller
             return response()->json([
                 'status' => false,
                 'msg' => 'El arqueo no existe.',
-                'type' => 'warning'
+                'type' => 'warning',
             ], 404);
         }
 
@@ -247,21 +257,21 @@ class ArchingCashController extends Controller
             ->of($movements)
             ->addColumn('cliente_info', function ($row) {
                 return '<div>'
-                    . '<div>' . e((string) $row->cliente) . '</div>'
-                    . (! empty($row->cliente_documento) ? '<small class="text-muted">' . e((string) $row->cliente_documento) . '</small>' : '')
-                    . '</div>';
+                    .'<div>'.e((string) $row->cliente).'</div>'
+                    .(! empty($row->cliente_documento) ? '<small class="text-muted">'.e((string) $row->cliente_documento).'</small>' : '')
+                    .'</div>';
             })
             ->addColumn('documento_info', function ($row) {
                 return '<div>'
-                    . '<div class="fw-semibold">' . e((string) $row->documento) . '</div>'
-                    . '<small class="text-muted">' . e((string) $row->tipo) . '</small>'
-                    . '</div>';
+                    .'<div class="fw-semibold">'.e((string) $row->documento).'</div>'
+                    .'<small class="text-muted">'.e((string) $row->tipo).'</small>'
+                    .'</div>';
             })
             ->editColumn('fecha', function ($row) {
                 return e((string) $row->fecha);
             })
             ->editColumn('total', function ($row) {
-                return '<span class="fw-semibold">' . e($this->signo_pais() . ' ' . number_format((float) $row->total, 2, '.', '')) . '</span>';
+                return '<span class="fw-semibold">'.e($this->signo_pais().' '.number_format((float) $row->total, 2, '.', '')).'</span>';
             })
             ->rawColumns(['cliente_info', 'documento_info', 'total'])
             ->toJson();
@@ -278,7 +288,7 @@ class ArchingCashController extends Controller
             return response()->json([
                 'status' => false,
                 'msg' => 'Intente de nuevo',
-                'type' => 'warning'
+                'type' => 'warning',
             ]);
         }
 
@@ -287,13 +297,13 @@ class ArchingCashController extends Controller
             return response()->json([
                 'status' => false,
                 'msg' => 'El arqueo no existe.',
-                'type' => 'warning'
+                'type' => 'warning',
             ], 404);
         }
 
         $summary = $this->buildSummary($archingCash);
         $business = Business::find(1);
-        $filename = 'arqueo-caja-' . $archingCash->id . '-' . date('Ymd') . '.pdf';
+        $filename = 'arqueo-caja-'.$archingCash->id.'-'.date('Ymd').'.pdf';
 
         File::ensureDirectoryExists(public_path('files/arching-cashes/ticket'));
 
@@ -304,11 +314,11 @@ class ArchingCashController extends Controller
             'signo' => $this->signo_pais(),
         ])->setPaper([0, 0, 226.77, 900.00], 'portrait');
 
-        $pdf->save(public_path('files/arching-cashes/ticket/' . $filename));
+        $pdf->save(public_path('files/arching-cashes/ticket/'.$filename));
 
         return response()->json([
             'status' => true,
-            'pdf' => $filename
+            'pdf' => $filename,
         ]);
     }
 
@@ -318,7 +328,7 @@ class ArchingCashController extends Controller
             return response()->json([
                 'status' => false,
                 'msg' => 'Intente de nuevo',
-                'type' => 'warning'
+                'type' => 'warning',
             ]);
         }
 
@@ -327,7 +337,7 @@ class ArchingCashController extends Controller
             return response()->json([
                 'status' => false,
                 'msg' => 'El arqueo no existe.',
-                'type' => 'warning'
+                'type' => 'warning',
             ], 404);
         }
 
@@ -335,7 +345,7 @@ class ArchingCashController extends Controller
             return response()->json([
                 'status' => false,
                 'msg' => 'La caja ya se encuentra cerrada.',
-                'type' => 'warning'
+                'type' => 'warning',
             ], 422);
         }
 
@@ -343,7 +353,7 @@ class ArchingCashController extends Controller
             return response()->json([
                 'status' => false,
                 'msg' => 'Solo la persona que aperturo esta caja puede cerrarla.',
-                'type' => 'warning'
+                'type' => 'warning',
             ], 422);
         }
 
@@ -359,7 +369,89 @@ class ArchingCashController extends Controller
         return response()->json([
             'status' => true,
             'msg' => 'Caja cerrada correctamente.',
-            'type' => 'success'
+            'type' => 'success',
+        ]);
+    }
+
+    public function save_deposit(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|integer',
+            'monto' => 'required|numeric|min:0.01',
+            'motivo' => 'required|string|max:255',
+        ]);
+
+        $archingCash = ArchingCash::find((int) $request->input('id'));
+        if (! $archingCash || (int) $archingCash->estado !== 1) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'El arqueo de caja no está abierto o no existe.',
+                'type' => 'warning',
+            ], 422);
+        }
+
+        $movement = CashMovement::create([
+            'idarqueocaja' => $archingCash->id,
+            'idcaja' => $archingCash->idcaja,
+            'idalmacen' => $archingCash->idalmacen,
+            'idusuario' => Auth::id(),
+            'tipo' => CashMovement::TYPE_DEPOSIT,
+            'monto' => (float) $request->input('monto'),
+            'motivo' => $request->input('motivo'),
+            'metodo_pago' => $request->input('metodo_pago', 'Efectivo'),
+            'fecha' => date('Y-m-d'),
+            'hora' => date('H:i:s'),
+            'beneficiario' => $request->input('beneficiario'),
+            'observaciones' => $request->input('observaciones'),
+            'estado' => 1,
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'msg' => 'Depósito registrado exitosamente.',
+            'type' => 'success',
+            'data' => $movement,
+        ]);
+    }
+
+    public function save_withdrawal(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|integer',
+            'monto' => 'required|numeric|min:0.01',
+            'motivo' => 'required|string|max:255',
+        ]);
+
+        $archingCash = ArchingCash::find((int) $request->input('id'));
+        if (! $archingCash || (int) $archingCash->estado !== 1) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'El arqueo de caja no está abierto o no existe.',
+                'type' => 'warning',
+            ], 422);
+        }
+
+        $movement = CashMovement::create([
+            'idarqueocaja' => $archingCash->id,
+            'idcaja' => $archingCash->idcaja,
+            'idalmacen' => $archingCash->idalmacen,
+            'idusuario' => Auth::id(),
+            'tipo' => CashMovement::TYPE_WITHDRAWAL,
+            'monto' => (float) $request->input('monto'),
+            'motivo' => $request->input('motivo'),
+            'metodo_pago' => $request->input('metodo_pago', 'Efectivo'),
+            'fecha' => date('Y-m-d'),
+            'hora' => date('H:i:s'),
+            'beneficiario' => $request->input('beneficiario'),
+            'observaciones' => $request->input('observaciones'),
+            'estado' => 1,
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'msg' => 'Retiro registrado exitosamente.',
+            'type' => 'success',
+            'data' => $movement,
         ]);
     }
 
@@ -393,12 +485,65 @@ class ArchingCashController extends Controller
         $billingsValid = Billing::query()->where('idarqueocaja', $archingCash->id)->where('anulado', false);
         $billingsAnnulled = Billing::query()->where('idarqueocaja', $archingCash->id)->where('anulado', true);
 
-        $salesCount = (clone $saleNotesValid)->count() + (clone $billingsValid)->count();
-        $salesTotal = (float) (clone $saleNotesValid)->sum('total') + (float) (clone $billingsValid)->sum('total');
+        // Deduplication between billings and unbilled contract installments:
+        $installmentsQuery = ContractInstallment::query()
+            ->where('idarqueocaja', $archingCash->id)
+            ->where('estado', 1);
+
+        $unbilledInstallmentsTotal = (float) (clone $installmentsQuery)
+            ->whereNotExists(function ($sub) {
+                $sub->select(DB::raw(1))
+                    ->from('billings')
+                    ->whereColumn('billings.reconciliation_key', 'contract_installments.reconciliation_key')
+                    ->where('billings.anulado', 0);
+            })
+            ->sum('monto');
+
+        $unbilledInstallmentsCount = (clone $installmentsQuery)
+            ->whereNotExists(function ($sub) {
+                $sub->select(DB::raw(1))
+                    ->from('billings')
+                    ->whereColumn('billings.reconciliation_key', 'contract_installments.reconciliation_key')
+                    ->where('billings.anulado', 0);
+            })
+            ->count();
+
+        $depositsTotal = (float) CashMovement::query()
+            ->where('idarqueocaja', $archingCash->id)
+            ->where('tipo', CashMovement::TYPE_DEPOSIT)
+            ->where('estado', 1)
+            ->sum('monto');
+
+        $withdrawalsTotal = (float) CashMovement::query()
+            ->where('idarqueocaja', $archingCash->id)
+            ->where('tipo', CashMovement::TYPE_WITHDRAWAL)
+            ->where('estado', 1)
+            ->sum('monto');
+
+        $expensesCashTotal = (float) Expense::query()
+            ->where('idarqueocaja', $archingCash->id)
+            ->where('estado', 1)
+            ->where('metodo_pago', 'Efectivo')
+            ->sum('monto');
+
+        $expensesCount = Expense::query()
+            ->where('idarqueocaja', $archingCash->id)
+            ->where('estado', 1)
+            ->count();
+
+        $expensesTotal = (float) Expense::query()
+            ->where('idarqueocaja', $archingCash->id)
+            ->where('estado', 1)
+            ->sum('monto');
+
+        $salesCount = (clone $saleNotesValid)->count() + (clone $billingsValid)->count() + $unbilledInstallmentsCount;
+        $salesTotal = (float) (clone $saleNotesValid)->sum('total') + (float) (clone $billingsValid)->sum('total') + $unbilledInstallmentsTotal;
         $annulledCount = (clone $saleNotesAnnulled)->count() + (clone $billingsAnnulled)->count();
         $annulledTotal = (float) (clone $saleNotesAnnulled)->sum('total') + (float) (clone $billingsAnnulled)->sum('total');
         $grossTotal = $salesTotal + $annulledTotal;
-        $expectedFinal = (float) $archingCash->monto_inicial + $salesTotal;
+
+        // Formula: Expected = Initial Balance + Cash (Sales + Installments) + Deposits - Withdrawals - Expenses
+        $expectedFinal = (float) $archingCash->monto_inicial + $salesTotal + $depositsTotal - $withdrawalsTotal - $expensesCashTotal;
         $displayFinal = (int) $archingCash->estado === 2
             ? (float) ($archingCash->monto_final ?? $expectedFinal)
             : $expectedFinal;
@@ -410,8 +555,11 @@ class ArchingCashController extends Controller
             'gross_total' => number_format($grossTotal, 2, '.', ''),
             'annulled_count' => (int) $annulledCount,
             'annulled_total' => number_format($annulledTotal, 2, '.', ''),
-            'expenses_count' => 0,
-            'expenses_total' => number_format(0, 2, '.', ''),
+            'deposits_total' => number_format($depositsTotal, 2, '.', ''),
+            'withdrawals_total' => number_format($withdrawalsTotal, 2, '.', ''),
+            'expenses_count' => (int) $expensesCount,
+            'expenses_total' => number_format($expensesTotal, 2, '.', ''),
+            'expenses_cash_total' => number_format($expensesCashTotal, 2, '.', ''),
             'expected_final' => number_format($expectedFinal, 2, '.', ''),
             'display_final' => number_format($displayFinal, 2, '.', ''),
             'payment_summary' => $this->buildPaymentSummary($archingCash),
@@ -451,6 +599,7 @@ class ArchingCashController extends Controller
                         'label' => 'Efectivo',
                         'total' => round((float) $saleNote->total, 2),
                     ]);
+
                     continue;
                 }
 
@@ -476,6 +625,7 @@ class ArchingCashController extends Controller
                         'label' => $this->normalizePaymentMethodLabel((string) ($billing->payMode?->descripcion ?: $billing->sunat_forma_pago ?: 'Efectivo')),
                         'total' => round((float) $billing->total, 2),
                     ]);
+
                     continue;
                 }
 

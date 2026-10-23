@@ -197,20 +197,44 @@
             @endforeach
         </table>
 
+        @if (!empty($summary['installments_paid_total']) && $summary['installments_paid_total'] > 0)
+            <div style="margin-top: 6px; font-weight: bold; font-size: 10px; color: #374151;">
+                CUOTAS DE CONTRATO ({{ $summary['installments_paid_count'] }} cuotas: {{ $signo }} {{ number_format($summary['installments_paid_total'], 2) }}):
+            </div>
+            <table class="summary-row" style="margin-left: 6px;">
+                @foreach ($summary['installment_payment_methods'] as $iMethod)
+                    @if ($iMethod['total'] > 0)
+                        <tr>
+                            <td class="summary-label" style="font-size: 10px; color: #4b5563;">• {{ $iMethod['label'] }} ({{ $iMethod['count'] }})</td>
+                            <td class="summary-value" style="font-size: 10px;">{{ $signo }} {{ number_format($iMethod['total'], 2) }}</td>
+                        </tr>
+                    @endif
+                @endforeach
+            </table>
+        @endif
+
         <div class="separator"></div>
 
-        <div class="section-title">4. Arqueo de Efectivo en Caja</div>
+        <div class="section-title">4. Arqueo y Balance de Efectivo</div>
         <table class="summary-row">
             <tr>
-                <td class="summary-label">(+) Saldo Inicial Apertura</td>
+                <td class="summary-label">(+) Initial Balance (Apertura)</td>
                 <td class="summary-value">{{ $signo }} {{ number_format($summary['opening_amount'], 2) }}</td>
             </tr>
             <tr>
-                <td class="summary-label">(+) Ventas Pagadas en Efectivo</td>
-                <td class="summary-value">{{ $signo }} {{ number_format($summary['payment_methods']['Efectivo']['total'] ?? $summary['sales_paid_total'], 2) }}</td>
+                <td class="summary-label">(+) Cash (Ventas y Cuotas)</td>
+                <td class="summary-value">{{ $signo }} {{ number_format($summary['cash_sales_in'], 2) }}</td>
             </tr>
             <tr>
-                <td class="summary-label">(-) Gastos Pagados en Efectivo</td>
+                <td class="summary-label">(+) Deposits (Depósitos a Caja)</td>
+                <td class="summary-value">{{ $signo }} {{ number_format($summary['deposits_total'], 2) }}</td>
+            </tr>
+            <tr>
+                <td class="summary-label">(-) Withdrawals (Retiros de Caja)</td>
+                <td class="summary-value">-{{ $signo }} {{ number_format($summary['withdrawals_total'], 2) }}</td>
+            </tr>
+            <tr>
+                <td class="summary-label">(-) Expenses (Gastos en Efectivo)</td>
                 <td class="summary-value">-{{ $signo }} {{ number_format($summary['expenses_cash_total'], 2) }}</td>
             </tr>
         </table>

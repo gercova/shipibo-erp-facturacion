@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ArchingCash;
 use App\Models\Billing;
 use App\Models\Business;
 use App\Models\Client;
@@ -9,7 +10,9 @@ use App\Models\Contract;
 use App\Models\ContractClause;
 use App\Models\ContractInstallment;
 use App\Models\ContractItem;
+use App\Models\DetailPayment;
 use App\Models\IdentityDocumentType;
+use App\Models\PayMode;
 use App\Models\Product;
 use App\Services\Contracts\ContractAdjustmentService;
 use App\Services\Ebilling\ContractEbillingService;
@@ -26,9 +29,10 @@ use Luecano\NumeroALetras\NumeroALetras;
 
 class ContractController extends Controller
 {
-    public function index(): View {
-        $warehouseId    = $this->currentWarehouseId();
-        $query          = Contract::query();
+    public function index(): View
+    {
+        $warehouseId = $this->currentWarehouseId();
+        $query = Contract::query();
         if ($warehouseId > 0) {
             $query->where(function ($q) use ($warehouseId) {
                 $q->where('idalmacen', $warehouseId)->orWhereNull('idalmacen');
@@ -38,15 +42,16 @@ class ContractController extends Controller
         $now = Carbon::now();
 
         return view('admin.contracts.list', [
-            'kpi_total_count'   => (clone $query)->count(),
-            'kpi_signed_count'  => (clone $query)->where('estado', Contract::STATUS_SIGNED)->count(),
-            'kpi_events_month'  => (clone $query)->whereYear('fecha_evento', $now->year)->whereMonth('fecha_evento', $now->month)->count(),
-            'kpi_total_amount'  => (clone $query)->where('estado', '!=', Contract::STATUS_VOIDED)->sum('total'),
-            'signo'             => $this->signo_pais(),
+            'kpi_total_count' => (clone $query)->count(),
+            'kpi_signed_count' => (clone $query)->where('estado', Contract::STATUS_SIGNED)->count(),
+            'kpi_events_month' => (clone $query)->whereYear('fecha_evento', $now->year)->whereMonth('fecha_evento', $now->month)->count(),
+            'kpi_total_amount' => (clone $query)->where('estado', '!=', Contract::STATUS_VOIDED)->sum('total'),
+            'signo' => $this->signo_pais(),
         ]);
     }
 
-    public function get(Request $request) {
+    public function get(Request $request)
+    {
         $warehouseId = $this->currentWarehouseId();
         $contracts = Contract::query()
             ->select('contracts.*', 'clients.nombres as cliente', 'clients.nro_documento as dni_ruc')
@@ -149,27 +154,29 @@ class ContractController extends Controller
             ->make(true);
     }
 
-    public function create(): View {
-        $business       = Business::first();
-        $clients        = Client::orderBy('nombres', 'asc')->get();
-        $products       = Product::with(['unit'])->orderBy('descripcion', 'asc')->get();
-        $typeDocuments  = IdentityDocumentType::where('estado', 1)->orderBy('descripcion')->get();
-        $nextNumber     = $this->generateNextContractNumber();
+    public function create(): View
+    {
+        $business = Business::first();
+        $clients = Client::orderBy('nombres', 'asc')->get();
+        $products = Product::with(['unit'])->orderBy('descripcion', 'asc')->get();
+        $typeDocuments = IdentityDocumentType::where('estado', 1)->orderBy('descripcion')->get();
+        $nextNumber = $this->generateNextContractNumber();
         $defaultClauses = $this->getDefaultClauseTemplates($business);
 
         return view('admin.contracts.create', [
-            'business'          => $business,
-            'clients'           => $clients,
-            'products'          => $products,
-            'typeDocuments'     => $typeDocuments,
-            'nextNumber'        => $nextNumber,
-            'defaultClauses'    => $defaultClauses,
-            'signo'             => $this->signo_pais(),
-            'moneda'            => $this->moneda_pais(),
+            'business' => $business,
+            'clients' => $clients,
+            'products' => $products,
+            'typeDocuments' => $typeDocuments,
+            'nextNumber' => $nextNumber,
+            'defaultClauses' => $defaultClauses,
+            'signo' => $this->signo_pais(),
+            'moneda' => $this->moneda_pais(),
         ]);
     }
 
-    public function store(Request $request) {
+    public function store(Request $request)
+    {
         $validator = Validator::make($request->all(), Contract::validationRules(), [
             'idcliente.required' => 'Debe seleccionar un cliente contratante.',
             'contract_number.required' => 'El número de contrato es obligatorio.',
@@ -317,13 +324,14 @@ class ContractController extends Controller
         }
     }
 
-    public function edit(int $id): View {
-        $contract   = Contract::with(['client', 'items.product', 'clauses', 'installments', 'adjustments.installment', 'adjustments.user'])->find($id);
+    public function edit(int $id): View
+    {
+        $contract = Contract::with(['client', 'items.product', 'clauses', 'installments', 'adjustments.installment', 'adjustments.user'])->find($id);
         abort_if(! $contract, 404);
 
-        $business   = Business::first();
-        $clients    = Client::orderBy('nombres', 'asc')->get();
-        $products   = Product::with(['unit'])->orderBy('descripcion', 'asc')->get();
+        $business = Business::first();
+        $clients = Client::orderBy('nombres', 'asc')->get();
+        $products = Product::with(['unit'])->orderBy('descripcion', 'asc')->get();
         $typeDocuments = IdentityDocumentType::where('estado', 1)->orderBy('descripcion')->get();
 
         return view('admin.contracts.edit', [
@@ -637,6 +645,8 @@ class ContractController extends Controller
         $validator = Validator::make($request->all(), [
             'fecha_pago' => 'required|date',
             'metodo_pago' => 'nullable|string|max:50',
+            'idpago' => 'nullable|integer|exists:pay_modes,id',
+            'idarqueocaja' => 'nullable|integer|exists:arching_cashes,id',
             'referencia_pago' => 'nullable|string|max:100',
             'observaciones' => 'nullable|string|max:255',
         ], [
@@ -651,13 +661,85 @@ class ContractController extends Controller
             ], 422);
         }
 
-        $installment->update([
-            'estado' => ContractInstallment::STATUS_PAID,
-            'fecha_pago' => $request->input('fecha_pago', date('Y-m-d')),
-            'metodo_pago' => $request->input('metodo_pago', 'Efectivo'),
-            'referencia_pago' => $request->input('referencia_pago'),
-            'observaciones' => $request->input('observaciones'),
-        ]);
+        // 1. Resolve Active Arqueo (Cash reconciliation session)
+        $archingId = $request->input('idarqueocaja');
+        $openArching = null;
+        if (! empty($archingId)) {
+            $openArching = ArchingCash::where('id', $archingId)->where('estado', 1)->first();
+            if (! $openArching) {
+                return response()->json([
+                    'status' => false,
+                    'msg' => 'La caja seleccionada no se encuentra abierta actualmente.',
+                    'type' => 'warning',
+                ], 422);
+            }
+        } else {
+            $userId = Auth::id();
+            $openArching = ArchingCash::where('idusuario', $userId)->where('estado', 1)->latest('id')->first();
+            if (! $openArching && Auth::user()?->idcaja) {
+                $openArching = ArchingCash::where('idcaja', Auth::user()->idcaja)->where('estado', 1)->latest('id')->first();
+            }
+        }
+
+        // 2. Resolve PayMode
+        $payMode = null;
+        if ($request->filled('idpago')) {
+            $payMode = PayMode::find($request->input('idpago'));
+        } elseif ($request->filled('metodo_pago')) {
+            $rawMethod = trim((string) $request->input('metodo_pago'));
+            $payMode = PayMode::where('descripcion', 'like', $rawMethod)->first();
+            if (! $payMode) {
+                $normalized = mb_strtolower($rawMethod, 'UTF-8');
+                $payModeId = match (true) {
+                    str_contains($normalized, 'efectivo') || str_contains($normalized, 'cash') || str_contains($normalized, 'contado') => 1,
+                    str_contains($normalized, 'yape') => 2,
+                    str_contains($normalized, 'plin') => 3,
+                    str_contains($normalized, 'tarjeta') || str_contains($normalized, 'visa') || str_contains($normalized, 'debito') || str_contains($normalized, 'credito') => 5,
+                    str_contains($normalized, 'transf') || str_contains($normalized, 'deposito') => 7,
+                    default => 1,
+                };
+                $payMode = PayMode::find($payModeId);
+            }
+        }
+
+        if (! $payMode) {
+            $payMode = PayMode::find(1) ?: PayMode::first();
+        }
+
+        $reconciliationKey = "INST-{$installment->id}";
+
+        DB::transaction(function () use ($installment, $request, $payMode, $openArching, $reconciliationKey) {
+            $installment->update([
+                'estado' => ContractInstallment::STATUS_PAID,
+                'fecha_pago' => $request->input('fecha_pago', date('Y-m-d')),
+                'metodo_pago' => $payMode ? $payMode->descripcion : 'Efectivo',
+                'idpago' => $payMode?->id,
+                'idarqueocaja' => $openArching?->id,
+                'reconciliation_key' => $reconciliationKey,
+                'referencia_pago' => $request->input('referencia_pago'),
+                'observaciones' => $request->input('observaciones'),
+            ]);
+
+            // Record cash register payment in detail_payments
+            DetailPayment::updateOrCreate(
+                [
+                    'reconciliation_key' => $reconciliationKey,
+                ],
+                [
+                    'idtipo_comprobante' => 6, // Nota de Venta / Recibo de caja interno
+                    'idfactura' => (int) $installment->id,
+                    'installment_id' => (int) $installment->id,
+                    'idpago' => $payMode ? (int) $payMode->id : 1,
+                    'monto' => (float) $installment->monto,
+                    'idarqueocaja' => $openArching ? (int) $openArching->id : 0,
+                    'estado' => 1,
+                ]
+            );
+
+            if ($openArching) {
+                $openArching->increment('total_ventas');
+            }
+        });
 
         // Re-generate contract PDF with updated payment details if desired
         $this->generatePdfFile($installment->contract_id);
@@ -665,7 +747,7 @@ class ContractController extends Controller
         return response()->json([
             'status' => true,
             'msg' => 'Pago de la cuota #'.$installment->numero_cuota.' registrado exitosamente.',
-            'installment' => $installment,
+            'installment' => $installment->fresh(['payMode', 'archingCash']),
         ]);
     }
 
@@ -1080,25 +1162,25 @@ class ContractController extends Controller
             $result = $ebillingService->issueDebitNoteForAdjustments($contract, $parentBilling, $request->all());
 
             return response()->json([
-                'status'        => true,
-                'msg'           => "Nota de Débito {$result['debit_note']->serie}-{$result['debit_note']->correlativo} emitida exitosamente.",
-                'type'          => 'success',
+                'status' => true,
+                'msg' => "Nota de Débito {$result['debit_note']->serie}-{$result['debit_note']->correlativo} emitida exitosamente.",
+                'type' => 'success',
                 'debit_note_id' => $result['debit_note']->id,
-                'numero'        => $result['debit_note']->serie.'-'.$result['debit_note']->correlativo,
-                'total'         => (float) $result['debit_note']->total,
-                'payload'       => $result['payload'],
+                'numero' => $result['debit_note']->serie.'-'.$result['debit_note']->correlativo,
+                'total' => (float) $result['debit_note']->total,
+                'payload' => $result['payload'],
             ]);
         } catch (\InvalidArgumentException $e) {
             return response()->json([
-                'status'    => false,
-                'msg'       => $e->getMessage(),
-                'type'      => 'warning',
+                'status' => false,
+                'msg' => $e->getMessage(),
+                'type' => 'warning',
             ], 422);
         } catch (\Throwable $e) {
             return response()->json([
-                'status'    => false,
-                'msg'       => 'Error al emitir Nota de Débito: '.$e->getMessage(),
-                'type'      => 'error',
+                'status' => false,
+                'msg' => 'Error al emitir Nota de Débito: '.$e->getMessage(),
+                'type' => 'error',
             ], 500);
         }
     }

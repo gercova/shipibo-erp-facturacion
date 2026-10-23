@@ -41,4 +41,39 @@ class ArchingCash extends Model
     {
         return $this->belongsTo(User::class, 'idusuario');
     }
+
+    public function warehouse()
+    {
+        return $this->belongsTo(Warehouse::class, 'idalmacen');
+    }
+
+    public function expenses()
+    {
+        return $this->hasMany(Expense::class, 'idarqueocaja');
+    }
+
+    public function cashMovements()
+    {
+        return $this->hasMany(CashMovement::class, 'idarqueocaja');
+    }
+
+    public function installments()
+    {
+        return $this->hasMany(ContractInstallment::class, 'idarqueocaja');
+    }
+
+    public function detailPayments()
+    {
+        return $this->hasMany(DetailPayment::class, 'idarqueocaja');
+    }
+
+    public function billings()
+    {
+        return $this->hasMany(Billing::class, 'idarqueocaja');
+    }
+
+    public function saleNotes()
+    {
+        return $this->hasMany(SaleNote::class, 'idarqueocaja');
+    }
 }

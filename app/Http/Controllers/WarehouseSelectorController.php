@@ -31,7 +31,6 @@ class WarehouseSelectorController extends Controller
 
         $user = auth()->user();
         $warehouseId = (int) $validated['warehouse_id'];
-
         $hasAccess = $user->warehouses()
             ->where('warehouses.id', $warehouseId)
             ->exists();
@@ -57,7 +56,7 @@ class WarehouseSelectorController extends Controller
         return redirect()->to($this->resolveRedirectUrl($redirectTo, $warehouseId));
     }
 
-    private function resolveRedirectUrl(string $redirectTo, int $warehouseId): string
+    private function resolveRedirectUrl(string $redirectTo, int $warehouseId)
     {
         if ($redirectTo === '' || ! str_starts_with($redirectTo, url('/'))) {
             return route('admin.home');
@@ -65,15 +64,15 @@ class WarehouseSelectorController extends Controller
 
         $parts = parse_url($redirectTo);
         $path = (string) ($parts['path'] ?? '/');
-        $updatedPath = preg_replace('/\/warehouses\/\d+(?=\/|$)/', '/warehouses/' . $warehouseId, $path, 1) ?: $path;
+        $updatedPath = preg_replace('/\/warehouses\/\d+(?=\/|$)/', '/warehouses/'.$warehouseId, $path, 1) ?: $path;
         $resolvedUrl = url($updatedPath);
 
         if (! empty($parts['query'])) {
-            $resolvedUrl .= '?' . $parts['query'];
+            $resolvedUrl .= '?'.$parts['query'];
         }
 
         if (! empty($parts['fragment'])) {
-            $resolvedUrl .= '#' . $parts['fragment'];
+            $resolvedUrl .= '#'.$parts['fragment'];
         }
 
         return $resolvedUrl;

@@ -3,12 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\ArchingCash;
-use App\Models\Billing;
 use App\Models\Business;
 use App\Models\Cash;
-use App\Models\DetailPayment;
 use App\Models\Expense;
-use App\Models\SaleNote;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -107,7 +104,37 @@ class DailyCashClosingController extends Controller
                 END as classification_status
             ");
 
-        $unionQuery = DB::query()->fromSub($billings->unionAll($saleNotes), 'today_sales');
+        // 3. Consulta de Cuotas de Contratos pagadas del día (no facturadas en billings para evitar duplicados)
+        $installments = DB::table('contract_installments')
+            ->join('contracts', 'contract_installments.contract_id', '=', 'contracts.id')
+            ->leftJoin('clients', 'contracts.idcliente', '=', 'clients.id')
+            ->leftJoin('pay_modes', 'contract_installments.idpago', '=', 'pay_modes.id')
+            ->whereDate('contract_installments.fecha_pago', $today)
+            ->where('contract_installments.estado', 1)
+            ->whereNotExists(function ($sub) {
+                $sub->select(DB::raw(1))
+                    ->from('billings')
+                    ->whereColumn('billings.reconciliation_key', 'contract_installments.reconciliation_key')
+                    ->where('billings.anulado', 0);
+            })
+            ->selectRaw("
+                'installment' as origin_type,
+                contract_installments.id as origin_id,
+                contract_installments.fecha_pago as fecha,
+                '12:00:00' as hora,
+                CONCAT('CUOTA #', contract_installments.numero_cuota, ' (', contracts.contract_number, ')') as documento,
+                'CUOTA CONTRATO' as tipo_documento,
+                'CUOTA' as tipo_documento_codigo,
+                COALESCE(clients.nombres, 'CLIENTE') as cliente,
+                COALESCE(clients.nro_documento, '') as cliente_doc,
+                COALESCE(pay_modes.descripcion, 'Efectivo') as metodo_pago,
+                1 as modo_pago,
+                0 as anulado,
+                contract_installments.monto as total,
+                'paid' as classification_status
+            ");
+
+        $unionQuery = DB::query()->fromSub($billings->unionAll($saleNotes)->unionAll($installments), 'today_sales');
 
         // Filtrado por píldora de clasificación seleccionada
         if ($statusFilter !== 'all') {
@@ -117,29 +144,31 @@ class DailyCashClosingController extends Controller
         return datatables()
             ->of($unionQuery)
             ->editColumn('hora', function ($row) {
-                return '<span class="text-secondary small fw-medium">' . e($row->hora ?: '--:--') . '</span>';
+                return '<span class="text-secondary small fw-medium">'.e($row->hora ?: '--:--').'</span>';
             })
             ->addColumn('documento_info', function ($row) {
                 $badgeClass = match ($row->tipo_documento_codigo) {
                     '01' => 'bg-primary-subtle text-primary',
                     '03' => 'bg-info-subtle text-info',
                     '07' => 'bg-warning-subtle text-warning',
+                    'CUOTA' => 'bg-success-subtle text-success',
                     default => 'bg-secondary-subtle text-secondary',
                 };
 
                 return '<div class="d-flex flex-column">'
-                    . '<span class="fw-bold text-dark">' . e($row->documento) . '</span>'
-                    . '<span class="badge ' . $badgeClass . ' text-uppercase" style="width: fit-content; font-size: 0.68rem; padding: 2px 6px;">'
-                    . e($row->tipo_documento)
-                    . '</span>'
-                    . '</div>';
+                    .'<span class="fw-bold text-dark">'.e($row->documento).'</span>'
+                    .'<span class="badge '.$badgeClass.' text-uppercase" style="width: fit-content; font-size: 0.68rem; padding: 2px 6px;">'
+                    .e($row->tipo_documento)
+                    .'</span>'
+                    .'</div>';
             })
             ->addColumn('cliente_info', function ($row) {
-                $doc = ! empty($row->cliente_doc) ? '<small class="text-muted d-block">' . e($row->cliente_doc) . '</small>' : '';
-                return '<div><div class="fw-semibold text-truncate" style="max-width: 220px;" title="' . e($row->cliente) . '">' . e($row->cliente) . '</div>' . $doc . '</div>';
+                $doc = ! empty($row->cliente_doc) ? '<small class="text-muted d-block">'.e($row->cliente_doc).'</small>' : '';
+
+                return '<div><div class="fw-semibold text-truncate" style="max-width: 220px;" title="'.e($row->cliente).'">'.e($row->cliente).'</div>'.$doc.'</div>';
             })
             ->editColumn('metodo_pago', function ($row) {
-                return '<span class="badge bg-light text-dark border">' . e(ucfirst($row->metodo_pago)) . '</span>';
+                return '<span class="badge bg-light text-dark border">'.e(ucfirst($row->metodo_pago)).'</span>';
             })
             ->addColumn('status_badge', function ($row) {
                 return match ($row->classification_status) {
@@ -160,9 +189,9 @@ class DailyCashClosingController extends Controller
                     default => 'text-success fw-bold',
                 };
 
-                return '<div class="text-end ' . $textClass . ' font-monospace">'
-                    . $sign . $this->signo_pais() . ' ' . number_format((float) $row->total, 2, '.', '')
-                    . '</div>';
+                return '<div class="text-end '.$textClass.' font-monospace">'
+                    .$sign.$this->signo_pais().' '.number_format((float) $row->total, 2, '.', '')
+                    .'</div>';
             })
             ->rawColumns(['hora', 'documento_info', 'cliente_info', 'metodo_pago', 'status_badge', 'total'])
             ->toJson();
@@ -188,27 +217,29 @@ class DailyCashClosingController extends Controller
         return datatables()
             ->of($expenses)
             ->editColumn('hora', function ($expense) {
-                return '<span class="text-secondary small fw-medium">' . e($expense->hora ?: '--:--') . '</span>';
+                return '<span class="text-secondary small fw-medium">'.e($expense->hora ?: '--:--').'</span>';
             })
             ->addColumn('comprobante_info', function ($expense) {
-                $nro = $expense->nro_comprobante ? ' ' . e($expense->nro_comprobante) : '';
-                return '<span class="badge bg-light text-dark border">' . e($expense->tipo_comprobante) . $nro . '</span>';
+                $nro = $expense->nro_comprobante ? ' '.e($expense->nro_comprobante) : '';
+
+                return '<span class="badge bg-light text-dark border">'.e($expense->tipo_comprobante).$nro.'</span>';
             })
             ->editColumn('motivo', function ($expense) {
-                $obs = $expense->observaciones ? '<small class="text-muted d-block">' . e($expense->observaciones) . '</small>' : '';
-                return '<div><strong class="text-dark">' . e($expense->motivo) . '</strong>' . $obs . '</div>';
+                $obs = $expense->observaciones ? '<small class="text-muted d-block">'.e($expense->observaciones).'</small>' : '';
+
+                return '<div><strong class="text-dark">'.e($expense->motivo).'</strong>'.$obs.'</div>';
             })
             ->editColumn('beneficiario', function ($expense) {
                 return e($expense->beneficiario ?: '-');
             })
             ->editColumn('metodo_pago', function ($expense) {
-                return '<span class="badge bg-secondary-subtle text-secondary">' . e($expense->metodo_pago) . '</span>';
+                return '<span class="badge bg-secondary-subtle text-secondary">'.e($expense->metodo_pago).'</span>';
             })
             ->editColumn('monto', function ($expense) {
-                return '<div class="text-end text-danger fw-bold font-monospace">-' . $this->signo_pais() . ' ' . number_format((float) $expense->monto, 2, '.', '') . '</div>';
+                return '<div class="text-end text-danger fw-bold font-monospace">-'.$this->signo_pais().' '.number_format((float) $expense->monto, 2, '.', '').'</div>';
             })
             ->addColumn('acciones', function ($expense) {
-                return '<button type="button" class="btn btn-sm btn-outline-danger btn-delete-expense" data-id="' . $expense->id . '" title="Anular gasto">
+                return '<button type="button" class="btn btn-sm btn-outline-danger btn-delete-expense" data-id="'.$expense->id.'" title="Anular gasto">
                             <i class="ri-delete-bin-line"></i>
                         </button>';
             })
@@ -355,7 +386,7 @@ class DailyCashClosingController extends Controller
             'currentTime' => date('H:i:s'),
         ])->setPaper([0, 0, 226.77, 950.00], 'portrait');
 
-        $fileName = 'cierre-caja-' . date('Ymd') . '-' . ($context['openArching']?->id ?? 'dia') . '.pdf';
+        $fileName = 'cierre-caja-'.date('Ymd').'-'.($context['openArching']?->id ?? 'dia').'.pdf';
 
         return $pdf->stream($fileName);
     }
@@ -428,7 +459,7 @@ class DailyCashClosingController extends Controller
                 $q->where('billings.modo_pago', 1)
                     ->orWhere('billings.sunat_forma_pago', 'Contado');
             })
-            ->when($whId > 0, fn($q) => $q->where('billings.idalmacen', $whId));
+            ->when($whId > 0, fn ($q) => $q->where('billings.idalmacen', $whId));
 
         $billingPaidCount = (clone $billingPaidQuery)->count();
         $billingPaidTotal = (float) (clone $billingPaidQuery)->sum('billings.total');
@@ -442,7 +473,7 @@ class DailyCashClosingController extends Controller
                 $q->where('billings.modo_pago', 2)
                     ->orWhere('billings.sunat_forma_pago', 'Credito');
             })
-            ->when($whId > 0, fn($q) => $q->where('billings.idalmacen', $whId));
+            ->when($whId > 0, fn ($q) => $q->where('billings.idalmacen', $whId));
 
         $billingPendingCount = (clone $billingPendingQuery)->count();
         $billingPendingTotal = (float) (clone $billingPendingQuery)->sum('billings.total');
@@ -452,7 +483,7 @@ class DailyCashClosingController extends Controller
             ->whereDate('billings.fecha_emision', $today)
             ->where('billings.anulado', 0)
             ->where('type_documents.codigo', '07')
-            ->when($whId > 0, fn($q) => $q->where('billings.idalmacen', $whId));
+            ->when($whId > 0, fn ($q) => $q->where('billings.idalmacen', $whId));
 
         $billingReturnedCount = (clone $billingReturnedQuery)->count();
         $billingReturnedTotal = (float) (clone $billingReturnedQuery)->sum('billings.total');
@@ -461,7 +492,7 @@ class DailyCashClosingController extends Controller
             ->join('type_documents', 'billings.idtipo_comprobante', '=', 'type_documents.id')
             ->whereDate('billings.fecha_emision', $today)
             ->where('billings.anulado', 1)
-            ->when($whId > 0, fn($q) => $q->where('billings.idalmacen', $whId));
+            ->when($whId > 0, fn ($q) => $q->where('billings.idalmacen', $whId));
 
         $billingCancelledCount = (clone $billingCancelledQuery)->count();
         $billingCancelledTotal = (float) (clone $billingCancelledQuery)->sum('billings.total');
@@ -491,9 +522,60 @@ class DailyCashClosingController extends Controller
         $saleNoteCancelledCount = (clone $saleNoteCancelledQuery)->count();
         $saleNoteCancelledTotal = (float) (clone $saleNoteCancelledQuery)->sum('total');
 
-        // Totales clasificados de Ventas
-        $salesPaidCount = $billingPaidCount + $saleNotePaidCount;
-        $salesPaidTotal = $billingPaidTotal + $saleNotePaidTotal;
+        // 3. Cuotas de Contratos del día (Contract Installments)
+        $installmentsQuery = DB::table('contract_installments')
+            ->leftJoin('pay_modes', 'contract_installments.idpago', '=', 'pay_modes.id')
+            ->where('contract_installments.estado', 1)
+            ->where(function ($q) use ($context, $today) {
+                if (! empty($context['openArching'])) {
+                    $q->where('contract_installments.idarqueocaja', $context['openArching']->id)
+                        ->orWhereDate('contract_installments.fecha_pago', $today);
+                } else {
+                    $q->whereDate('contract_installments.fecha_pago', $today);
+                }
+            });
+
+        $installmentsPaidCount = (clone $installmentsQuery)->count();
+        $installmentsPaidTotal = (float) (clone $installmentsQuery)->sum('contract_installments.monto');
+
+        // Cuotas ya facturadas electrónicamente en billings (para evitar doble conteo)
+        $invoicedInstallmentsTotal = (float) (clone $installmentsQuery)
+            ->whereExists(function ($sub) {
+                $sub->select(DB::raw(1))
+                    ->from('billings')
+                    ->whereColumn('billings.reconciliation_key', 'contract_installments.reconciliation_key')
+                    ->where('billings.anulado', 0);
+            })
+            ->sum('contract_installments.monto');
+
+        $unbilledInstallmentsTotal = max(0, $installmentsPaidTotal - $invoicedInstallmentsTotal);
+        $unbilledInstallmentsCount = (clone $installmentsQuery)
+            ->whereNotExists(function ($sub) {
+                $sub->select(DB::raw(1))
+                    ->from('billings')
+                    ->whereColumn('billings.reconciliation_key', 'contract_installments.reconciliation_key')
+                    ->where('billings.anulado', 0);
+            })
+            ->count();
+
+        // 4. Movimientos de Caja (Depósitos y Retiros)
+        $movementsQuery = DB::table('cash_movements')
+            ->where('estado', 1)
+            ->where(function ($q) use ($context, $today) {
+                if (! empty($context['openArching'])) {
+                    $q->where('idarqueocaja', $context['openArching']->id)
+                        ->orWhereDate('fecha', $today);
+                } else {
+                    $q->whereDate('fecha', $today);
+                }
+            });
+
+        $depositsTotal = (float) (clone $movementsQuery)->where('tipo', 'deposit')->sum('monto');
+        $withdrawalsTotal = (float) (clone $movementsQuery)->where('tipo', 'withdrawal')->sum('monto');
+
+        // Totales clasificados de Ingresos (Facturas + Boletas + Notas de Venta + Cuotas no facturadas)
+        $salesPaidCount = $billingPaidCount + $saleNotePaidCount + $unbilledInstallmentsCount;
+        $salesPaidTotal = $billingPaidTotal + $saleNotePaidTotal + $unbilledInstallmentsTotal;
 
         $salesPendingCount = $billingPendingCount + $saleNotePendingCount;
         $salesPendingTotal = $billingPendingTotal + $saleNotePendingTotal;
@@ -504,30 +586,32 @@ class DailyCashClosingController extends Controller
         $salesCancelledCount = $billingCancelledCount + $saleNoteCancelledCount;
         $salesCancelledTotal = $billingCancelledTotal + $saleNoteCancelledTotal;
 
-        // 3. Gastos del día (Expenses)
+        // 5. Gastos del día (Expenses)
         $expensesQuery = DB::table('expenses')
             ->whereDate('fecha', $today)
             ->where('estado', 1)
-            ->when($whId > 0, fn($q) => $q->where('idalmacen', $whId));
+            ->when($whId > 0, fn ($q) => $q->where('idalmacen', $whId));
 
         $expensesCount = (clone $expensesQuery)->count();
         $expensesTotal = (float) (clone $expensesQuery)->sum('monto');
         $expensesCashTotal = (float) (clone $expensesQuery)->where('metodo_pago', 'Efectivo')->sum('monto');
 
-        // 4. Monto inicial de caja abierta
+        // 6. Monto inicial de caja abierta
         $openingAmount = (float) ($context['openArching']?->monto_inicial ?? 0);
 
-        // 5. Desglose de ingresos por método de pago
+        // 7. Desglose de ingresos por método de pago (global y cuotas)
         $paymentMethods = $this->calculateDailyPaymentMethods($today, $context);
+        $installmentPaymentMethods = $this->calculateDailyInstallmentPaymentMethods($today, $context);
 
-        // Efectivo ingresado por ventas
+        // Efectivo ingresado por ventas y cuotas
         $cashSalesIn = (float) ($paymentMethods['Efectivo']['total'] ?? $salesPaidTotal);
 
-        // Balance de efectivo esperado en caja: Apertura + Ventas Efectivo - Gastos Efectivo
-        $expectedCashInBox = max(0, $openingAmount + $cashSalesIn - $expensesCashTotal);
+        // Balance de efectivo esperado en caja:
+        // Expected = Initial Balance + Cash + Deposits − Withdrawals − Expenses
+        $expectedCashInBox = max(0, $openingAmount + $cashSalesIn + $depositsTotal - $withdrawalsTotal - $expensesCashTotal);
 
-        // Flujo neto del día (Ventas Cobradas - Devoluciones - Gastos)
-        $netDayFlow = $salesPaidTotal - $salesReturnedTotal - $expensesTotal;
+        // Flujo neto del día (Ventas y cuotas cobradas - Devoluciones - Gastos + Depósitos - Retiros)
+        $netDayFlow = $salesPaidTotal - $salesReturnedTotal - $expensesTotal + $depositsTotal - $withdrawalsTotal;
 
         return [
             'opening_amount' => $openingAmount,
@@ -542,10 +626,79 @@ class DailyCashClosingController extends Controller
             'expenses_count' => $expensesCount,
             'expenses_total' => $expensesTotal,
             'expenses_cash_total' => $expensesCashTotal,
+            'deposits_total' => $depositsTotal,
+            'withdrawals_total' => $withdrawalsTotal,
+            'cash_sales_in' => $cashSalesIn,
+            'installments_paid_count' => $installmentsPaidCount,
+            'installments_paid_total' => $installmentsPaidTotal,
+            'installments_invoiced_total' => $invoicedInstallmentsTotal,
+            'installments_unbilled_total' => $unbilledInstallmentsTotal,
+            'installment_payment_methods' => $installmentPaymentMethods,
             'expected_cash_in_box' => $expectedCashInBox,
             'net_day_flow' => $netDayFlow,
             'payment_methods' => $paymentMethods,
         ];
+    }
+
+    /**
+     * Desglose exclusivo de cuotas de contrato cobradas en el día por método de pago.
+     */
+    protected function calculateDailyInstallmentPaymentMethods(string $today, array $context): array
+    {
+        $methods = [
+            'Efectivo' => ['label' => 'Efectivo', 'total' => 0.0, 'count' => 0, 'icon' => 'ri-money-dollar-circle-line', 'color' => 'success'],
+            'Yape' => ['label' => 'Yape', 'total' => 0.0, 'count' => 0, 'icon' => 'ri-smartphone-line', 'color' => 'purple'],
+            'Plin' => ['label' => 'Plin', 'total' => 0.0, 'count' => 0, 'icon' => 'ri-qr-code-line', 'color' => 'info'],
+            'Tarjeta' => ['label' => 'Tarjeta', 'total' => 0.0, 'count' => 0, 'icon' => 'ri-bank-card-line', 'color' => 'primary'],
+            'Transferencia' => ['label' => 'Transferencia', 'total' => 0.0, 'count' => 0, 'icon' => 'ri-exchange-line', 'color' => 'warning'],
+            'Otros' => ['label' => 'Otros', 'total' => 0.0, 'count' => 0, 'icon' => 'ri-wallet-3-line', 'color' => 'secondary'],
+        ];
+
+        $detailPayments = DB::table('detail_payments')
+            ->join('pay_modes', 'detail_payments.idpago', '=', 'pay_modes.id')
+            ->where('detail_payments.estado', 1)
+            ->whereNotNull('detail_payments.installment_id')
+            ->where(function ($q) use ($context, $today) {
+                if (! empty($context['openArching'])) {
+                    $q->where('detail_payments.idarqueocaja', $context['openArching']->id)
+                        ->orWhereDate('detail_payments.created_at', $today);
+                } else {
+                    $q->whereDate('detail_payments.created_at', $today);
+                }
+            })
+            ->select('detail_payments.installment_id', 'pay_modes.descripcion as modo_desc', 'detail_payments.monto')
+            ->get()
+            ->groupBy('installment_id');
+
+        $installmentsQuery = DB::table('contract_installments')
+            ->leftJoin('pay_modes', 'contract_installments.idpago', '=', 'pay_modes.id')
+            ->where('contract_installments.estado', 1)
+            ->where(function ($q) use ($context, $today) {
+                if (! empty($context['openArching'])) {
+                    $q->where('contract_installments.idarqueocaja', $context['openArching']->id)
+                        ->orWhereDate('contract_installments.fecha_pago', $today);
+                } else {
+                    $q->whereDate('contract_installments.fecha_pago', $today);
+                }
+            })
+            ->select('contract_installments.id', 'pay_modes.descripcion as modo', 'contract_installments.monto')
+            ->get();
+
+        foreach ($installmentsQuery as $inst) {
+            if ($detailPayments->has($inst->id)) {
+                foreach ($detailPayments->get($inst->id) as $dp) {
+                    $cat = $this->classifyPaymentMethod($dp->modo_desc);
+                    $methods[$cat]['total'] += (float) $dp->monto;
+                    $methods[$cat]['count'] += 1;
+                }
+            } else {
+                $cat = $this->classifyPaymentMethod($inst->modo ?: 'Efectivo');
+                $methods[$cat]['total'] += (float) $inst->monto;
+                $methods[$cat]['count'] += 1;
+            }
+        }
+
+        return $methods;
     }
 
     /**
@@ -562,77 +715,140 @@ class DailyCashClosingController extends Controller
             'Otros' => ['label' => 'Otros', 'total' => 0.0, 'count' => 0, 'icon' => 'ri-wallet-3-line', 'color' => 'secondary'],
         ];
 
-        // 1. Cobros en detail_payments registrados hoy
-        $detailPaymentsQuery = DB::table('detail_payments')
+        // Precargar detail_payments del día para vincular por comprobante
+        $detailPayments = DB::table('detail_payments')
             ->join('pay_modes', 'detail_payments.idpago', '=', 'pay_modes.id')
-            ->where('detail_payments.estado', 1);
-
-        if (! empty($context['openArching'])) {
-            $detailPaymentsQuery->where(function ($q) use ($context, $today) {
-                $q->where('detail_payments.idarqueocaja', $context['openArching']->id)
-                  ->orWhereDate('detail_payments.created_at', $today);
-            });
-        } else {
-            $detailPaymentsQuery->whereDate('detail_payments.created_at', $today);
-        }
-
-        $detailPayments = $detailPaymentsQuery
-            ->select('pay_modes.descripcion as modo', 'detail_payments.monto')
+            ->where('detail_payments.estado', 1)
+            ->where(function ($q) use ($context, $today) {
+                if (! empty($context['openArching'])) {
+                    $q->where('detail_payments.idarqueocaja', $context['openArching']->id)
+                        ->orWhereDate('detail_payments.created_at', $today);
+                } else {
+                    $q->whereDate('detail_payments.created_at', $today);
+                }
+            })
+            ->select('detail_payments.*', 'pay_modes.descripcion as modo_desc')
             ->get();
 
-        if ($detailPayments->isNotEmpty()) {
-            foreach ($detailPayments as $dp) {
-                $category = $this->classifyPaymentMethod($dp->modo);
-                $methods[$category]['total'] += (float) $dp->monto;
-                $methods[$category]['count'] += 1;
-            }
-        } else {
-            // Alternativa: Si no hay en detail_payments, consultar por billings y sale_notes pagadas hoy
-            $billings = DB::table('billings')
-                ->leftJoin('pay_modes', 'billings.idpago', '=', 'pay_modes.id')
-                ->join('type_documents', 'billings.idtipo_comprobante', '=', 'type_documents.id')
-                ->whereDate('billings.fecha_emision', $today)
-                ->where('billings.anulado', 0)
-                ->whereIn('type_documents.codigo', ['01', '03'])
-                ->where(function ($q) {
-                    $q->where('billings.modo_pago', 1)->orWhere('billings.sunat_forma_pago', 'Contado');
-                })
-                ->select('pay_modes.descripcion as modo', 'billings.total', 'billings.payment_breakdown')
-                ->get();
+        $dpByBilling = $detailPayments->whereNotNull('idfactura')->whereIn('idtipo_comprobante', [1, 2])->groupBy('idfactura');
+        $dpBySaleNote = $detailPayments->whereNotNull('idfactura')->where('idtipo_comprobante', 6)->groupBy('idfactura');
+        $dpByInstallment = $detailPayments->whereNotNull('installment_id')->groupBy('installment_id');
 
-            foreach ($billings as $b) {
-                $breakdown = ! empty($b->payment_breakdown) ? json_decode($b->payment_breakdown, true) : null;
-                if (is_array($breakdown) && ! empty($breakdown)) {
-                    foreach ($breakdown as $item) {
-                        $cat = $this->classifyPaymentMethod($item['method'] ?? 'Efectivo');
-                        $methods[$cat]['total'] += (float) ($item['amount'] ?? 0);
-                        $methods[$cat]['count'] += 1;
-                    }
+        // 1. Facturas y Boletas (Billings)
+        $billingsQuery = DB::table('billings')
+            ->leftJoin('pay_modes', 'billings.idpago', '=', 'pay_modes.id')
+            ->join('type_documents', 'billings.idtipo_comprobante', '=', 'type_documents.id')
+            ->where('billings.anulado', 0)
+            ->whereIn('type_documents.codigo', ['01', '03'])
+            ->where(function ($q) {
+                $q->where('billings.modo_pago', 1)->orWhere('billings.sunat_forma_pago', 'Contado');
+            })
+            ->where(function ($q) use ($context, $today) {
+                if (! empty($context['openArching'])) {
+                    $q->where('billings.idarqueocaja', $context['openArching']->id)
+                        ->orWhereDate('billings.fecha_emision', $today);
                 } else {
-                    $cat = $this->classifyPaymentMethod($b->modo ?: 'Efectivo');
-                    $methods[$cat]['total'] += (float) $b->total;
+                    $q->whereDate('billings.fecha_emision', $today);
+                }
+            });
+
+        $billings = $billingsQuery->select('billings.id', 'pay_modes.descripcion as modo', 'billings.total', 'billings.payment_breakdown')->get();
+
+        foreach ($billings as $b) {
+            if ($dpByBilling->has($b->id)) {
+                foreach ($dpByBilling->get($b->id) as $dp) {
+                    $cat = $this->classifyPaymentMethod($dp->modo_desc);
+                    $methods[$cat]['total'] += (float) $dp->monto;
                     $methods[$cat]['count'] += 1;
                 }
+
+                continue;
             }
 
-            $saleNotes = DB::table('sale_notes')
-                ->whereDate('fecha_emision', $today)
-                ->where('estado', 1)
-                ->select('total', 'payment_breakdown')
-                ->get();
-
-            foreach ($saleNotes as $sn) {
-                $breakdown = ! empty($sn->payment_breakdown) ? json_decode($sn->payment_breakdown, true) : null;
-                if (is_array($breakdown) && ! empty($breakdown)) {
-                    foreach ($breakdown as $item) {
-                        $cat = $this->classifyPaymentMethod($item['method'] ?? 'Efectivo');
-                        $methods[$cat]['total'] += (float) ($item['amount'] ?? 0);
-                        $methods[$cat]['count'] += 1;
-                    }
-                } else {
-                    $methods['Efectivo']['total'] += (float) $sn->total;
-                    $methods['Efectivo']['count'] += 1;
+            $breakdown = ! empty($b->payment_breakdown) ? json_decode($b->payment_breakdown, true) : null;
+            if (is_array($breakdown) && ! empty($breakdown)) {
+                foreach ($breakdown as $item) {
+                    $cat = $this->classifyPaymentMethod($item['method'] ?? 'Efectivo');
+                    $methods[$cat]['total'] += (float) ($item['amount'] ?? 0);
+                    $methods[$cat]['count'] += 1;
                 }
+            } else {
+                $cat = $this->classifyPaymentMethod($b->modo ?: 'Efectivo');
+                $methods[$cat]['total'] += (float) $b->total;
+                $methods[$cat]['count'] += 1;
+            }
+        }
+
+        // 2. Notas de Venta (Sale Notes)
+        $saleNotesQuery = DB::table('sale_notes')
+            ->where('sale_notes.estado', 1)
+            ->where(function ($q) use ($context, $today) {
+                if (! empty($context['openArching'])) {
+                    $q->where('sale_notes.idarqueocaja', $context['openArching']->id)
+                        ->orWhereDate('sale_notes.fecha_emision', $today);
+                } else {
+                    $q->whereDate('sale_notes.fecha_emision', $today);
+                }
+            });
+
+        $saleNotes = $saleNotesQuery->select('sale_notes.id', 'sale_notes.total', 'sale_notes.payment_breakdown')->get();
+
+        foreach ($saleNotes as $sn) {
+            if ($dpBySaleNote->has($sn->id)) {
+                foreach ($dpBySaleNote->get($sn->id) as $dp) {
+                    $cat = $this->classifyPaymentMethod($dp->modo_desc);
+                    $methods[$cat]['total'] += (float) $dp->monto;
+                    $methods[$cat]['count'] += 1;
+                }
+
+                continue;
+            }
+
+            $breakdown = ! empty($sn->payment_breakdown) ? json_decode($sn->payment_breakdown, true) : null;
+            if (is_array($breakdown) && ! empty($breakdown)) {
+                foreach ($breakdown as $item) {
+                    $cat = $this->classifyPaymentMethod($item['method'] ?? 'Efectivo');
+                    $methods[$cat]['total'] += (float) ($item['amount'] ?? 0);
+                    $methods[$cat]['count'] += 1;
+                }
+            } else {
+                $methods['Efectivo']['total'] += (float) $sn->total;
+                $methods['Efectivo']['count'] += 1;
+            }
+        }
+
+        // 3. Cuotas de Contratos NO facturadas (evita duplicar con billings)
+        $installmentsQuery = DB::table('contract_installments')
+            ->leftJoin('pay_modes', 'contract_installments.idpago', '=', 'pay_modes.id')
+            ->where('contract_installments.estado', 1)
+            ->whereNotExists(function ($sub) {
+                $sub->select(DB::raw(1))
+                    ->from('billings')
+                    ->whereColumn('billings.reconciliation_key', 'contract_installments.reconciliation_key')
+                    ->where('billings.anulado', 0);
+            })
+            ->where(function ($q) use ($context, $today) {
+                if (! empty($context['openArching'])) {
+                    $q->where('contract_installments.idarqueocaja', $context['openArching']->id)
+                        ->orWhereDate('contract_installments.fecha_pago', $today);
+                } else {
+                    $q->whereDate('contract_installments.fecha_pago', $today);
+                }
+            })
+            ->select('contract_installments.id', 'pay_modes.descripcion as modo', 'contract_installments.monto')
+            ->get();
+
+        foreach ($installmentsQuery as $inst) {
+            if ($dpByInstallment->has($inst->id)) {
+                foreach ($dpByInstallment->get($inst->id) as $dp) {
+                    $cat = $this->classifyPaymentMethod($dp->modo_desc);
+                    $methods[$cat]['total'] += (float) $dp->monto;
+                    $methods[$cat]['count'] += 1;
+                }
+            } else {
+                $cat = $this->classifyPaymentMethod($inst->modo ?: 'Efectivo');
+                $methods[$cat]['total'] += (float) $inst->monto;
+                $methods[$cat]['count'] += 1;
             }
         }
 

@@ -424,6 +424,44 @@
                         </div>
                         @endforeach
                     </div>
+
+                    <!-- Desglose exclusivo de Cuotas de Contratos -->
+                    <div class="mt-4 pt-3 border-top">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-1">
+                                    <i class="ri-file-list-3-line text-success me-1"></i> Recaudación por Cuotas de Contratos
+                                </h6>
+                                <small class="text-muted">Desglose de pagos de cuotas de contrato cobradas hoy por medio de pago</small>
+                            </div>
+                            <span class="badge bg-success-subtle text-success fs-6 px-3 py-1 font-monospace">
+                                Total: {{ $signo }} {{ number_format($summary['installments_paid_total'], 2) }} ({{ $summary['installments_paid_count'] }} cuotas)
+                            </span>
+                        </div>
+
+                        <div class="row g-3">
+                            @foreach($summary['installment_payment_methods'] as $key => $method)
+                            <div class="col-md-4 col-sm-6">
+                                <div class="payment-method-card border-success-subtle bg-light">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="kpi-icon-circle bg-{{ $method['color'] }}-subtle text-{{ $method['color'] }}" style="width: 32px; height: 32px; font-size: 1rem;">
+                                                <i class="{{ $method['icon'] }}"></i>
+                                            </div>
+                                            <span class="fw-bold text-dark small">{{ $method['label'] }}</span>
+                                        </div>
+                                        <span class="badge bg-white text-secondary border">{{ $method['count'] }} cuotas</span>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="fs-5 fw-bold text-success font-monospace">
+                                            {{ $signo }} {{ number_format($method['total'], 2) }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
                 </div>
 
                 <!-- TAB 4: ARQUEO & CIERRE FORMAL -->
@@ -431,31 +469,54 @@
                     <div class="row justify-content-center">
                         <div class="col-lg-8">
                             <div class="border rounded-3 p-4 bg-light mb-4">
-                                <h5 class="fw-bold text-dark mb-3">
-                                    <i class="ri-scales-3-line text-primary me-2"></i> Conciliación de Efectivo en Caja
-                                </h5>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="fw-bold text-dark mb-0">
+                                        <i class="ri-scales-3-line text-primary me-2"></i> Conciliación y Balance de Caja
+                                    </h5>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 small">
+                                        Fórmula: Initial Balance + Cash + Deposits − Withdrawals − Expenses
+                                    </span>
+                                </div>
 
                                 <div class="table-responsive">
                                     <table class="table table-borderless align-middle mb-0">
                                         <tbody>
                                             <tr class="border-bottom">
-                                                <td class="text-muted py-2">Monto de Apertura (Saldo Inicial)</td>
+                                                <td class="text-muted py-2">Initial Balance (Saldo Inicial / Apertura)</td>
                                                 <td class="text-end fw-bold py-2 font-monospace">
                                                     {{ $signo }} {{ number_format($summary['opening_amount'], 2) }}
                                                 </td>
                                             </tr>
                                             <tr class="border-bottom">
                                                 <td class="text-muted py-2">
-                                                    (+) Ventas Pagadas en Efectivo
+                                                    (+) Cash (Efectivo de Ventas POS y Cuotas)
                                                     <small class="d-block text-secondary">Ingresos reales al cajón de dinero</small>
                                                 </td>
                                                 <td class="text-end fw-bold text-success py-2 font-monospace">
-                                                    +{{ $signo }} {{ number_format($summary['payment_methods']['Efectivo']['total'] ?? $summary['sales_paid_total'], 2) }}
+                                                    +{{ $signo }} {{ number_format($summary['cash_sales_in'], 2) }}
                                                 </td>
                                             </tr>
                                             <tr class="border-bottom">
                                                 <td class="text-muted py-2">
-                                                    (-) Egresos / Gastos en Efectivo
+                                                    (+) Deposits (Depósitos / Entradas a Caja)
+                                                    <small class="d-block text-secondary">Inyecciones de efectivo registradas</small>
+                                                </td>
+                                                <td class="text-end fw-bold text-info py-2 font-monospace">
+                                                    +{{ $signo }} {{ number_format($summary['deposits_total'], 2) }}
+                                                </td>
+                                            </tr>
+                                            <tr class="border-bottom">
+                                                <td class="text-muted py-2">
+                                                    (-) Withdrawals (Retiros / Salidas de Caja)
+                                                    <small class="d-block text-secondary">Retiros parciales o traslados de efectivo</small>
+                                                </td>
+                                                <td class="text-end fw-bold text-warning py-2 font-monospace">
+                                                    -{{ $signo }} {{ number_format($summary['withdrawals_total'], 2) }}
+                                                </td>
+                                            </tr>
+                                            <tr class="border-bottom">
+                                                <td class="text-muted py-2">
+                                                    (-) Expenses (Gastos Operativos en Efectivo)
                                                     <small class="d-block text-secondary">Gastos operativos pagados de caja</small>
                                                 </td>
                                                 <td class="text-end fw-bold text-danger py-2 font-monospace" id="close_expenses_cash">
@@ -464,7 +525,7 @@
                                             </tr>
                                             <tr class="table-primary rounded">
                                                 <td class="fw-bold text-primary py-3 fs-5">
-                                                    (=) Total Efectivo Esperado en Caja
+                                                    (=) Expected (Total Efectivo Esperado en Caja)
                                                 </td>
                                                 <td class="text-end fw-bold text-primary py-3 fs-4 font-monospace" id="close_final_cash">
                                                     {{ $signo }} {{ number_format($summary['expected_cash_in_box'], 2) }}

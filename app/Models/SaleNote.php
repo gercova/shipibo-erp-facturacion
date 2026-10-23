@@ -8,9 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 class SaleNote extends Model
 {
     use HasFactory;
-    protected $table        = 'sale_notes';
-    protected $primaryKey   = 'id';
-    protected $fillable     = [
+
+    protected $table = 'sale_notes';
+
+    protected $primaryKey = 'id';
+
+    protected $fillable = [
         'idtipo_comprobante',
         'serie',
         'correlativo',
@@ -31,6 +34,7 @@ class SaleNote extends Model
         'idarqueocaja',
         'idfactura_anular',
         'vuelto',
+        'reconciliation_key',
     ];
 
     protected $casts = [

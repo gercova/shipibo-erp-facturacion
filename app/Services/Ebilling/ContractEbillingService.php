@@ -104,6 +104,8 @@ class ContractEbillingService
                 'observaciones' => trim((string) ($options['observaciones'] ?? "Facturación de cuota #{$installment->numero_cuota} de contrato {$contract->contract_number}")),
                 'contract_id' => $contract->id,
                 'installment_id' => $installment->id,
+                'reconciliation_key' => "INST-{$installment->id}",
+                'idarqueocaja' => $installment->idarqueocaja ?: ($options['idarqueocaja'] ?? null),
                 'idusuario' => auth()->id() ?: 1,
                 'idalmacen' => $contract->idalmacen ?: 1,
                 'estado_cpe' => null,
@@ -132,11 +134,12 @@ class ContractEbillingService
                 $serieModel->update(['correlativo' => (int) $correlativo]);
             }
 
-            // Flag installment as billed with direct reference
+            // Flag installment as billed with direct reference and reconciliation key
             $installment->update([
                 'billing_id' => $billing->id,
                 'facturado_at' => now(),
                 'factura_numero' => "{$serie}-{$correlativo}",
+                'reconciliation_key' => "INST-{$installment->id}",
             ]);
 
             return $billing;

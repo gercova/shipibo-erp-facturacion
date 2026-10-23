@@ -53,6 +53,7 @@ class Billing extends Model
         'contract_id',
         'installment_id',
         'checklist_id',
+        'reconciliation_key',
     ];
 
     protected $casts = [

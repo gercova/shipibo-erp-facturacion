@@ -26,6 +26,9 @@ class ContractInstallment extends Model
         'facturado_at',
         'factura_numero',
         'metodo_pago',
+        'idpago',
+        'idarqueocaja',
+        'reconciliation_key',
         'referencia_pago',
         'observaciones',
     ];
@@ -37,6 +40,8 @@ class ContractInstallment extends Model
         'monto' => 'decimal:2',
         'porcentaje' => 'decimal:2',
         'estado' => 'integer',
+        'idarqueocaja' => 'integer',
+        'idpago' => 'integer',
     ];
 
     const STATUS_PENDING = 0;
@@ -51,6 +56,16 @@ class ContractInstallment extends Model
     public function billing(): BelongsTo
     {
         return $this->belongsTo(Billing::class, 'billing_id');
+    }
+
+    public function archingCash(): BelongsTo
+    {
+        return $this->belongsTo(ArchingCash::class, 'idarqueocaja');
+    }
+
+    public function payMode(): BelongsTo
+    {
+        return $this->belongsTo(PayMode::class, 'idpago');
     }
 
     public function isBilled(): bool
@@ -109,5 +124,20 @@ class ContractInstallment extends Model
         }
 
         return '<span class="badge bg-light text-secondary fw-medium"><i class="ri-calendar-line me-1"></i> Vence '.$this->fecha_vencimiento->format('d/m/Y').'</span>';
+    }
+
+    public function getAmountAttribute(): float
+    {
+        return (float) ($this->attributes['monto'] ?? 0);
+    }
+
+    public function getPaidAtAttribute(): ?Carbon
+    {
+        return ! empty($this->attributes['fecha_pago']) ? Carbon::parse($this->attributes['fecha_pago']) : null;
+    }
+
+    public function getStatusAttribute(): string
+    {
+        return $this->isPaid() ? 'paid' : 'pending';
     }
 }

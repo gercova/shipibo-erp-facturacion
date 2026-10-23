@@ -10,6 +10,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CocktailMenuController;
 use App\Http\Controllers\ContractController;
+use App\Http\Controllers\ContractReportController;
 use App\Http\Controllers\CountryController;
 use App\Http\Controllers\DailyCashClosingController;
 use App\Http\Controllers\EventChecklistController;
@@ -254,6 +255,16 @@ Route::controller(ContractController::class)->prefix('contracts')->middleware(['
     Route::post('/{id}/issue-debit-note', 'issue_debit_note')->name('admin.contracts.issue_debit_note');
     Route::post('/{id}/formalize', 'formalize')->name('admin.contracts.formalize');
     Route::post('/{id}/adjustments', 'store_adjustment')->name('admin.contracts.store_adjustment');
+});
+
+Route::controller(ContractReportController::class)->prefix('contracts/reports')->middleware(['auth'])->group(function () {
+    Route::get('/', 'index')->name('admin.reports.contracts.index');
+    Route::get('/status-data', 'getContractsByStatus')->name('admin.reports.contracts.status_data');
+    Route::get('/installments-due-data', 'getInstallmentsDue')->name('admin.reports.contracts.installments_due_data');
+    Route::get('/guarantees-data', 'getGuarantees')->name('admin.reports.contracts.guarantees_data');
+    Route::get('/adjustments-data', 'getAdjustments')->name('admin.reports.contracts.adjustments_data');
+    Route::get('/revenue-payment-data', 'getRevenueByPaymentMethod')->name('admin.reports.contracts.revenue_payment_data');
+    Route::get('/preliminaries-data', 'getPreliminaryTransactions')->name('admin.reports.contracts.preliminaries_data');
 });
 
 Route::controller(PreliminaryOrderController::class)->prefix('contracts/preliminary-orders')->middleware(['auth', 'can:admin.contracts'])->group(function () {
