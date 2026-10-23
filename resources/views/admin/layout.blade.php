@@ -315,8 +315,18 @@
                                             href="{{ route('admin.quotes') }}">Cotizaciones</a>
                                     @endcan
                                     @can('admin.contracts')
-                                        <a class="nav-link {{ request()->is('contracts*') ? 'active' : '' }}"
-                                            href="{{ route('admin.contracts') }}">Contratos</a>
+                                        <a class="nav-link {{ request()->is('contracts') || (request()->is('contracts/*') && !request()->is('contracts/preliminary-orders*')) ? 'active' : '' }}"
+                                            href="{{ route('admin.contracts') }}">Contratos Formales</a>
+                                        <a class="nav-link {{ request()->is('contracts/preliminary-orders*') ? 'active' : '' }} d-flex justify-content-between align-items-center"
+                                            href="{{ route('admin.contracts.preliminary_orders') }}">
+                                            <span>Cola Pedidos Web</span>
+                                            @php
+                                                $pendingWebOrders = \App\Models\Contract::where('status', 'preliminar')->count();
+                                            @endphp
+                                            @if($pendingWebOrders > 0)
+                                                <span class="badge bg-danger rounded-pill">{{ $pendingWebOrders }}</span>
+                                            @endif
+                                        </a>
                                         <a class="nav-link {{ request()->is('event-checklists*') ? 'active' : '' }}"
                                             href="{{ route('admin.event_checklists') }}">Checklists de Eventos</a>
                                         <a class="nav-link {{ request()->is('cocktail-menu*') ? 'active' : '' }}"

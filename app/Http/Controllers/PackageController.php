@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Business;
 use App\Models\CocktailMenuItem;
 use App\Models\Package;
 use App\Models\PackageItem;
@@ -408,10 +407,5 @@ class PackageController extends Controller
                 'msg' => 'Error al calcular cotización: '.$e->getMessage(),
             ], 500);
         }
-    }
-
-    private function signo_pais(): string
-    {
-        return Business::where('id', 1)->value('simbolo') ?: 'S/';
     }
 }

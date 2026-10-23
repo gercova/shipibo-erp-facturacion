@@ -19,8 +19,10 @@ use App\Http\Controllers\LoginController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\PayModeController;
 use App\Http\Controllers\PosController;
+use App\Http\Controllers\PreliminaryOrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProviderController;
+use App\Http\Controllers\PublicOrderController;
 use App\Http\Controllers\QuoteController;
 use App\Http\Controllers\ReportPaymentController;
 use App\Http\Controllers\ReportSalesController;
@@ -49,6 +51,18 @@ Route::get('/', [LoginController::class, 'index'])->name('login')->middleware('g
 Route::controller(LoginController::class)->prefix('login')->group(function () {
     Route::post('/login', 'login')->name('login.login');
     Route::get('/logout', 'logout')->name('login.logout');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Flujo Público de Pedidos Web - Menú Digital (Ley N° 29733)
+|--------------------------------------------------------------------------
+*/
+Route::controller(PublicOrderController::class)->prefix('pedido')->group(function () {
+    Route::get('/', 'index')->name('public.orders.index');
+    Route::post('/simular', 'simulate')->name('public.orders.simulate');
+    Route::post('/confirmar', 'store')->middleware('throttle:public_orders')->name('public.orders.store');
+    Route::get('/confirmacion/{tracking_code}', 'confirmation')->name('public.orders.confirmation');
 });
 
 Route::get('/home', [HomeController::class, 'index'])->name('admin.home')->middleware(['auth', 'can:admin.home']);
@@ -238,6 +252,14 @@ Route::controller(ContractController::class)->prefix('contracts')->middleware(['
     Route::post('/installments/{id}/pay', 'pay_installment')->name('admin.contracts.pay_installment');
 });
 
+Route::controller(PreliminaryOrderController::class)->prefix('contracts/preliminary-orders')->middleware(['auth', 'can:admin.contracts'])->group(function () {
+    Route::get('/', 'index')->name('admin.contracts.preliminary_orders');
+    Route::get('/get', 'get')->name('admin.contracts.preliminary_orders.get');
+    Route::match(['get', 'post'], '/detail', 'detail')->name('admin.contracts.preliminary_orders.detail');
+    Route::post('/convert-draft', 'convertToDraft')->name('admin.contracts.preliminary_orders.convert_draft');
+    Route::post('/convert-to-draft', 'convertToDraft'); // Alias
+});
+
 Route::controller(EventChecklistController::class)->prefix('event-checklists')->middleware(['auth', 'can:admin.contracts'])->group(function () {
     Route::get('/', 'index')->name('admin.event_checklists');
     Route::get('/get', 'get')->name('event_checklists.get');
@@ -416,7 +438,6 @@ Route::controller(BuyController::class)->prefix('buys')->middleware(['auth', 'ca
     Route::post('/store-product', 'store_product')->name('admin.store_product_buy');
     Route::post('/load-providers', 'load_providers')->name('admin.load_providers');
     Route::post('/get-product-warehouse', 'get_product_idwarehouse')->name('admin.get_products_by_idwarehouse_b');
-
     Route::post('/print-buy', 'print')->name('admin.print_buy');
     Route::get('/pdf', 'test_pdf');
 });

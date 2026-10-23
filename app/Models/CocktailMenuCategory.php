@@ -25,15 +25,23 @@ class CocktailMenuCategory extends Model
         'orden' => 'integer',
     ];
 
-    public function items(): HasMany {
+    public function items(): HasMany
+    {
         return $this->hasMany(CocktailMenuItem::class, 'menu_category_id')->orderBy('orden');
     }
 
-    public function activeItems(): HasMany {
+    public function cocktails(): HasMany
+    {
+        return $this->hasMany(CocktailMenuItem::class, 'menu_category_id')->orderBy('orden');
+    }
+
+    public function activeItems(): HasMany
+    {
         return $this->hasMany(CocktailMenuItem::class, 'menu_category_id')->where('activo', true)->orderBy('orden');
     }
 
-    public function scopeActive($query) {
+    public function scopeActive($query)
+    {
         return $query->where('activo', true)->orderBy('orden');
     }
 }
