@@ -53,7 +53,6 @@ Los modulos pendientes de adecuacion son:
 8. Cotizaciones
 9. Reportes
 
-
 ## 5. Detalle por Modulo
 
 ### 5.1 Proveedores
