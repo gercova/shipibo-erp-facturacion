@@ -181,6 +181,17 @@
                         <span>Guardar</span>
                     </button>
                 @endif
+                @if($checklist->hasShipmentGuide())
+                    <a href="{{ asset('files/shipment_guides/a4/' . $checklist->shipmentGuide?->serie . '-' . $checklist->shipmentGuide?->correlativo . '.pdf') }}" target="_blank" class="btn btn-info text-dark touch-btn fw-bold">
+                        <i class="ri-truck-line me-1 fs-5"></i>
+                        <span>GRE: {{ $checklist->shipmentGuide?->serie }}-{{ $checklist->shipmentGuide?->correlativo }}</span>
+                    </a>
+                @else
+                    <button type="button" class="btn btn-info text-dark touch-btn fw-bold" id="btn-generate-gre-tablet">
+                        <i class="ri-truck-line me-1 fs-5"></i>
+                        <span>Generar Guía (GRE)</span>
+                    </button>
+                @endif
                 <a href="{{ route('admin.event_checklists.report', $checklist->id) }}" class="btn btn-warning text-dark touch-btn">
                     <i class="ri-file-chart-line me-1 fs-5"></i>
                     <span>Acta de Cierre</span>
@@ -1394,6 +1405,95 @@ $(document).ready(function() {
                 submitBtn.prop('disabled', false);
                 const msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Error inesperado al reabrir.';
                 Swal.fire({ icon: 'error', title: 'No se pudo reabrir', text: msg });
+            }
+        });
+    });
+
+    // Generate GRE via Checklist
+    $('#btn-generate-gre-tablet').on('click', function() {
+        const btn = $(this);
+        Swal.fire({
+            title: '¿Generar Guía de Remisión (GRE)?',
+            html: `
+                <div class="text-start small">
+                    <p class="mb-2">Se generará la <strong>Guía de Remisión Electrónica Remitente (09)</strong> para amparar el transporte privado de los bienes físicos de este checklist.</p>
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small">Placa de Vehículo Principal:</label>
+                        <input type="text" id="swal-gre-placa" class="form-control form-control-sm" value="M1-1234" placeholder="Ej: ABC-123" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small">Motivo de Traslado:</label>
+                        <select id="swal-gre-motivo" class="form-select form-select-sm">
+                            <option value="01" selected>01 - VENTA</option>
+                            <option value="04">04 - TRASLADO ENTRE ESTABLECIMIENTOS</option>
+                            <option value="13">13 - OTROS</option>
+                        </select>
+                    </div>
+                    <div class="alert alert-secondary py-1 px-2 small mb-0">
+                        <i class="ri-information-line me-1"></i> Se transportan únicamente bienes físicos. Los servicios no figuran en la GRE.
+                    </div>
+                </div>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '<i class="ri-truck-line me-1"></i> Emitir Guía',
+            cancelButtonText: 'Cancelar',
+            preConfirm: () => {
+                const placa = $('#swal-gre-placa').val().trim();
+                if (!placa) {
+                    Swal.showValidationMessage('Debe ingresar la placa del vehículo para transporte privado.');
+                    return false;
+                }
+                return {
+                    placa_vehiculo: placa,
+                    motivo_traslado_codigo: $('#swal-gre-motivo').val()
+                };
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                btn.prop('disabled', true);
+                Swal.fire({
+                    title: 'Generando GRE...',
+                    text: 'Construyendo payload y registrando en SUNAT Beta...',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+
+                $.ajax({
+                    url: "{{ route('admin.event_checklists.generate_gre', $checklist->id) }}",
+                    type: 'POST',
+                    data: {
+                        _token: "{{ csrf_token() }}",
+                        placa_vehiculo: result.value.placa_vehiculo,
+                        motivo_traslado_codigo: result.value.motivo_traslado_codigo
+                    },
+                    success: function(resp) {
+                        if (resp.status) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Guía Generada Exitosamente!',
+                                html: `
+                                    <p class="mb-2"><strong>${resp.numero}</strong> vinculada al checklist.</p>
+                                    <div class="mb-2 small text-muted">Ticket SUNAT: ${resp.ticket || 'Aceptado'}</div>
+                                    <a href="${resp.pdf_url}" target="_blank" class="btn btn-primary btn-sm px-3 mt-2">
+                                        <i class="ri-printer-line me-1"></i> Ver / Imprimir PDF
+                                    </a>
+                                `,
+                                confirmButtonText: 'Aceptar'
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            btn.prop('disabled', false);
+                            Swal.fire({ icon: 'warning', title: 'Atención', text: resp.msg || 'No se pudo generar la guía.' });
+                        }
+                    },
+                    error: function(xhr) {
+                        btn.prop('disabled', false);
+                        const msg = (xhr.responseJSON && xhr.responseJSON.msg) ? xhr.responseJSON.msg : 'Error al procesar la guía de remisión.';
+                        Swal.fire({ icon: 'error', title: 'Error', text: msg });
+                    }
+                });
             }
         });
     });

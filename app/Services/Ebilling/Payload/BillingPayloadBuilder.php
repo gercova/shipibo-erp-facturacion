@@ -128,9 +128,9 @@ class BillingPayloadBuilder
         }
 
         $item = [
-            'descripcion' => trim((string) $detail->product->descripcion),
+            'descripcion' => trim((string) ($detail->descripcion_custom ?: $detail->product->descripcion)),
             'cantidad' => round((float) $detail->cantidad, 2),
-            'unidad' => trim((string) optional($detail->product->unit)->codigo ?: 'NIU'),
+            'unidad' => trim((string) ($detail->unidad_custom ?: optional($detail->product->unit)->codigo ?: 'NIU')),
             'valor_unitario' => round((float) $detail->valor_unitario, 10),
             'precio_unitario' => round((float) $detail->precio_unitario, 10),
             'valor_total' => round((float) $detail->valor_total, 2),

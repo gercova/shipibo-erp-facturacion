@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Billing;
 use App\Models\Business;
 use App\Models\Client;
 use App\Models\Contract;
@@ -11,8 +12,10 @@ use App\Models\ContractItem;
 use App\Models\IdentityDocumentType;
 use App\Models\Product;
 use App\Services\Contracts\ContractAdjustmentService;
+use App\Services\Ebilling\ContractEbillingService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,10 +26,9 @@ use Luecano\NumeroALetras\NumeroALetras;
 
 class ContractController extends Controller
 {
-    public function index()
-    {
-        $warehouseId = $this->currentWarehouseId();
-        $query = Contract::query();
+    public function index(): View {
+        $warehouseId    = $this->currentWarehouseId();
+        $query          = Contract::query();
         if ($warehouseId > 0) {
             $query->where(function ($q) use ($warehouseId) {
                 $q->where('idalmacen', $warehouseId)->orWhereNull('idalmacen');
@@ -36,16 +38,15 @@ class ContractController extends Controller
         $now = Carbon::now();
 
         return view('admin.contracts.list', [
-            'kpi_total_count' => (clone $query)->count(),
-            'kpi_signed_count' => (clone $query)->where('estado', Contract::STATUS_SIGNED)->count(),
-            'kpi_events_month' => (clone $query)->whereYear('fecha_evento', $now->year)->whereMonth('fecha_evento', $now->month)->count(),
-            'kpi_total_amount' => (clone $query)->where('estado', '!=', Contract::STATUS_VOIDED)->sum('total'),
-            'signo' => $this->signo_pais(),
+            'kpi_total_count'   => (clone $query)->count(),
+            'kpi_signed_count'  => (clone $query)->where('estado', Contract::STATUS_SIGNED)->count(),
+            'kpi_events_month'  => (clone $query)->whereYear('fecha_evento', $now->year)->whereMonth('fecha_evento', $now->month)->count(),
+            'kpi_total_amount'  => (clone $query)->where('estado', '!=', Contract::STATUS_VOIDED)->sum('total'),
+            'signo'             => $this->signo_pais(),
         ]);
     }
 
-    public function get(Request $request)
-    {
+    public function get(Request $request) {
         $warehouseId = $this->currentWarehouseId();
         $contracts = Contract::query()
             ->select('contracts.*', 'clients.nombres as cliente', 'clients.nro_documento as dni_ruc')
@@ -148,29 +149,27 @@ class ContractController extends Controller
             ->make(true);
     }
 
-    public function create()
-    {
-        $business = Business::first();
-        $clients = Client::orderBy('nombres', 'asc')->get();
-        $products = Product::with(['unit'])->orderBy('descripcion', 'asc')->get();
-        $typeDocuments = IdentityDocumentType::where('estado', 1)->orderBy('descripcion')->get();
-        $nextNumber = $this->generateNextContractNumber();
+    public function create(): View {
+        $business       = Business::first();
+        $clients        = Client::orderBy('nombres', 'asc')->get();
+        $products       = Product::with(['unit'])->orderBy('descripcion', 'asc')->get();
+        $typeDocuments  = IdentityDocumentType::where('estado', 1)->orderBy('descripcion')->get();
+        $nextNumber     = $this->generateNextContractNumber();
         $defaultClauses = $this->getDefaultClauseTemplates($business);
 
         return view('admin.contracts.create', [
-            'business' => $business,
-            'clients' => $clients,
-            'products' => $products,
-            'typeDocuments' => $typeDocuments,
-            'nextNumber' => $nextNumber,
-            'defaultClauses' => $defaultClauses,
-            'signo' => $this->signo_pais(),
-            'moneda' => $this->moneda_pais(),
+            'business'          => $business,
+            'clients'           => $clients,
+            'products'          => $products,
+            'typeDocuments'     => $typeDocuments,
+            'nextNumber'        => $nextNumber,
+            'defaultClauses'    => $defaultClauses,
+            'signo'             => $this->signo_pais(),
+            'moneda'            => $this->moneda_pais(),
         ]);
     }
 
-    public function store(Request $request)
-    {
+    public function store(Request $request) {
         $validator = Validator::make($request->all(), Contract::validationRules(), [
             'idcliente.required' => 'Debe seleccionar un cliente contratante.',
             'contract_number.required' => 'El número de contrato es obligatorio.',
@@ -318,14 +317,13 @@ class ContractController extends Controller
         }
     }
 
-    public function edit($id)
-    {
-        $contract = Contract::with(['client', 'items.product', 'clauses', 'installments', 'adjustments.installment', 'adjustments.user'])->find($id);
+    public function edit(int $id): View {
+        $contract   = Contract::with(['client', 'items.product', 'clauses', 'installments', 'adjustments.installment', 'adjustments.user'])->find($id);
         abort_if(! $contract, 404);
 
-        $business = Business::first();
-        $clients = Client::orderBy('nombres', 'asc')->get();
-        $products = Product::with(['unit'])->orderBy('descripcion', 'asc')->get();
+        $business   = Business::first();
+        $clients    = Client::orderBy('nombres', 'asc')->get();
+        $products   = Product::with(['unit'])->orderBy('descripcion', 'asc')->get();
         $typeDocuments = IdentityDocumentType::where('estado', 1)->orderBy('descripcion')->get();
 
         return view('admin.contracts.edit', [
@@ -549,7 +547,15 @@ class ContractController extends Controller
     public function detail(Request $request)
     {
         $id = (int) $request->input('id');
-        $contract = Contract::with(['client.tipoDocumento', 'items', 'clauses', 'installments'])->find($id);
+        $contract = Contract::with([
+            'client.tipoDocumento',
+            'items',
+            'clauses',
+            'installments.billing',
+            'adjustments',
+            'billings.typeDocument',
+            'shipmentGuides',
+        ])->find($id);
 
         if (! $contract) {
             return response()->json([
@@ -571,6 +577,10 @@ class ContractController extends Controller
                 'fecha_pago' => $inst->fecha_pago ? $inst->fecha_pago->format('d/m/Y') : '-',
                 'estado' => $inst->estado,
                 'is_paid' => $inst->isPaid(),
+                'is_billed' => $inst->isBilled(),
+                'billing_id' => $inst->billing_id,
+                'facturado_at' => $inst->facturado_at ? $inst->facturado_at->format('d/m/Y H:i') : null,
+                'factura_numero' => $inst->factura_numero,
                 'is_overdue' => $inst->isOverdue(),
                 'is_due_today' => $inst->isDueToday(),
                 'badge' => $inst->status_badge,
@@ -587,6 +597,24 @@ class ContractController extends Controller
             'items' => $contract->items,
             'clauses' => $contract->clauses,
             'installments' => $formattedInstallments,
+            'adjustments' => $contract->adjustments,
+            'billings' => $contract->billings->map(fn ($b) => [
+                'id' => $b->id,
+                'tipo' => optional($b->typeDocument)->descripcion ?: 'COMPROBANTE',
+                'serie' => $b->serie,
+                'correlativo' => $b->correlativo,
+                'numero' => "{$b->serie}-{$b->correlativo}",
+                'total' => (float) $b->total,
+                'fecha_emision' => optional($b->fecha_emision)->format('d/m/Y'),
+                'estado_cpe' => $b->estado_cpe,
+            ]),
+            'shipment_guides' => $contract->shipmentGuides->map(fn ($g) => [
+                'id' => $g->id,
+                'numero' => "{$g->serie}-{$g->correlativo}",
+                'fecha_emision' => optional($g->fecha_emision)->format('d/m/Y'),
+                'estado_cpe' => $g->estado_cpe,
+                'ticket' => $g->ticket,
+            ]),
             'has_overdue' => $contract->hasOverdueInstallments(),
             'paid_amount' => $contract->paid_amount,
             'pending_amount' => $contract->pending_amount,
@@ -987,5 +1015,91 @@ class ContractController extends Controller
                 'contenido' => 'La cancelación del evento no implica la devolución del dinero; puede canjear el servicio para otra fecha que esté a disposición del proveedor.',
             ],
         ];
+    }
+
+    public function invoice_installment(Request $request, $id, $installmentId, ContractEbillingService $ebillingService)
+    {
+        $contract = Contract::with(['client.tipoDocumento', 'installments'])->find($id);
+        if (! $contract) {
+            return response()->json(['status' => false, 'msg' => 'Contrato no encontrado.', 'type' => 'warning'], 404);
+        }
+
+        $installment = $contract->installments()->find($installmentId);
+        if (! $installment) {
+            return response()->json(['status' => false, 'msg' => 'Cuota no encontrada.', 'type' => 'warning'], 404);
+        }
+
+        try {
+            $result = $ebillingService->invoiceInstallment($installment, $request->all());
+
+            return response()->json([
+                'status' => true,
+                'msg' => "Cuota #{$installment->numero_cuota} facturada exitosamente con {$result['billing']->serie}-{$result['billing']->correlativo}.",
+                'type' => 'success',
+                'billing_id' => $result['billing']->id,
+                'factura_numero' => $result['billing']->serie.'-'.$result['billing']->correlativo,
+                'total' => (float) $result['billing']->total,
+                'payload' => $result['payload'],
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'status' => false,
+                'msg' => $e->getMessage(),
+                'type' => 'warning',
+            ], 422);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Error al facturar cuota: '.$e->getMessage(),
+                'type' => 'error',
+            ], 500);
+        }
+    }
+
+    public function issue_debit_note(Request $request, $id, ContractEbillingService $ebillingService)
+    {
+        $contract = Contract::with(['client.tipoDocumento', 'adjustments', 'billings.typeDocument'])->find($id);
+        if (! $contract) {
+            return response()->json(['status' => false, 'msg' => 'Contrato no encontrado.', 'type' => 'warning'], 404);
+        }
+
+        $parentBillingId = (int) $request->input('parent_billing_id');
+        $parentBilling = $parentBillingId > 0
+            ? $contract->billings()->find($parentBillingId)
+            : Billing::query()->where('contract_id', $contract->id)->latest('id')->first();
+
+        if (! $parentBilling) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'No se encontró un comprobante previo facturado para este contrato al cual asociar la Nota de Débito.',
+                'type' => 'warning',
+            ], 422);
+        }
+
+        try {
+            $result = $ebillingService->issueDebitNoteForAdjustments($contract, $parentBilling, $request->all());
+
+            return response()->json([
+                'status'        => true,
+                'msg'           => "Nota de Débito {$result['debit_note']->serie}-{$result['debit_note']->correlativo} emitida exitosamente.",
+                'type'          => 'success',
+                'debit_note_id' => $result['debit_note']->id,
+                'numero'        => $result['debit_note']->serie.'-'.$result['debit_note']->correlativo,
+                'total'         => (float) $result['debit_note']->total,
+                'payload'       => $result['payload'],
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'status'    => false,
+                'msg'       => $e->getMessage(),
+                'type'      => 'warning',
+            ], 422);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status'    => false,
+                'msg'       => 'Error al emitir Nota de Débito: '.$e->getMessage(),
+                'type'      => 'error',
+            ], 500);
+        }
     }
 }

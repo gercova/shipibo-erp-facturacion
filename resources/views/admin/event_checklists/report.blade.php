@@ -34,6 +34,16 @@
         </div>
 
         <div class="d-flex align-items-center gap-2 flex-wrap">
+            @if($checklist->hasShipmentGuide())
+                <a href="{{ asset('files/shipment_guides/a4/' . $checklist->shipmentGuide?->serie . '-' . $checklist->shipmentGuide?->correlativo . '.pdf') }}" target="_blank" class="btn btn-info text-dark px-3 py-2 rounded-pill fw-bold">
+                    <i class="ri-truck-line me-1"></i> GRE: {{ $checklist->shipmentGuide?->serie }}-{{ $checklist->shipmentGuide?->correlativo }}
+                </a>
+            @endif
+            @if($contract)
+                <a href="{{ route('admin.contracts') }}" class="btn btn-outline-primary px-3 py-2 rounded-pill">
+                    <i class="ri-bill-line me-1"></i> Facturación Contrato
+                </a>
+            @endif
             <a href="{{ route('admin.event_checklists.pdf', $checklist->id) }}" target="_blank" class="btn btn-primary px-3 py-2 rounded-pill fw-bold">
                 <i class="ri-printer-line me-1"></i> Imprimir / Exportar PDF A4
             </a>

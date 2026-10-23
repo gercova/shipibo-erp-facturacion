@@ -187,11 +187,11 @@
                             dueHtml = `<span class="text-warning-emphasis fw-bold"><i class="ri-time-fill me-1"></i>${inst.fecha_vencimiento} (Hoy)</span>`;
                         }
 
-                        let actionHtml = '';
+                        let actionHtml = '<div class="d-flex flex-column gap-1 align-items-center">';
                         if (inst.is_paid) {
-                            actionHtml = `<span class="badge bg-success-subtle text-success py-1 px-2"><i class="ri-check-line me-1"></i>Pagado</span>`;
+                            actionHtml += `<span class="badge bg-success-subtle text-success py-1 px-2"><i class="ri-check-line me-1"></i>Pagado</span>`;
                         } else {
-                            actionHtml = `<button type="button" class="btn btn-sm btn-outline-success py-0 px-2 btn-open-pay-modal" 
+                            actionHtml += `<button type="button" class="btn btn-sm btn-outline-success py-0 px-2 btn-open-pay-modal" 
                                 data-id="${inst.id}" 
                                 data-contract-id="${c.id}" 
                                 data-num="${inst.numero_cuota}" 
@@ -201,6 +201,22 @@
                                 <i class="ri-money-dollar-circle-line me-1"></i>Pagar
                             </button>`;
                         }
+
+                        if (inst.is_billed) {
+                            actionHtml += `<span class="badge bg-primary-subtle text-primary py-1 px-2" title="Facturado el ${inst.facturado_at || ''}"><i class="ri-bill-line me-1"></i>${inst.factura_numero || 'Facturado'}</span>`;
+                        } else {
+                            actionHtml += `<button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 btn-open-invoice-modal"
+                                data-id="${inst.id}"
+                                data-contract-id="${c.id}"
+                                data-num="${inst.numero_cuota}"
+                                data-desc="${inst.descripcion}"
+                                data-amount="${parseFloat(inst.monto).toFixed(2)}"
+                                data-client-doc-type="${client ? (client.tipo_documento?.codigo || '') : ''}"
+                                data-client-doc="${client ? (client.nro_documento || '') : ''}">
+                                <i class="ri-file-text-line me-1"></i>Facturar
+                            </button>`;
+                        }
+                        actionHtml += '</div>';
 
                         installmentsHtml += `<tr class="${rowClass}">
                             <td class="text-center fw-bold">${inst.numero_cuota}</td>
@@ -229,6 +245,49 @@
                     } else {
                         $('#modal-overdue-alert-banner').hide();
                     }
+
+                    // Render Billings List
+                    let billingsHtml = '';
+                    let parentBillingOptions = '';
+                    if (r.billings && r.billings.length > 0) {
+                        billingsHtml = '<div class="list-group list-group-flush">';
+                        r.billings.forEach(b => {
+                            billingsHtml += `<div class="list-group-item d-flex justify-content-between align-items-center py-2 px-1">
+                                <div>
+                                    <strong class="text-dark">${b.tipo}: ${b.numero}</strong>
+                                    <div class="text-muted small">${b.fecha_emision} | Estado: <span class="badge bg-success-subtle text-success">${b.estado_cpe || 'REGISTRADO'}</span></div>
+                                </div>
+                                <span class="badge bg-primary fs-7">${signo} ${parseFloat(b.total).toFixed(2)}</span>
+                            </div>`;
+                            parentBillingOptions += `<option value="${b.id}">${b.tipo} ${b.numero} - Total: ${signo} ${parseFloat(b.total).toFixed(2)}</option>`;
+                        });
+                        billingsHtml += '</div>';
+                        $('#btn-open-debit-note-modal').show().data('contract-id', c.id);
+                    } else {
+                        billingsHtml = '<span class="text-muted small">Sin comprobantes electrónicos emitidos aún.</span>';
+                        $('#btn-open-debit-note-modal').hide();
+                    }
+                    $('#modal-billings-list').html(billingsHtml);
+                    $('#debit-note-parent-id').html(parentBillingOptions);
+
+                    // Render GRE List
+                    let greHtml = '';
+                    if (r.shipment_guides && r.shipment_guides.length > 0) {
+                        greHtml = '<div class="list-group list-group-flush">';
+                        r.shipment_guides.forEach(g => {
+                            greHtml += `<div class="list-group-item d-flex justify-content-between align-items-center py-2 px-1">
+                                <div>
+                                    <strong class="text-dark">GRE: ${g.numero}</strong>
+                                    <div class="text-muted small">${g.fecha_emision} | ${g.estado_cpe || 'REGISTRADO'}</div>
+                                </div>
+                                <a href="{{ asset('files/shipment_guides/a4') }}/${g.numero}.pdf" target="_blank" class="btn btn-xs btn-outline-info py-0 px-2">PDF</a>
+                            </div>`;
+                        });
+                        greHtml += '</div>';
+                    } else {
+                        greHtml = '<span class="text-muted small">Sin guías de remisión generadas.</span>';
+                    }
+                    $('#modal-gre-list').html(greHtml);
 
                     // 20% Guarantee numerical display
                     let guaranteeVal = (parseFloat(c.total) * 0.20).toFixed(2);
@@ -365,6 +424,131 @@
                     btn.prop('disabled', false).html('<i class="ri-check-line me-1"></i> Confirmar Pago');
                     let msg = xhr.responseJSON?.msg || 'Error al procesar el pago.';
                     toastr.error(msg);
+                }
+            });
+        });
+
+        // Open Invoice Modal
+        $(document).on('click', '.btn-open-invoice-modal', function() {
+            let id = $(this).data('id');
+            let contractId = $(this).data('contract-id');
+            let num = $(this).data('num');
+            let desc = $(this).data('desc');
+            let amount = $(this).data('amount');
+            let clientDocType = String($(this).data('client-doc-type') || '');
+            let clientDoc = String($(this).data('client-doc') || '');
+
+            $('#invoice-contract-id').val(contractId);
+            $('#invoice-installment-id').val(id);
+            $('#invoice-installment-num').text(`#${num}`);
+            $('#invoice-installment-desc').text(desc);
+            $('#invoice-installment-amount').text(amount);
+
+            // Auto-select Factura (01) if client has 11-digit RUC (type 6), else Boleta (03)
+            let isRuc = (clientDocType === '6' && clientDoc.length === 11);
+            if (isRuc) {
+                $('#invoice-doc-type').val('01');
+                $('#invoice-doc-type-help').html('<span class="text-success"><i class="ri-checkbox-circle-line me-1"></i>Cliente con RUC válido (11 dígitos). Procede emisión de Factura.</span>');
+            } else {
+                $('#invoice-doc-type').val('03');
+                $('#invoice-doc-type-help').html('<span class="text-muted"><i class="ri-information-line me-1"></i>Cliente sin RUC. Se emitirá Boleta de Venta Electrónica.</span>');
+            }
+
+            // Show breakages toggle if cuota > 1
+            if (parseInt(num) >= 2) {
+                $('#invoice-breakages-wrapper').show();
+            } else {
+                $('#invoice-breakages-wrapper').hide();
+                $('#invoice-include-breakages').prop('checked', false);
+            }
+
+            $('#modalInvoiceInstallment').modal('show');
+        });
+
+        // Submit Invoice Form
+        $('#form-invoice-installment').on('submit', function(e) {
+            e.preventDefault();
+            let contractId = $('#invoice-contract-id').val();
+            let installmentId = $('#invoice-installment-id').val();
+            let btn = $('#btn-submit-invoice');
+
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Emitiendo a SUNAT...');
+
+            let postUrl = "{{ url('contracts') }}/" + contractId + "/installments/" + installmentId + "/invoice";
+
+            $.ajax({
+                url: postUrl,
+                type: "POST",
+                data: $(this).serialize(),
+                dataType: "json",
+                success: function(response) {
+                    btn.prop('disabled', false).html('<i class="ri-check-double-line me-1"></i> Emitir Comprobante SUNAT');
+                    if (response.status) {
+                        $('#modalInvoiceInstallment').modal('hide');
+                        Swal.fire({
+                            title: '¡Comprobante Emitido!',
+                            html: `<strong>${response.msg}</strong><br><small class="text-muted">Total: S/ ${parseFloat(response.total).toFixed(2)}</small>`,
+                            icon: 'success'
+                        });
+                        table.ajax.reload(null, false);
+                        if (contractId) {
+                            $(`.btn-detail-contract[data-id="${contractId}"]`).first().trigger('click');
+                        }
+                    } else {
+                        toastr.error(response.msg || 'No se pudo emitir el comprobante.');
+                    }
+                },
+                error: function(xhr) {
+                    btn.prop('disabled', false).html('<i class="ri-check-double-line me-1"></i> Emitir Comprobante SUNAT');
+                    let msg = xhr.responseJSON?.msg || 'Error al emitir el comprobante.';
+                    Swal.fire('Validación Tributaria', msg, 'warning');
+                }
+            });
+        });
+
+        // Open Debit Note Modal
+        $('#btn-open-debit-note-modal').on('click', function() {
+            let contractId = $(this).data('contract-id');
+            $('#debit-note-contract-id').val(contractId);
+            $('#modalDebitNote').modal('show');
+        });
+
+        // Submit Debit Note Form
+        $('#form-debit-note').on('submit', function(e) {
+            e.preventDefault();
+            let contractId = $('#debit-note-contract-id').val();
+            let btn = $('#btn-submit-debit-note');
+
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Emitiendo Nota de Débito...');
+
+            let postUrl = "{{ url('contracts') }}/" + contractId + "/issue-debit-note";
+
+            $.ajax({
+                url: postUrl,
+                type: "POST",
+                data: $(this).serialize(),
+                dataType: "json",
+                success: function(response) {
+                    btn.prop('disabled', false).html('<i class="ri-check-line me-1"></i> Emitir Nota de Débito');
+                    if (response.status) {
+                        $('#modalDebitNote').modal('hide');
+                        Swal.fire({
+                            title: '¡Nota de Débito Emitida!',
+                            html: `<strong>${response.msg}</strong><br><small class="text-muted">Total Imputado: S/ ${parseFloat(response.total).toFixed(2)}</small>`,
+                            icon: 'success'
+                        });
+                        table.ajax.reload(null, false);
+                        if (contractId) {
+                            $(`.btn-detail-contract[data-id="${contractId}"]`).first().trigger('click');
+                        }
+                    } else {
+                        toastr.error(response.msg || 'No se pudo emitir la nota de débito.');
+                    }
+                },
+                error: function(xhr) {
+                    btn.prop('disabled', false).html('<i class="ri-check-line me-1"></i> Emitir Nota de Débito');
+                    let msg = xhr.responseJSON?.msg || 'Error al emitir la nota de débito.';
+                    Swal.fire('Error', msg, 'error');
                 }
             });
         });

@@ -18,6 +18,7 @@ class EventChecklistItem extends Model
         'contract_item_id',
         'idproducto',
         'producto_id',
+        'product_id',
         'descripcion',
         'categoria',
         'cantidad_planeada',
@@ -106,6 +107,16 @@ class EventChecklistItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class, 'idproducto');
+    }
+
+    public function setProductIdAttribute($value): void
+    {
+        $this->attributes['idproducto'] = $value;
+    }
+
+    public function getProductIdAttribute(): ?int
+    {
+        return isset($this->attributes['idproducto']) ? (int) $this->attributes['idproducto'] : null;
     }
 
     public function userLlevado(): BelongsTo

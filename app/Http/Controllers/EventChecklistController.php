@@ -8,6 +8,7 @@ use App\Models\EventChecklist;
 use App\Models\EventChecklistItem;
 use App\Models\Product;
 use App\Services\Events\EventChecklistReturnService;
+use App\Services\Events\EventChecklistShipmentGuideService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -674,5 +675,39 @@ class EventChecklistController extends Controller
         }
 
         return sprintf('CHK-%s-%04d', $year, $correlativo);
+    }
+
+    public function generateGre(Request $request, $id, EventChecklistShipmentGuideService $greService)
+    {
+        $checklist = EventChecklist::with(['contract.client', 'items.product'])->findOrFail($id);
+
+        try {
+            $guide = $greService->generateGuideFromChecklist($checklist, $request->all());
+
+            return response()->json([
+                'status' => true,
+                'msg' => "Guía de remisión electrónica {$guide->serie}-{$guide->correlativo} generada y vinculada exitosamente.",
+                'type' => 'success',
+                'guide_id' => $guide->id,
+                'serie' => $guide->serie,
+                'correlativo' => $guide->correlativo,
+                'numero' => "{$guide->serie}-{$guide->correlativo}",
+                'ticket' => $guide->ticket,
+                'estado_cpe' => $guide->estado_cpe,
+                'pdf_url' => asset("files/shipment_guides/a4/{$guide->serie}-{$guide->correlativo}.pdf"),
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'status' => false,
+                'msg' => $e->getMessage(),
+                'type' => 'warning',
+            ], 422);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Error al generar la guía de remisión: '.$e->getMessage(),
+                'type' => 'error',
+            ], 500);
+        }
     }
 }

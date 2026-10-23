@@ -50,6 +50,9 @@ class Billing extends Model
         'vuelto',
         'qr',
         'idalmacen',
+        'contract_id',
+        'installment_id',
+        'checklist_id',
     ];
 
     protected $casts = [
@@ -70,6 +73,21 @@ class Billing extends Model
         'anulado' => 'boolean',
         'vuelto' => 'decimal:2',
     ];
+
+    public function contract()
+    {
+        return $this->belongsTo(Contract::class, 'contract_id');
+    }
+
+    public function installment()
+    {
+        return $this->belongsTo(ContractInstallment::class, 'installment_id');
+    }
+
+    public function checklist()
+    {
+        return $this->belongsTo(EventChecklist::class, 'checklist_id');
+    }
 
     public function customer()
     {

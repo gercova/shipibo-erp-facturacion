@@ -138,6 +138,28 @@
                         Estipulado para cubrir eventuales roturas o pérdidas de cristalería, barras móviles y utensilios de coctelería. Liquidable al término del evento.
                     </span>
                 </div>
+
+                <!-- Electronic Documents (Facturas, Boletas, Notas de Débito, GRE) -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-7">
+                        <div class="p-3 bg-white rounded-3 border h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="fw-bold text-dark mb-0"><i class="ri-bill-line text-primary me-1"></i> Comprobantes Emitidos</h6>
+                                <button type="button" class="btn btn-xs btn-outline-danger py-0 px-2" id="btn-open-debit-note-modal" style="display: none;">
+                                    <i class="ri-file-add-line me-1"></i> + Nota de Débito
+                                </button>
+                            </div>
+                            <div id="modal-billings-list" class="small text-muted">Sin comprobantes emitidos aún.</div>
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="p-3 bg-white rounded-3 border h-100">
+                            <h6 class="fw-bold text-dark mb-2"><i class="ri-truck-line text-info me-1"></i> Guías de Remisión (GRE)</h6>
+                            <div id="modal-gre-list" class="small text-muted">Sin guías de remisión generadas.</div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Clauses Section -->
                 <h6 class="fw-bold mb-2 text-dark"><i class="ri-article-line me-1"></i> Cláusulas del Contrato</h6>
                 <div id="modal-clauses-container" class="p-3 bg-light rounded-3 border mb-4" style="max-height: 250px; overflow-y: auto;">
@@ -350,3 +372,124 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Facturar Cuota (Ebilling) -->
+<div class="modal fade" id="modalInvoiceInstallment" tabindex="-1" aria-labelledby="modalInvoiceInstallmentLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalInvoiceInstallmentLabel">
+                    <i class="ri-bill-line me-1"></i> Facturar Cuota Contractual
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="form-invoice-installment">
+                @csrf
+                <input type="hidden" id="invoice-contract-id" name="contract_id" />
+                <input type="hidden" id="invoice-installment-id" name="installment_id" />
+                <div class="modal-body p-4">
+                    <div class="alert alert-info py-2 px-3 small mb-3">
+                        <div class="d-flex justify-content-between">
+                            <strong>Cuota: <span id="invoice-installment-num"></span></strong>
+                            <strong class="text-primary fs-6">{{ $signo ?? 'S/' }} <span id="invoice-installment-amount"></span></strong>
+                        </div>
+                        <div class="text-muted" id="invoice-installment-desc"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Tipo de Comprobante <span class="text-danger">*</span></label>
+                        <select name="tipo_documento" id="invoice-doc-type" class="form-select" required>
+                            <option value="03">Boleta de Venta Electrónica (03)</option>
+                            <option value="01">Factura Electrónica (01) - Requiere RUC 11 dígitos</option>
+                        </select>
+                        <span class="form-text text-muted small" id="invoice-doc-type-help">
+                            Facturas requieren que el cliente tenga RUC (11 dígitos).
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Tratamiento Tributario IGV <span class="text-danger">*</span></label>
+                        <select name="id_afectacion_igv" id="invoice-igv-type" class="form-select" required>
+                            <option value="1">Gravado - Operación Onerosa (10) - 18% IGV</option>
+                            <option value="2">Exonerado - Operación Onerosa (20) - 0% IGV</option>
+                        </select>
+                    </div>
+
+                    <div class="form-check form-switch mb-3" id="invoice-breakages-wrapper" style="display: none;">
+                        <input class="form-check-input" type="checkbox" role="switch" id="invoice-include-breakages" name="include_breakages" value="1">
+                        <label class="form-check-label small fw-bold text-danger" for="invoice-include-breakages">
+                            Incluir cargos de roturas / penalidades del evento como líneas de reposición
+                        </label>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Observaciones en Comprobante</label>
+                        <input type="text" name="observaciones" id="invoice-observaciones" class="form-control form-control-sm" placeholder="Opcional" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary btn-sm fw-bold" id="btn-submit-invoice">
+                        <i class="ri-check-double-line me-1"></i> Emitir Comprobante SUNAT
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Emitir Nota de Débito (B4 / B5) -->
+<div class="modal fade" id="modalDebitNote" tabindex="-1" aria-labelledby="modalDebitNoteLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="modalDebitNoteLabel">
+                    <i class="ri-file-warning-line me-1"></i> Emitir Nota de Débito por Daños / Roturas (08)
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="form-debit-note">
+                @csrf
+                <input type="hidden" id="debit-note-contract-id" name="contract_id" />
+                <div class="modal-body p-4">
+                    <p class="small text-muted mb-3">
+                        Se emitirá una <strong>Nota de Débito Electrónica (08)</strong> vinculada a la factura/boleta previa del contrato para imputar las penalidades y daños de insumos/cristalería (B4).
+                    </p>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Comprobante de Referencia <span class="text-danger">*</span></label>
+                        <select name="parent_billing_id" id="debit-note-parent-id" class="form-select" required></select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Motivo SUNAT <span class="text-danger">*</span></label>
+                        <select name="motivo_codigo" class="form-select" required>
+                            <option value="03" selected>03 - PENALIDADES / OTROS CONCEPTOS</option>
+                            <option value="02">02 - AUMENTO EN EL VALOR</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Tratamiento IGV</label>
+                        <select name="id_afectacion_igv" class="form-select">
+                            <option value="1" selected>Gravado - 18% IGV (10)</option>
+                            <option value="2">Exonerado - 0% IGV (20)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Sustento / Descripción de la Nota de Débito</label>
+                        <textarea name="motivo" class="form-control form-control-sm" rows="2" placeholder="Penalidad por roturas y pérdidas registradas en acta de cierre de evento."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger btn-sm fw-bold" id="btn-submit-debit-note">
+                        <i class="ri-check-line me-1"></i> Emitir Nota de Débito
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+

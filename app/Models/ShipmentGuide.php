@@ -42,6 +42,8 @@ class ShipmentGuide extends Model
         'estado_cpe',
         'ticket',
         'errores',
+        'contract_id',
+        'checklist_id',
     ];
 
     protected $casts = [
@@ -49,6 +51,16 @@ class ShipmentGuide extends Model
         'fecha_inicio_traslado' => 'date',
         'peso_total' => 'decimal:3',
     ];
+
+    public function contract()
+    {
+        return $this->belongsTo(Contract::class, 'contract_id');
+    }
+
+    public function checklist()
+    {
+        return $this->belongsTo(EventChecklist::class, 'checklist_id');
+    }
 
     public function client()
     {

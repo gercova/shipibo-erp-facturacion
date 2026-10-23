@@ -22,6 +22,9 @@ class ContractInstallment extends Model
         'fecha_vencimiento',
         'fecha_pago',
         'estado',
+        'billing_id',
+        'facturado_at',
+        'factura_numero',
         'metodo_pago',
         'referencia_pago',
         'observaciones',
@@ -29,18 +32,30 @@ class ContractInstallment extends Model
 
     protected $casts = [
         'fecha_vencimiento' => 'date',
-        'fecha_pago'        => 'date',
-        'monto'             => 'decimal:2',
-        'porcentaje'        => 'decimal:2',
-        'estado'            => 'integer',
+        'fecha_pago' => 'date',
+        'facturado_at' => 'datetime',
+        'monto' => 'decimal:2',
+        'porcentaje' => 'decimal:2',
+        'estado' => 'integer',
     ];
 
     const STATUS_PENDING = 0;
-    const STATUS_PAID    = 1;
+
+    const STATUS_PAID = 1;
 
     public function contract(): BelongsTo
     {
         return $this->belongsTo(Contract::class, 'contract_id');
+    }
+
+    public function billing(): BelongsTo
+    {
+        return $this->belongsTo(Billing::class, 'billing_id');
+    }
+
+    public function isBilled(): bool
+    {
+        return ! is_null($this->billing_id);
     }
 
     public function isPaid(): bool
@@ -75,7 +90,7 @@ class ContractInstallment extends Model
     {
         return match ($this->estado) {
             self::STATUS_PAID => 'Pagado',
-            default           => 'Pendiente',
+            default => 'Pendiente',
         };
     }
 
@@ -86,13 +101,13 @@ class ContractInstallment extends Model
         }
 
         if ($this->isOverdue()) {
-            return '<span class="badge bg-danger-subtle text-danger fw-bold"><i class="ri-alarm-warning-line me-1"></i> Vencida (' . $this->fecha_vencimiento->format('d/m/Y') . ')</span>';
+            return '<span class="badge bg-danger-subtle text-danger fw-bold"><i class="ri-alarm-warning-line me-1"></i> Vencida ('.$this->fecha_vencimiento->format('d/m/Y').')</span>';
         }
 
         if ($this->isDueToday()) {
             return '<span class="badge bg-warning-subtle text-warning fw-bold"><i class="ri-time-line me-1"></i> Vence Hoy</span>';
         }
 
-        return '<span class="badge bg-light text-secondary fw-medium"><i class="ri-calendar-line me-1"></i> Vence ' . $this->fecha_vencimiento->format('d/m/Y') . '</span>';
+        return '<span class="badge bg-light text-secondary fw-medium"><i class="ri-calendar-line me-1"></i> Vence '.$this->fecha_vencimiento->format('d/m/Y').'</span>';
     }
 }

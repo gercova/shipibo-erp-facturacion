@@ -36,6 +36,7 @@ class EventChecklist extends Model
         'reabierto_at',
         'reabierto_by',
         'motivo_reapertura',
+        'shipment_guide_id',
         'idusuario',
         'idalmacen',
     ];
@@ -83,6 +84,16 @@ class EventChecklist extends Model
     public function movements(): HasMany
     {
         return $this->hasMany(InventoryMovement::class, 'checklist_id');
+    }
+
+    public function shipmentGuide(): BelongsTo
+    {
+        return $this->belongsTo(ShipmentGuide::class, 'shipment_guide_id');
+    }
+
+    public function hasShipmentGuide(): bool
+    {
+        return ! is_null($this->shipment_guide_id);
     }
 
     public function isReturnClosed(): bool

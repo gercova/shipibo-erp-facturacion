@@ -250,6 +250,8 @@ Route::controller(ContractController::class)->prefix('contracts')->middleware(['
     Route::post('/print-a4', 'print_a4')->name('admin.print_contract_a4');
     Route::get('/{id}/download', 'download_pdf')->name('admin.contracts.download');
     Route::post('/installments/{id}/pay', 'pay_installment')->name('admin.contracts.pay_installment');
+    Route::post('/{id}/installments/{installmentId}/invoice', 'invoice_installment')->name('admin.contracts.invoice_installment');
+    Route::post('/{id}/issue-debit-note', 'issue_debit_note')->name('admin.contracts.issue_debit_note');
     Route::post('/{id}/formalize', 'formalize')->name('admin.contracts.formalize');
     Route::post('/{id}/adjustments', 'store_adjustment')->name('admin.contracts.store_adjustment');
 });
@@ -267,6 +269,7 @@ Route::controller(EventChecklistController::class)->prefix('event-checklists')->
     Route::get('/get', 'get')->name('event_checklists.get');
     Route::get('/contract/{contractId}/generate', 'generateFromContract')->name('admin.event_checklists.generate');
     Route::get('/{id}/tablet', 'tablet')->name('admin.event_checklists.tablet');
+    Route::post('/{id}/generate-gre', 'generateGre')->name('admin.event_checklists.generate_gre');
     Route::post('/{id}/update-item', 'updateItem')->name('admin.event_checklists.update_item');
     Route::post('/{id}/add-item', 'addItem')->name('admin.event_checklists.add_item');
     Route::post('/{id}/bulk-toggle', 'bulkToggle')->name('admin.event_checklists.bulk_toggle');

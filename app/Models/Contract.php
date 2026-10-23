@@ -129,6 +129,16 @@ class Contract extends Model
         return $this->checklists()->first();
     }
 
+    public function shipmentGuides(): HasMany
+    {
+        return $this->hasMany(ShipmentGuide::class, 'contract_id')->orderBy('id', 'desc');
+    }
+
+    public function billings(): HasMany
+    {
+        return $this->hasMany(Billing::class, 'contract_id')->orderBy('id', 'desc');
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'idusuario');
