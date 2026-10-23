@@ -268,54 +268,58 @@
         </table>
     </div>
 
-    <!-- Items Detail Table -->
+    <!-- Items Detail Table with 6 Return Categories -->
     <table class="items-table">
         <thead>
             <tr>
-                <th width="5%">#</th>
-                <th width="35%" style="text-align: left;">DESCRIPCIÓN DEL ÍTEM</th>
-                <th width="10%">CANT.</th>
-                <th width="15%">SALIDA (MONTAJE)</th>
-                <th width="15%">RETORNO (DESMONTAJE)</th>
+                <th width="4%">#</th>
+                <th width="28%" style="text-align: left;">DESCRIPCIÓN DEL ÍTEM</th>
+                <th width="8%">ENVIADO</th>
+                <th width="8%">OK</th>
+                <th width="8%">DAÑADO</th>
+                <th width="8%">ROTO</th>
+                <th width="8%">FALTANTE</th>
+                <th width="8%">CONSUMO</th>
                 <th width="20%">ESTADO / OBSERVACIÓN</th>
             </tr>
         </thead>
         <tbody>
             @foreach($checklist->items as $index => $item)
+            @php
+                $sentQty = (float) ($item->qty_enviada > 0 ? $item->qty_enviada : ($item->cantidad_llevada > 0 ? $item->cantidad_llevada : $item->cantidad_planeada));
+            @endphp
             <tr>
                 <td style="text-align: center; color: #64748b;">{{ $loop->iteration }}</td>
                 <td>
                     <strong style="color: #0f172a;">{{ $item->descripcion }}</strong>
                     <div style="font-size: 7.5px; color: #64748b;">{{ $item->categoria }}</div>
                 </td>
-                <td style="text-align: center; font-weight: bold;">
-                    {{ rtrim(rtrim(number_format($item->cantidad, 2), '0'), '.') }} {{ $item->unidad_medida }}
+                <td style="text-align: center; font-weight: bold; background-color: #f1f5f9;">
+                    {{ rtrim(rtrim(number_format($sentQty, 2), '0'), '.') }}
                 </td>
-                <td style="text-align: center;">
-                    @if($item->llevado)
-                        <span class="badge badge-success">Llevado</span><br>
-                        <span style="font-size: 7px; color: #64748b;">{{ $item->fecha_llevado ? \Carbon\Carbon::parse($item->fecha_llevado)->format('d/m H:i') : '' }}</span>
-                    @else
-                        <span class="badge badge-warning">No registrado</span>
-                    @endif
+                <td style="text-align: center; color: #047857; font-weight: bold;">
+                    {{ rtrim(rtrim(number_format($item->qty_ok, 2), '0'), '.') }}
                 </td>
-                <td style="text-align: center;">
-                    @if($item->devuelto)
-                        <span class="badge badge-success">Devuelto</span><br>
-                        <span style="font-size: 7px; color: #64748b;">{{ $item->fecha_devuelto ? \Carbon\Carbon::parse($item->fecha_devuelto)->format('d/m H:i') : '' }}</span>
-                    @else
-                        <span class="badge badge-danger">No devuelto</span>
-                    @endif
+                <td style="text-align: center; color: #b45309;">
+                    {{ $item->qty_danada > 0 ? rtrim(rtrim(number_format($item->qty_danada, 2), '0'), '.') : '-' }}
+                </td>
+                <td style="text-align: center; color: #b91c1c; font-weight: bold;">
+                    {{ $item->qty_quebrada > 0 ? rtrim(rtrim(number_format($item->qty_quebrada, 2), '0'), '.') : '-' }}
+                </td>
+                <td style="text-align: center; color: #dc2626; font-weight: bold;">
+                    {{ $item->qty_faltante > 0 ? rtrim(rtrim(number_format($item->qty_faltante, 2), '0'), '.') : '-' }}
+                </td>
+                <td style="text-align: center; color: #0284c7;">
+                    {{ $item->qty_consumida > 0 ? rtrim(rtrim(number_format($item->qty_consumida, 2), '0'), '.') : '-' }}
                 </td>
                 <td>
-                    @if($item->tiene_incidencia)
-                        <span class="badge badge-danger">{{ $item->tipo_incidencia }}</span>:
-                        <strong>{{ rtrim(rtrim(number_format($item->cantidad_afectada, 2), '0'), '.') }}</strong> {{ $item->unidad_medida }}<br>
-                        <span style="font-size: 7.5px; color: #dc2626; font-style: italic;">{{ $item->observaciones }}</span>
-                    @elseif($item->llevado && $item->devuelto)
+                    @if($item->tiene_incidencia || ($item->qty_quebrada + $item->qty_faltante + $item->qty_danada) > 0)
+                        <span class="badge badge-danger">Incidencia</span>
+                        <span style="font-size: 7.5px; color: #dc2626;">{{ $item->observaciones ?: $item->tipo_incidencia }}</span>
+                    @elseif($item->isReturnBalanced())
                         <span class="badge badge-success">Conforme</span>
                     @else
-                        <span class="badge badge-warning">Incompleto</span>
+                        <span class="badge badge-warning">Descuadre: {{ $item->return_discrepancy }}</span>
                     @endif
                 </td>
             </tr>
@@ -323,31 +327,55 @@
         </tbody>
     </table>
 
-    <!-- Incidents Summary Table if any -->
-    @if($checklist->items->where('tiene_incidencia', 1)->count() > 0)
+    <!-- Incidents & Additional Charges Summary Table -->
+    @php
+        $affectedItems = $checklist->items->filter(function($i) {
+            return $i->tiene_incidencia || ($i->qty_quebrada > 0 || $i->qty_faltante > 0 || $i->qty_danada > 0);
+        });
+        $grandTotalLiquidacion = 0.00;
+    @endphp
+    @if($affectedItems->count() > 0)
     <div style="font-size: 9px; font-weight: bold; color: #b91c1c; text-transform: uppercase; margin-bottom: 4px;">
-        RESUMEN DE ROTURAS / FALTANTES A LIQUIDAR
+        LIQUIDACIÓN DE ROTURAS / FALTANTES / REPARACIONES (CARGOS ADICIONALES)
     </div>
     <table class="items-table" style="margin-bottom: 15px;">
         <thead>
             <tr style="background-color: #b91c1c;">
                 <th width="5%" style="background-color: #b91c1c;">#</th>
-                <th width="40%" style="background-color: #b91c1c; text-align: left;">ÍTEM AFECTADO</th>
-                <th width="20%" style="background-color: #b91c1c;">TIPO DE INCIDENCIA</th>
-                <th width="15%" style="background-color: #b91c1c;">CANTIDAD</th>
-                <th width="20%" style="background-color: #b91c1c; text-align: left;">DETALLE / OBSERVACIÓN</th>
+                <th width="35%" style="background-color: #b91c1c; text-align: left;">ÍTEM AFECTADO</th>
+                <th width="15%" style="background-color: #b91c1c;">DESGLOSE INCIDENCIA</th>
+                <th width="15%" style="background-color: #b91c1c;">COSTO REPOSICIÓN</th>
+                <th width="15%" style="background-color: #b91c1c; text-align: right;">SUBTOTAL CARGO</th>
+                <th width="15%" style="background-color: #b91c1c; text-align: left;">OBSERVACIONES</th>
             </tr>
         </thead>
         <tbody>
-            @foreach($checklist->items->where('tiene_incidencia', 1) as $item)
+            @foreach($affectedItems as $item)
+            @php
+                $prod = $item->product;
+                $costUnit = $prod ? $prod->effective_replacement_cost : (float) $item->costo_penalidad_estimado;
+                $affectedQty = (float) ($item->qty_quebrada + $item->qty_faltante + $item->qty_danada);
+                $subtotalCargo = round($affectedQty * $costUnit, 2);
+                $grandTotalLiquidacion += $subtotalCargo;
+            @endphp
             <tr>
                 <td style="text-align: center;">{{ $loop->iteration }}</td>
                 <td><strong>{{ $item->descripcion }}</strong></td>
-                <td style="text-align: center;"><span class="badge badge-danger">{{ $item->tipo_incidencia }}</span></td>
-                <td style="text-align: center; font-weight: bold; color: #b91c1c;">{{ rtrim(rtrim(number_format($item->cantidad_afectada, 2), '0'), '.') }} {{ $item->unidad_medida }}</td>
+                <td style="text-align: center; font-size: 8px;">
+                    @if($item->qty_quebrada > 0) <span style="color:#b91c1c;">Roto: {{ $item->qty_quebrada }}</span><br> @endif
+                    @if($item->qty_faltante > 0) <span style="color:#dc2626;">Falta: {{ $item->qty_faltante }}</span><br> @endif
+                    @if($item->qty_danada > 0) <span style="color:#b45309;">Daño: {{ $item->qty_danada }}</span> @endif
+                </td>
+                <td style="text-align: center;">{{ $signo }} {{ number_format($costUnit, 2) }}</td>
+                <td style="text-align: right; font-weight: bold; color: #b91c1c;">{{ $signo }} {{ number_format($subtotalCargo, 2) }}</td>
                 <td style="font-size: 7.5px; font-style: italic;">{{ $item->observaciones ?? '-' }}</td>
             </tr>
             @endforeach
+            <tr style="background-color: #fef2f2; font-weight: bold;">
+                <td colspan="4" style="text-align: right; color: #991b1b;">TOTAL CARGOS ADICIONALES A LIQUIDAR:</td>
+                <td style="text-align: right; color: #991b1b; font-size: 10.5px;">{{ $signo }} {{ number_format($grandTotalLiquidacion, 2) }}</td>
+                <td></td>
+            </tr>
         </tbody>
     </table>
     @endif

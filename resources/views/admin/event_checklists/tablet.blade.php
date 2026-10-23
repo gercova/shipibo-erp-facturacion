@@ -129,6 +129,24 @@
 
     <!-- Top Tablet Bar -->
     <div class="card tablet-header-card border-0 mb-3 p-3 p-md-4">
+        @if($checklist->isReturnClosed())
+            <div class="alert alert-success d-flex align-items-center justify-content-between p-3 rounded-3 mb-3 border-0 bg-success bg-opacity-25 text-white">
+                <div>
+                    <i class="ri-checkbox-circle-fill fs-4 me-2 text-success"></i>
+                    <strong>RETORNO CERRADO:</strong> Finalizado el {{ $checklist->retorno_cerrado_at->format('d/m/Y H:i') }}
+                    por <strong>{{ $checklist->retornoCerradoBy->nombre ?? 'Usuario' }}</strong>.
+                    @if($checklist->isStockApplied())
+                        <span class="badge bg-info text-dark ms-2"><i class="ri-archive-line me-1"></i> Stock / Kardex Actualizado</span>
+                    @endif
+                </div>
+                @if(auth()->user()->hasRole(['SUPERADMIN', 'ADMIN']))
+                    <button type="button" class="btn btn-outline-warning btn-sm fw-bold px-3 py-1 rounded-pill" data-bs-toggle="modal" data-bs-target="#modalReopenReturn">
+                        <i class="ri-restart-line me-1"></i> Reabrir Retorno (Auditoría)
+                    </button>
+                @endif
+            </div>
+        @endif
+
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
             <div>
                 <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
@@ -153,6 +171,16 @@
             </div>
 
             <div class="d-flex align-items-center gap-2 flex-wrap">
+                @if(!$checklist->isReturnClosed())
+                    <button type="button" class="btn btn-danger touch-btn fw-bold px-3" id="btn-open-close-modal">
+                        <i class="ri-lock-2-line me-1 fs-5"></i>
+                        <span>Cerrar Retorno</span>
+                    </button>
+                    <button type="button" class="btn btn-primary touch-btn fw-bold px-3" id="btn-save-draft-return">
+                        <i class="ri-save-line me-1 fs-5"></i>
+                        <span>Guardar</span>
+                    </button>
+                @endif
                 <a href="{{ route('admin.event_checklists.report', $checklist->id) }}" class="btn btn-warning text-dark touch-btn">
                     <i class="ri-file-chart-line me-1 fs-5"></i>
                     <span>Acta de Cierre</span>
@@ -243,12 +271,17 @@
 
                 <!-- Batch Actions for Fast Operation -->
                 <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <button type="button" class="btn btn-outline-success btn-sm fw-bold px-3 py-2 rounded-pill btn-bulk-action" data-action="all_llevados">
-                        <i class="ri-check-double-line me-1"></i> Todo Salida (Llevado)
-                    </button>
-                    <button type="button" class="btn btn-outline-primary btn-sm fw-bold px-3 py-2 rounded-pill btn-bulk-action" data-action="all_devueltos">
-                        <i class="ri-check-double-line me-1"></i> Todo Retorno (Devuelto)
-                    </button>
+                    @if(!$checklist->isReturnClosed())
+                        <button type="button" class="btn btn-outline-success btn-sm fw-bold px-3 py-2 rounded-pill btn-bulk-action" data-action="all_llevados">
+                            <i class="ri-truck-line me-1"></i> Todo Salida
+                        </button>
+                        <button type="button" class="btn btn-outline-primary btn-sm fw-bold px-3 py-2 rounded-pill btn-bulk-return-ok" title="Asignar todo el retorno como conforme (OK)">
+                            <i class="ri-check-double-line me-1"></i> Todo Retorno OK
+                        </button>
+                        <button type="button" class="btn btn-outline-info btn-sm fw-bold px-3 py-2 rounded-pill btn-bulk-consumables" title="Asignar insumos y licores como consumidos">
+                            <i class="ri-goblet-line me-1"></i> Consumibles a Consumido
+                        </button>
+                    @endif
                 </div>
             </div>
         </div>
@@ -359,7 +392,96 @@
                                 <span class="d-lg-none ms-1">Incidencia</span>
                             </button>
                         </div>
+                    </div>
+                    <!-- Panel Desglosado de Retorno (OK, Dañado, Roto, Faltante, Consumido) -->
+                    @php
+                        $sentQty        = (float) ($item->qty_enviada > 0 ? $item->qty_enviada : ($item->cantidad_llevada > 0 ? $item->cantidad_llevada : $item->cantidad_planeada));
+                        $effectiveCost  = $item->product ? $item->product->effective_replacement_cost : (float) $item->costo_penalidad_estimado;
+                        $isRentable     = (bool) ($item->product?->rentable);
+                        $isService      = (int) ($item->product?->opcion) === 2;
+                    @endphp
+                    <div class="mt-3 pt-3 border-top bg-light p-3 rounded-3 return-breakdown-panel"
+                         data-item-id="{{ $item->id }}"
+                         data-sent-qty="{{ $sentQty }}"
+                         data-unit-cost="{{ $effectiveCost }}"
+                         data-is-rentable="{{ $isRentable ? '1' : '0' }}"
+                         data-is-service="{{ $isService ? '1' : '0' }}">
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-2">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span class="badge bg-dark fs-7 px-2 py-1">Enviado: <strong class="item-sent-display">{{ rtrim(rtrim(number_format($sentQty, 2), '0'), '.') }}</strong> {{ $item->unidad_medida }}</span>
+                                <span class="badge item-balance-badge bg-secondary fs-7 px-2 py-1" id="balance-badge-{{ $item->id }}">Calculando...</span>
+                                @if($isRentable)
+                                    <span class="badge bg-secondary-subtle text-dark border"><i class="ri-tools-line me-1"></i> Alquiler / Menaje</span>
+                                @elseif(!$isService)
+                                    <span class="badge bg-info-subtle text-info border"><i class="ri-goblet-line me-1"></i> Insumo / Licor</span>
+                                @endif
+                                @if($effectiveCost > 0)
+                                    <span class="badge bg-light text-muted border">Reposición: {{ $signo }} {{ number_format($effectiveCost, 2) }}</span>
+                                @endif
+                            </div>
+                            @if(!$checklist->isReturnClosed())
+                                <div class="d-flex gap-1">
+                                    <button type="button" class="btn btn-sm btn-outline-success py-1 px-2 btn-item-all-ok" data-item-id="{{ $item->id }}" title="Marcar todo como Conforme (OK)">
+                                        <i class="ri-check-line me-1"></i> Todo OK
+                                    </button>
+                                    @if(!$isRentable && !$isService)
+                                    <button type="button" class="btn btn-sm btn-outline-info py-1 px-2 btn-item-all-consumed" data-item-id="{{ $item->id }}" title="Marcar todo como Consumido">
+                                        <i class="ri-drop-line me-1"></i> Todo Consumido
+                                    </button>
+                                    @endif
+                                </div>
+                            @endif
+                        </div>
+                        <!-- Stepper Counters Grid for 5 Categories -->
+                        <div class="row g-2 text-center">
+                            <!-- Qty OK -->
+                            <div class="col-6 col-md">
+                                <label class="form-label text-success small fw-bold mb-1"><i class="ri-checkbox-circle-line me-1"></i> OK (Conforme)</label>
+                                <div class="input-group input-group-sm">
+                                    <button type="button" class="btn btn-outline-secondary btn-step-down" data-target="#qty-ok-{{ $item->id }}" {{ $checklist->isReturnClosed() ? 'disabled' : '' }}>-</button>
+                                    <input type="number" step="0.01" min="0" class="form-control text-center fw-bold return-qty-input qty-ok-input" id="qty-ok-{{ $item->id }}" name="items[{{ $item->id }}][qty_ok]" value="{{ (float) $item->qty_ok }}" {{ $checklist->isReturnClosed() ? 'readonly' : '' }}>
+                                    <button type="button" class="btn btn-outline-secondary btn-step-up" data-target="#qty-ok-{{ $item->id }}" {{ $checklist->isReturnClosed() ? 'disabled' : '' }}>+</button>
+                                </div>
+                            </div>
+                            <!-- Qty Danada -->
+                            <div class="col-6 col-md">
+                                <label class="form-label text-warning small fw-bold mb-1"><i class="ri-tools-line me-1"></i> Dañado (Reparar)</label>
+                                <div class="input-group input-group-sm">
+                                    <button type="button" class="btn btn-outline-secondary btn-step-down" data-target="#qty-danada-{{ $item->id }}" {{ $checklist->isReturnClosed() ? 'disabled' : '' }}>-</button>
+                                    <input type="number" step="0.01" min="0" class="form-control text-center fw-bold return-qty-input qty-danada-input" id="qty-danada-{{ $item->id }}" name="items[{{ $item->id }}][qty_danada]" value="{{ (float) $item->qty_danada }}" {{ $checklist->isReturnClosed() ? 'readonly' : '' }}>
+                                    <button type="button" class="btn btn-outline-secondary btn-step-up" data-target="#qty-danada-{{ $item->id }}" {{ $checklist->isReturnClosed() ? 'disabled' : '' }}>+</button>
+                                </div>
+                            </div>
+                            <!-- Qty Quebrada -->
+                            <div class="col-6 col-md">
+                                <label class="form-label text-danger small fw-bold mb-1"><i class="ri-close-circle-line me-1"></i> Roto / Quebrado</label>
+                                <div class="input-group input-group-sm">
+                                    <button type="button" class="btn btn-outline-secondary btn-step-down" data-target="#qty-quebrada-{{ $item->id }}" {{ $checklist->isReturnClosed() ? 'disabled' : '' }}>-</button>
+                                    <input type="number" step="0.01" min="0" class="form-control text-center fw-bold text-danger return-qty-input qty-quebrada-input" id="qty-quebrada-{{ $item->id }}" name="items[{{ $item->id }}][qty_quebrada]" value="{{ (float) $item->qty_quebrada }}" {{ $checklist->isReturnClosed() ? 'readonly' : '' }}>
+                                    <button type="button" class="btn btn-outline-secondary btn-step-up" data-target="#qty-quebrada-{{ $item->id }}" {{ $checklist->isReturnClosed() ? 'disabled' : '' }}>+</button>
+                                </div>
+                            </div>
 
+                            <!-- Qty Faltante -->
+                            <div class="col-6 col-md">
+                                <label class="form-label text-danger small fw-bold mb-1"><i class="ri-search-eye-line me-1"></i> Faltante / Perdido</label>
+                                <div class="input-group input-group-sm">
+                                    <button type="button" class="btn btn-outline-secondary btn-step-down" data-target="#qty-faltante-{{ $item->id }}" {{ $checklist->isReturnClosed() ? 'disabled' : '' }}>-</button>
+                                    <input type="number" step="0.01" min="0" class="form-control text-center fw-bold text-danger return-qty-input qty-faltante-input" id="qty-faltante-{{ $item->id }}" name="items[{{ $item->id }}][qty_faltante]" value="{{ (float) $item->qty_faltante }}" {{ $checklist->isReturnClosed() ? 'readonly' : '' }}>
+                                    <button type="button" class="btn btn-outline-secondary btn-step-up" data-target="#qty-faltante-{{ $item->id }}" {{ $checklist->isReturnClosed() ? 'disabled' : '' }}>+</button>
+                                </div>
+                            </div>
+
+                            <!-- Qty Consumida -->
+                            <div class="col-12 col-md">
+                                <label class="form-label text-info small fw-bold mb-1"><i class="ri-goblet-line me-1"></i> Consumido</label>
+                                <div class="input-group input-group-sm">
+                                    <button type="button" class="btn btn-outline-secondary btn-step-down" data-target="#qty-consumida-{{ $item->id }}" {{ $checklist->isReturnClosed() ? 'disabled' : '' }}>-</button>
+                                    <input type="number" step="0.01" min="0" class="form-control text-center fw-bold text-info return-qty-input qty-consumida-input" id="qty-consumida-{{ $item->id }}" name="items[{{ $item->id }}][qty_consumida]" value="{{ (float) $item->qty_consumida }}" {{ $checklist->isReturnClosed() ? 'readonly' : '' }}>
+                                    <button type="button" class="btn btn-outline-secondary btn-step-up" data-target="#qty-consumida-{{ $item->id }}" {{ $checklist->isReturnClosed() ? 'disabled' : '' }}>+</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -373,7 +495,6 @@
         @endforelse
     </div>
 </div>
-
 <!-- Modal Report Incident -->
 <div class="modal fade" id="modalIncident" tabindex="-1" aria-labelledby="modalIncidentLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -391,7 +512,6 @@
                     <div class="text-muted small">Ítem Seleccionado:</div>
                     <h6 class="fw-bold mb-0 text-dark" id="modal-incident-item-name"></h6>
                 </div>
-
                 <div class="mb-3">
                     <label class="form-label fw-bold text-dark">Tipo de Incidencia</label>
                     <select class="form-select form-select-lg" id="modal-incident-type">
@@ -403,13 +523,11 @@
                         <option value="Otro">Otro Incidente</option>
                     </select>
                 </div>
-
                 <div class="mb-3">
                     <label class="form-label fw-bold text-dark">Cantidad Afectada (<span id="modal-incident-unit">UNIDAD</span>)</label>
                     <input type="number" step="0.01" min="0" class="form-control form-control-lg fw-bold" id="modal-incident-qty" value="1" />
                     <small class="text-muted">Cantidad máxima registrada: <span id="modal-incident-max-qty">1</span></small>
                 </div>
-
                 <div class="mb-3">
                     <label class="form-label fw-bold text-dark">Observaciones / Motivo detallado</label>
                     <textarea class="form-control" id="modal-incident-notes" rows="3" placeholder="Ej: Se rompieron 2 copas martini durante el brindis por caída de bandeja..."></textarea>
@@ -427,7 +545,6 @@
         </div>
     </div>
 </div>
-
 <!-- Modal Quick Add Item -->
 <div class="modal fade" id="modalAddItem" tabindex="-1" aria-labelledby="modalAddItemLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -456,7 +573,6 @@
                             <input type="text" name="unidad_medida" value="UNIDAD" class="form-control form-control-lg" />
                         </div>
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label fw-bold text-dark">Categoría</label>
                         <select name="categoria" class="form-select">
@@ -468,7 +584,6 @@
                             <option value="Otros">Otros</option>
                         </select>
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label text-dark">Nota / Observación adicional</label>
                         <input type="text" name="observaciones" class="form-control" placeholder="Opcional..." />
@@ -484,15 +599,115 @@
         </div>
     </div>
 </div>
+<!-- Modal Cerrar Retorno e Impactar Stock -->
+<div class="modal fade" id="modalCloseReturn" tabindex="-1" aria-labelledby="modalCloseReturnLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold" id="modalCloseReturnLabel">
+                    <i class="ri-lock-2-line me-1"></i> Confirmar Cierre de Retorno e Impacto en Inventario
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formCloseReturn" method="POST" action="{{ route('admin.event_checklists.close_return', $checklist->id) }}">
+                @csrf
+                <div class="modal-body p-4">
+                    <div class="alert alert-warning border-0 shadow-sm d-flex align-items-start gap-2 mb-3">
+                        <i class="ri-alert-line fs-4 text-warning"></i>
+                        <div class="small">
+                            <strong>¡Atención!</strong> Esta acción es irreversible para operadores estándar:
+                            <ul class="mb-0 ps-3 mt-1">
+                                <li>Se aplicará la <strong>baja permanente</strong> de stock en almacén para ítems rotos, extraviados o consumidos.</li>
+                                <li>Se generarán <strong>ajustes de penalidad sugeridos</strong> para ítems con roturas, daños o pérdidas.</li>
+                                <li>El checklist quedará <strong>bloqueado</strong> contra futuras ediciones directas.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-dark mb-2"><i class="ri-file-list-3-line me-1"></i> Resumen de Novedades y Penalidades:</h6>
+                    <div id="close-return-preview-container" class="table-responsive border rounded mb-3 bg-light p-2" style="max-height: 260px; overflow-y: auto;">
+                        <table class="table table-sm table-hover align-middle mb-0" id="preview-return-table">
+                            <thead class="table-light">
+                                <tr class="text-muted small">
+                                    <th>Ítem</th>
+                                    <th class="text-center">Tipo</th>
+                                    <th class="text-center">Roto/Faltante</th>
+                                    <th class="text-center">Dañado</th>
+                                    <th class="text-center">Consumido</th>
+                                    <th class="text-end">Penalidad Est.</th>
+                                </tr>
+                            </thead>
+                            <tbody id="preview-return-rows">
+                                <!-- Populated dynamically by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="card border-danger-subtle bg-danger-subtle p-3 rounded-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="text-danger fw-bold fs-6">Total Penalidades Sugeridas:</span>
+                                <div class="text-muted small">Monto que el supervisor podrá cargar a la 2da cuota o emitir Nota de Débito</div>
+                            </div>
+                            <div class="text-end">
+                                <span class="fs-4 fw-bolder text-danger" id="preview-total-penalty">{{ $signo }} 0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar / Seguir editando</button>
+                    <button type="submit" class="btn btn-danger fw-bold" id="btn-submit-close-return">
+                        <i class="ri-check-double-line me-1"></i> Confirmar Cierre y Descontar Stock
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Reabrir Retorno -->
+<div class="modal fade" id="modalReopenReturn" tabindex="-1" aria-labelledby="modalReopenReturnLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title fw-bold" id="modalReopenReturnLabel">
+                    <i class="ri-restart-line me-1"></i> Reabrir Retorno (Auditoría Administrativa)
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formReopenReturn" method="POST" action="{{ route('admin.event_checklists.reopen_return', $checklist->id) }}">
+                @csrf
+                <div class="modal-body p-4">
+                    <div class="alert alert-info border-0 small mb-3">
+                        <i class="ri-information-line me-1"></i>
+                        Al reabrir el checklist, se revertirán los movimientos de inventario y ajustes generados para permitir corregir cantidades.
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark">Motivo de Reapertura *</label>
+                        <textarea name="motivo_reapertura" id="modal-motivo-reapertura" class="form-control" rows="3" placeholder="Explique por qué se reabre el retorno (mínimo 5 caracteres)..." required minlength="5"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning text-dark fw-bold" id="btn-submit-reopen-return">
+                        <i class="ri-restart-line me-1"></i> Confirmar Reapertura
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('scripts')
 <script>
 $(document).ready(function() {
-    const checklistId = {{ $checklist->id }};
-    const updateItemUrl = "{{ route('admin.event_checklists.update_item', $checklist->id) }}";
-    const bulkToggleUrl = "{{ route('admin.event_checklists.bulk_toggle', $checklist->id) }}";
-    const addItemUrl = "{{ route('admin.event_checklists.add_item', $checklist->id) }}";
+    const checklistId       = {{ $checklist->id }};
+    const updateItemUrl     = "{{ route('admin.event_checklists.update_item', $checklist->id) }}";
+    const bulkToggleUrl     = "{{ route('admin.event_checklists.bulk_toggle', $checklist->id) }}";
+    const addItemUrl        = "{{ route('admin.event_checklists.add_item', $checklist->id) }}";
 
     // Live update UI elements from response counters
     function updateCounters(counters) {
@@ -528,10 +743,10 @@ $(document).ready(function() {
     // Toggle LLEVADO
     $(document).on('click', '.btn-toggle-llevado', function(e) {
         e.preventDefault();
-        const btn = $(this);
-        const itemId = btn.data('item-id');
-        const currentVal = parseInt(btn.data('current')) || 0;
-        const newVal = currentVal === 1 ? 0 : 1;
+        const btn           = $(this);
+        const itemId        = btn.data('item-id');
+        const currentVal    = parseInt(btn.data('current')) || 0;
+        const newVal        = currentVal === 1 ? 0 : 1;
 
         btn.prop('disabled', true);
 
@@ -581,10 +796,10 @@ $(document).ready(function() {
     // Toggle DEVUELTO
     $(document).on('click', '.btn-toggle-devuelto', function(e) {
         e.preventDefault();
-        const btn = $(this);
-        const itemId = btn.data('item-id');
-        const currentVal = parseInt(btn.data('current')) || 0;
-        const newVal = currentVal === 1 ? 0 : 1;
+        const btn           = $(this);
+        const itemId        = btn.data('item-id');
+        const currentVal    = parseInt(btn.data('current')) || 0;
+        const newVal        = currentVal === 1 ? 0 : 1;
 
         btn.prop('disabled', true);
 
@@ -631,11 +846,11 @@ $(document).ready(function() {
     });
 
     function checkCardCompletion(itemId) {
-        const wrapper = $('#item-wrapper-' + itemId);
-        const card = wrapper.find('.item-card');
-        const llevado = parseInt(wrapper.attr('data-llevado')) || 0;
-        const devuelto = parseInt(wrapper.attr('data-devuelto')) || 0;
-        const incident = parseInt(wrapper.attr('data-incident')) || 0;
+        const wrapper   = $('#item-wrapper-' + itemId);
+        const card      = wrapper.find('.item-card');
+        const llevado   = parseInt(wrapper.attr('data-llevado')) || 0;
+        const devuelto  = parseInt(wrapper.attr('data-devuelto')) || 0;
+        const incident  = parseInt(wrapper.attr('data-incident')) || 0;
 
         if (incident === 1) {
             card.addClass('has-incident').removeClass('all-done');
@@ -672,9 +887,9 @@ $(document).ready(function() {
 
     // Bulk Toggle
     $('.btn-bulk-action').on('click', function() {
-        const action = $(this).data('action');
-        const title = action === 'all_llevados' ? '¿Marcar TODO como LLEVADO?' : '¿Marcar TODO como DEVUELTO?';
-        const text = action === 'all_llevados'
+        const action    = $(this).data('action');
+        const title     = action === 'all_llevados' ? '¿Marcar TODO como LLEVADO?' : '¿Marcar TODO como DEVUELTO?';
+        const text      = action === 'all_llevados'
             ? 'Todos los ítems se marcarán como despachados para el evento.'
             : 'Todos los ítems se marcarán como retornados del evento.';
 
@@ -713,14 +928,14 @@ $(document).ready(function() {
     // Open Incident Modal
     $(document).on('click', '.btn-open-incident', function(e) {
         e.preventDefault();
-        const itemId = $(this).data('item-id');
-        const wrapper = $('#item-wrapper-' + itemId);
-        const desc = $(this).data('descripcion') || wrapper.find('h5').text();
-        const maxQty = $(this).data('max-qty') || 1;
-        const unit = $(this).data('unidad') || 'UNIDAD';
-        const incidentType = $(this).data('incident-type') || 'Rotura de Cristalería';
-        const incidentQty = $(this).data('incident-qty') || 1;
-        const notes = $(this).data('incident-notes') || '';
+        const itemId        = $(this).data('item-id');
+        const wrapper       = $('#item-wrapper-' + itemId);
+        const desc          = $(this).data('descripcion') || wrapper.find('h5').text();
+        const maxQty        = $(this).data('max-qty') || 1;
+        const unit          = $(this).data('unidad') || 'UNIDAD';
+        const incidentType  = $(this).data('incident-type') || 'Rotura de Cristalería';
+        const incidentQty   = $(this).data('incident-qty') || 1;
+        const notes         = $(this).data('incident-notes') || '';
 
         $('#incident-item-id').val(itemId);
         $('#modal-incident-item-name').text(desc);
@@ -840,6 +1055,345 @@ $(document).ready(function() {
             error: function() {
                 submitBtn.prop('disabled', false);
                 toastr.error('Error al agregar el ítem.');
+            }
+        });
+    });
+
+    // Stepper Handlers for Return Quantities
+    $(document).on('click', '.btn-step-up', function(e) {
+        e.preventDefault();
+        const targetId = $(this).data('target');
+        const input = $(targetId);
+        if (input.prop('readonly') || input.prop('disabled')) return;
+        let currentVal = parseFloat(input.val()) || 0;
+        currentVal = Math.round((currentVal + 1) * 100) / 100;
+        input.val(currentVal).trigger('input');
+    });
+
+    $(document).on('click', '.btn-step-down', function(e) {
+        e.preventDefault();
+        const targetId = $(this).data('target');
+        const input = $(targetId);
+        if (input.prop('readonly') || input.prop('disabled')) return;
+        let currentVal = parseFloat(input.val()) || 0;
+        currentVal = Math.max(0, Math.round((currentVal - 1) * 100) / 100);
+        input.val(currentVal).trigger('input');
+    });
+
+    // Real-time Balance Calculation per Item
+    function updateItemBalance(panel) {
+        const itemId = panel.data('item-id');
+        const sentQty = parseFloat(panel.data('sent-qty')) || 0;
+        
+        const qOk        = parseFloat(panel.find('.qty-ok-input').val()) || 0;
+        const qDanada    = parseFloat(panel.find('.qty-danada-input').val()) || 0;
+        const qQuebrada  = parseFloat(panel.find('.qty-quebrada-input').val()) || 0;
+        const qFaltante  = parseFloat(panel.find('.qty-faltante-input').val()) || 0;
+        const qConsumida = parseFloat(panel.find('.qty-consumida-input').val()) || 0;
+
+        const sum = qOk + qDanada + qQuebrada + qFaltante + qConsumida;
+        const diff = Math.round((sentQty - sum) * 10000) / 10000;
+        const badge = $('#balance-badge-' + itemId);
+
+        if (Math.abs(diff) < 0.0001) {
+            badge.removeClass('bg-secondary bg-warning bg-danger text-dark')
+                 .addClass('bg-success text-white')
+                 .html('<i class="ri-checkbox-circle-line me-1"></i> Balanceado (' + sum.toFixed(2) + ')');
+            panel.attr('data-balanced', '1');
+        } else if (diff > 0.0001) {
+            badge.removeClass('bg-secondary bg-success bg-danger text-white')
+                 .addClass('bg-warning text-dark')
+                 .html('<i class="ri-alert-line me-1"></i> Falta: ' + diff.toFixed(2));
+            panel.attr('data-balanced', '0');
+        } else {
+            badge.removeClass('bg-secondary bg-success bg-warning text-dark')
+                 .addClass('bg-danger text-white')
+                 .html('<i class="ri-close-circle-line me-1"></i> Exceso: ' + (-diff).toFixed(2));
+            panel.attr('data-balanced', '0');
+        }
+    }
+
+    // Trigger on input changes
+    $(document).on('input change keyup', '.return-qty-input', function() {
+        const panel = $(this).closest('.return-breakdown-panel');
+        updateItemBalance(panel);
+    });
+
+    // Initial check for all panels on load
+    $('.return-breakdown-panel').each(function() {
+        updateItemBalance($(this));
+    });
+
+    // Individual Item Shortcuts
+    $(document).on('click', '.btn-item-all-ok', function() {
+        const itemId = $(this).data('item-id');
+        const panel = $('.return-breakdown-panel[data-item-id="' + itemId + '"]');
+        const sentQty = parseFloat(panel.data('sent-qty')) || 0;
+        panel.find('.qty-ok-input').val(sentQty);
+        panel.find('.qty-danada-input').val(0);
+        panel.find('.qty-quebrada-input').val(0);
+        panel.find('.qty-faltante-input').val(0);
+        panel.find('.qty-consumida-input').val(0);
+        updateItemBalance(panel);
+    });
+
+    $(document).on('click', '.btn-item-all-consumed', function() {
+        const itemId = $(this).data('item-id');
+        const panel = $('.return-breakdown-panel[data-item-id="' + itemId + '"]');
+        const sentQty = parseFloat(panel.data('sent-qty')) || 0;
+        panel.find('.qty-ok-input').val(0);
+        panel.find('.qty-danada-input').val(0);
+        panel.find('.qty-quebrada-input').val(0);
+        panel.find('.qty-faltante-input').val(0);
+        panel.find('.qty-consumida-input').val(sentQty);
+        updateItemBalance(panel);
+    });
+
+    // Global Shortcuts
+    $('.btn-bulk-return-ok').on('click', function() {
+        Swal.fire({
+            title: '¿Asignar todo el retorno como Conforme (OK)?',
+            text: 'Todos los ítems tendrán sus cantidades devueltas en OK igual a lo enviado.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, asignar todo OK',
+            cancelButtonText: 'Cancelar'
+        }).then((res) => {
+            if (res.isConfirmed) {
+                $('.return-breakdown-panel').each(function() {
+                    const panel = $(this);
+                    const sentQty = parseFloat(panel.data('sent-qty')) || 0;
+                    panel.find('.qty-ok-input').val(sentQty);
+                    panel.find('.qty-danada-input').val(0);
+                    panel.find('.qty-quebrada-input').val(0);
+                    panel.find('.qty-faltante-input').val(0);
+                    panel.find('.qty-consumida-input').val(0);
+                    updateItemBalance(panel);
+                });
+                toastr.success('Todos los ítems se marcaron como retorno OK.');
+            }
+        });
+    });
+
+    $('.btn-bulk-consumables').on('click', function() {
+        Swal.fire({
+            title: '¿Asignar insumos y bebidas como consumidos?',
+            text: 'Los ítems no alquilables (insumos, licores) se asignarán a "Consumido". Los menajes y equipos alquilables se mantendrán intactos.',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, aplicar',
+            cancelButtonText: 'Cancelar'
+        }).then((res) => {
+            if (res.isConfirmed) {
+                let count = 0;
+                $('.return-breakdown-panel').each(function() {
+                    const panel = $(this);
+                    const isRentable = panel.data('is-rentable') == '1';
+                    const isService = panel.data('is-service') == '1';
+                    if (!isRentable && !isService) {
+                        const sentQty = parseFloat(panel.data('sent-qty')) || 0;
+                        panel.find('.qty-ok-input').val(0);
+                        panel.find('.qty-danada-input').val(0);
+                        panel.find('.qty-quebrada-input').val(0);
+                        panel.find('.qty-faltante-input').val(0);
+                        panel.find('.qty-consumida-input').val(sentQty);
+                        updateItemBalance(panel);
+                        count++;
+                    }
+                });
+                toastr.success(count + ' insumos marcados como consumidos.');
+            }
+        });
+    });
+
+    // Helper to collect items data
+    function collectReturnItemsPayload() {
+        const payload = {
+            _token: '{{ csrf_token() }}',
+            items: {}
+        };
+        $('.return-breakdown-panel').each(function() {
+            const panel = $(this);
+            const id = panel.data('item-id');
+            payload.items[id] = {
+                qty_ok: parseFloat(panel.find('.qty-ok-input').val()) || 0,
+                qty_danada: parseFloat(panel.find('.qty-danada-input').val()) || 0,
+                qty_quebrada: parseFloat(panel.find('.qty-quebrada-input').val()) || 0,
+                qty_faltante: parseFloat(panel.find('.qty-faltante-input').val()) || 0,
+                qty_consumida: parseFloat(panel.find('.qty-consumida-input').val()) || 0
+            };
+        });
+        return payload;
+    }
+
+    // Save Return Items Draft
+    $('#btn-save-draft-return').on('click', function() {
+        const btn = $(this);
+        btn.prop('disabled', true);
+        const payload = collectReturnItemsPayload();
+
+        $.ajax({
+            url: "{{ route('admin.event_checklists.save_return_items', $checklist->id) }}",
+            type: 'POST',
+            data: payload,
+            success: function(res) {
+                btn.prop('disabled', false);
+                if (res.status) {
+                    toastr.success(res.message);
+                } else {
+                    toastr.error(res.message || 'Error al guardar los ítems.');
+                }
+            },
+            error: function() {
+                btn.prop('disabled', false);
+                toastr.error('Error al guardar las cantidades de retorno.');
+            }
+        });
+    });
+
+    // Open Close Modal with Preview and Validation
+    $('#btn-open-close-modal').on('click', function() {
+        let unbalancedCount = 0;
+        $('.return-breakdown-panel').each(function() {
+            if ($(this).attr('data-balanced') !== '1') {
+                unbalancedCount++;
+            }
+        });
+
+        if (unbalancedCount > 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Cantidades desbalanceadas',
+                html: 'Hay <strong>' + unbalancedCount + '</strong> ítem(s) cuya suma de categorías no coincide exactamente con la cantidad enviada.<br><br>Por favor revisa las tarjetas marcadas en amarillo o rojo antes de cerrar el retorno.',
+                confirmButtonText: 'Entendido'
+            });
+            return;
+        }
+
+        // Build preview
+        const rowsContainer = $('#preview-return-rows');
+        rowsContainer.empty();
+        let totalPenalty = 0;
+        let changesCount = 0;
+
+        $('.return-breakdown-panel').each(function() {
+            const panel = $(this);
+            const desc = panel.closest('.item-card').find('h5').text().trim();
+            const unitCost = parseFloat(panel.data('unit-cost')) || 0;
+            const isRentable = panel.data('is-rentable') == '1';
+            const isService = panel.data('is-service') == '1';
+
+            const qOk        = parseFloat(panel.find('.qty-ok-input').val()) || 0;
+            const qDanada    = parseFloat(panel.find('.qty-danada-input').val()) || 0;
+            const qQuebrada  = parseFloat(panel.find('.qty-quebrada-input').val()) || 0;
+            const qFaltante  = parseFloat(panel.find('.qty-faltante-input').val()) || 0;
+            const qConsumida = parseFloat(panel.find('.qty-consumida-input').val()) || 0;
+
+            const penaltyUnits = qQuebrada + qFaltante + qDanada;
+            const penaltySubtotal = penaltyUnits * unitCost;
+
+            if (qDanada > 0 || qQuebrada > 0 || qFaltante > 0 || qConsumida > 0) {
+                changesCount++;
+                totalPenalty += penaltySubtotal;
+                const typeLabel = isRentable ? '<span class="badge bg-secondary-subtle text-dark">Alquiler</span>' : (isService ? '<span class="badge bg-light text-muted">Servicio</span>' : '<span class="badge bg-info-subtle text-info">Insumo</span>');
+                const row = `<tr>
+                    <td><strong>${desc}</strong></td>
+                    <td class="text-center">${typeLabel}</td>
+                    <td class="text-center text-danger fw-bold">${qQuebrada + qFaltante > 0 ? (qQuebrada + qFaltante) : '-'}</td>
+                    <td class="text-center text-warning fw-bold">${qDanada > 0 ? qDanada : '-'}</td>
+                    <td class="text-center text-info fw-bold">${qConsumida > 0 ? qConsumida : '-'}</td>
+                    <td class="text-end fw-bold">${penaltySubtotal > 0 ? '{{ $signo }} ' + penaltySubtotal.toFixed(2) : '-'}</td>
+                </tr>`;
+                rowsContainer.append(row);
+            }
+        });
+
+        if (changesCount === 0) {
+            rowsContainer.append('<tr><td colspan="6" class="text-center text-success py-3"><i class="ri-checkbox-circle-line me-1"></i> Todos los ítems retornaron conformes (100% OK). Sin penalidades ni bajas por rotura.</td></tr>');
+        }
+
+        $('#preview-total-penalty').text('{{ $signo }} ' + totalPenalty.toFixed(2));
+        $('#modalCloseReturn').modal('show');
+    });
+
+    // Form Close Return submission
+    $('#formCloseReturn').on('submit', function(e) {
+        e.preventDefault();
+        const form = $(this);
+        const submitBtn = $('#btn-submit-close-return');
+        submitBtn.prop('disabled', true);
+
+        // First auto-save the items to guarantee consistency
+        const payload = collectReturnItemsPayload();
+        $.ajax({
+            url: "{{ route('admin.event_checklists.save_return_items', $checklist->id) }}",
+            type: 'POST',
+            data: payload,
+            success: function() {
+                // Now submit close-return
+                $.ajax({
+                    url: form.attr('action'),
+                    type: 'POST',
+                    data: form.serialize(),
+                    success: function(resp) {
+                        if (resp.status) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Retorno Cerrado!',
+                                text: 'El retorno ha sido cerrado y el inventario fue actualizado exitosamente.',
+                                confirmButtonText: 'Ver Acta de Cierre'
+                            }).then(() => {
+                                window.location.href = "{{ route('admin.event_checklists.report', $checklist->id) }}";
+                            });
+                        } else {
+                            submitBtn.prop('disabled', false);
+                            Swal.fire({ icon: 'error', title: 'Error', text: resp.message || 'Error al cerrar el retorno.' });
+                        }
+                    },
+                    error: function(xhr) {
+                        submitBtn.prop('disabled', false);
+                        const msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Error inesperado al cerrar el retorno.';
+                        Swal.fire({ icon: 'error', title: 'No se pudo cerrar', text: msg });
+                    }
+                });
+            },
+            error: function() {
+                submitBtn.prop('disabled', false);
+                toastr.error('Error al guardar datos previos al cierre.');
+            }
+        });
+    });
+
+    // Form Reopen Return submission
+    $('#formReopenReturn').on('submit', function(e) {
+        e.preventDefault();
+        const form = $(this);
+        const submitBtn = $('#btn-submit-reopen-return');
+        submitBtn.prop('disabled', true);
+
+        $.ajax({
+            url: form.attr('action'),
+            type: 'POST',
+            data: form.serialize(),
+            success: function(resp) {
+                if (resp.status) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Retorno Reabierto',
+                        text: resp.message,
+                        confirmButtonText: 'Aceptar'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    submitBtn.prop('disabled', false);
+                    Swal.fire({ icon: 'error', title: 'Error', text: resp.message || 'Error al reabrir el retorno.' });
+                }
+            },
+            error: function(xhr) {
+                submitBtn.prop('disabled', false);
+                const msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Error inesperado al reabrir.';
+                Swal.fire({ icon: 'error', title: 'No se pudo reabrir', text: msg });
             }
         });
     });

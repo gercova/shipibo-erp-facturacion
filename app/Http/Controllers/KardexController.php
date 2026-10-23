@@ -97,6 +97,7 @@ class KardexController extends Controller
             $this->billingMovementsQuery($warehouseId, $productId),
             $this->transferOutMovementsQuery($warehouseId, $productId),
             $this->transferInMovementsQuery($warehouseId, $productId),
+            $this->eventReturnMovementsQuery($warehouseId, $productId),
         ];
 
         $union = array_shift($queries);
@@ -282,5 +283,29 @@ class KardexController extends Controller
             ->where('transfer_orders.estado', 1)
             ->when($warehouseId > 0, fn ($query) => $query->where('transfer_orders.idalmacen_receptor', $warehouseId))
             ->when($productId > 0, fn ($query) => $query->where('detail_transfer_orders.idproducto', $productId));
+    }
+
+    private function eventReturnMovementsQuery(int $warehouseId, int $productId)
+    {
+        return DB::table('inventory_movements')
+            ->selectRaw("
+                inventory_movements.id as row_id,
+                DATE(inventory_movements.created_at) as fecha,
+                'retorno_evento' as movement_type,
+                'Retorno Evento' as movement_label,
+                COALESCE(event_checklists.codigo, CONCAT('MOV-', inventory_movements.id)) as documento,
+                inventory_movements.product_id as product_id,
+                products.descripcion as product_name,
+                warehouses.descripcion as warehouse_name,
+                CASE WHEN inventory_movements.movement_sign > 0 THEN inventory_movements.quantity ELSE 0 END as entrada,
+                CASE WHEN inventory_movements.movement_sign < 0 THEN inventory_movements.quantity ELSE 0 END as salida,
+                COALESCE(products.replacement_cost, products.precio_compra, 0) as costo_unitario,
+                (inventory_movements.quantity * COALESCE(products.replacement_cost, products.precio_compra, 0)) as total_movimiento
+            ")
+            ->join('products', 'products.id', '=', 'inventory_movements.product_id')
+            ->leftJoin('warehouses', 'warehouses.id', '=', 'inventory_movements.warehouse_id')
+            ->leftJoin('event_checklists', 'event_checklists.id', '=', 'inventory_movements.checklist_id')
+            ->when($warehouseId > 0, fn ($query) => $query->where('inventory_movements.warehouse_id', $warehouseId))
+            ->when($productId > 0, fn ($query) => $query->where('inventory_movements.product_id', $productId));
     }
 }

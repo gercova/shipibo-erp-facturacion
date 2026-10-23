@@ -270,6 +270,9 @@ Route::controller(EventChecklistController::class)->prefix('event-checklists')->
     Route::post('/{id}/update-item', 'updateItem')->name('admin.event_checklists.update_item');
     Route::post('/{id}/add-item', 'addItem')->name('admin.event_checklists.add_item');
     Route::post('/{id}/bulk-toggle', 'bulkToggle')->name('admin.event_checklists.bulk_toggle');
+    Route::post('/{id}/close-return', 'closeReturn')->name('admin.event_checklists.close_return');
+    Route::post('/{id}/reopen-return', 'reopenReturn')->name('admin.event_checklists.reopen_return');
+    Route::post('/{id}/save-return-items', 'saveReturnItems')->name('admin.event_checklists.save_return_items');
     Route::get('/{id}/report', 'report')->name('admin.event_checklists.report');
     Route::get('/{id}/pdf', 'pdfReport')->name('admin.event_checklists.pdf');
     Route::post('/delete', 'destroy')->name('admin.event_checklists.delete');

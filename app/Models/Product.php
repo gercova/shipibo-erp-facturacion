@@ -8,34 +8,51 @@ use Illuminate\Database\Eloquent\Model;
 class Product extends Model
 {
     use HasFactory;
-    protected $table        = 'products';
-    protected $primaryKey   = 'id';
+
+    protected $table = 'products';
+
+    protected $primaryKey = 'id';
 
     protected $fillable =
-    [
-        'codigo_interno',
-        'codigo_barras',
-        'codigo_sunat',
-        'descripcion',
-        'idunidad',
-        'idcategoria',
-        'igv',
-        'idcodigo_igv',
-        'precio_compra',
-        'precio_venta',
-        'opcion',
-        'rentable',
-        'es_alquilable',
-        'stock_actual'
-    ];
+        [
+            'codigo_interno',
+            'codigo_barras',
+            'codigo_sunat',
+            'descripcion',
+            'idunidad',
+            'idcategoria',
+            'igv',
+            'idcodigo_igv',
+            'precio_compra',
+            'precio_venta',
+            'opcion',
+            'rentable',
+            'es_alquilable',
+            'stock_actual',
+            'replacement_cost',
+        ];
 
     protected $casts = [
         'rentable' => 'boolean',
         'stock_actual' => 'decimal:4',
         'precio_compra' => 'decimal:2',
         'precio_venta' => 'decimal:2',
+        'replacement_cost' => 'decimal:4',
         'opcion' => 'integer',
     ];
+
+    public function getEffectiveReplacementCostAttribute(): float
+    {
+        if ($this->replacement_cost !== null && (float) $this->replacement_cost > 0) {
+            return (float) $this->replacement_cost;
+        }
+
+        if ($this->precio_compra !== null && (float) $this->precio_compra > 0) {
+            return (float) $this->precio_compra;
+        }
+
+        return (float) ($this->precio_venta ?? 0.0);
+    }
 
     public function unit()
     {

@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -31,6 +30,12 @@ class EventChecklist extends Model
         'items_con_incidencia',
         'observaciones_salida',
         'observaciones_retorno',
+        'retorno_cerrado_at',
+        'retorno_cerrado_by',
+        'stock_aplicado_at',
+        'reabierto_at',
+        'reabierto_by',
+        'motivo_reapertura',
         'idusuario',
         'idalmacen',
     ];
@@ -42,12 +47,18 @@ class EventChecklist extends Model
         'items_llevados' => 'integer',
         'items_devueltos' => 'integer',
         'items_con_incidencia' => 'integer',
+        'retorno_cerrado_at' => 'datetime',
+        'stock_aplicado_at' => 'datetime',
+        'reabierto_at' => 'datetime',
     ];
 
-    const STATUS_PLANNED         = 0; // Borrador / Planificado
-    const STATUS_DISPATCHED      = 1; // En Montaje / Salida Verificada
-    const STATUS_RETURNED_OK     = 2; // Conforme / Completado
-    const STATUS_WITH_INCIDENTS  = 3; // Con Incidencias / Daños
+    const STATUS_PLANNED = 0; // Borrador / Planificado
+
+    const STATUS_DISPATCHED = 1; // En Montaje / Salida Verificada
+
+    const STATUS_RETURNED_OK = 2; // Conforme / Completado
+
+    const STATUS_WITH_INCIDENTS = 3; // Con Incidencias / Daños
 
     public function contract(): BelongsTo
     {
@@ -57,6 +68,31 @@ class EventChecklist extends Model
     public function items(): HasMany
     {
         return $this->hasMany(EventChecklistItem::class, 'checklist_id')->orderBy('orden', 'asc')->orderBy('id', 'asc');
+    }
+
+    public function retornoCerradoBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'retorno_cerrado_by');
+    }
+
+    public function reabiertoBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reabierto_by');
+    }
+
+    public function movements(): HasMany
+    {
+        return $this->hasMany(InventoryMovement::class, 'checklist_id');
+    }
+
+    public function isReturnClosed(): bool
+    {
+        return ! is_null($this->retorno_cerrado_at);
+    }
+
+    public function isStockApplied(): bool
+    {
+        return ! is_null($this->stock_aplicado_at);
     }
 
     public function user(): BelongsTo
@@ -93,13 +129,19 @@ class EventChecklist extends Model
 
     public function progressLlevado(): float
     {
-        if ($this->total_items <= 0) return 0.0;
+        if ($this->total_items <= 0) {
+            return 0.0;
+        }
+
         return round(($this->items_llevados / $this->total_items) * 100, 1);
     }
 
     public function progressDevuelto(): float
     {
-        if ($this->total_items <= 0) return 0.0;
+        if ($this->total_items <= 0) {
+            return 0.0;
+        }
+
         return round(($this->items_devueltos / $this->total_items) * 100, 1);
     }
 
@@ -111,22 +153,22 @@ class EventChecklist extends Model
     public function getStatusLabelAttribute(): string
     {
         return match ($this->estado) {
-            self::STATUS_PLANNED        => 'Planificado',
-            self::STATUS_DISPATCHED     => 'En Montaje / Salida',
-            self::STATUS_RETURNED_OK    => 'Conforme / Retornado',
+            self::STATUS_PLANNED => 'Planificado',
+            self::STATUS_DISPATCHED => 'En Montaje / Salida',
+            self::STATUS_RETURNED_OK => 'Conforme / Retornado',
             self::STATUS_WITH_INCIDENTS => 'Con Incidencias / Daños',
-            default                     => 'Desconocido',
+            default => 'Desconocido',
         };
     }
 
     public function getStatusBadgeAttribute(): string
     {
         return match ($this->estado) {
-            self::STATUS_PLANNED        => '<span class="badge bg-warning-subtle text-warning fw-bold"><i class="ri-time-line me-1"></i> Planificado</span>',
-            self::STATUS_DISPATCHED     => '<span class="badge bg-primary-subtle text-primary fw-bold"><i class="ri-truck-line me-1"></i> En Montaje / Salida</span>',
-            self::STATUS_RETURNED_OK    => '<span class="badge bg-success-subtle text-success fw-bold"><i class="ri-checkbox-circle-line me-1"></i> Conforme</span>',
+            self::STATUS_PLANNED => '<span class="badge bg-warning-subtle text-warning fw-bold"><i class="ri-time-line me-1"></i> Planificado</span>',
+            self::STATUS_DISPATCHED => '<span class="badge bg-primary-subtle text-primary fw-bold"><i class="ri-truck-line me-1"></i> En Montaje / Salida</span>',
+            self::STATUS_RETURNED_OK => '<span class="badge bg-success-subtle text-success fw-bold"><i class="ri-checkbox-circle-line me-1"></i> Conforme</span>',
             self::STATUS_WITH_INCIDENTS => '<span class="badge bg-danger text-white fw-bold"><i class="ri-alarm-warning-line me-1"></i> Con Incidencias</span>',
-            default                     => '<span class="badge bg-secondary">N/A</span>',
+            default => '<span class="badge bg-secondary">N/A</span>',
         };
     }
 
@@ -168,7 +210,7 @@ class EventChecklist extends Model
             $correlativo = 1;
         }
 
-        return sprintf("CHK-%s-%04d", $year, $correlativo);
+        return sprintf('CHK-%s-%04d', $year, $correlativo);
     }
 
     public static function generateCode(): string

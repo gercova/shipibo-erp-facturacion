@@ -158,42 +158,116 @@
         </div>
     </div>
 
+    <!-- Return Status & Supervisor Decision Banner -->
+    @php
+        $affectedItems = $checklist->items->filter(function($i) {
+            return $i->tiene_incidencia || ($i->qty_quebrada > 0 || $i->qty_faltante > 0 || $i->qty_danada > 0);
+        });
+        $totalCargos = 0.00;
+        foreach($affectedItems as $ai) {
+            $prod = $ai->product;
+            $unitCost = $prod ? $prod->effective_replacement_cost : (float) $ai->costo_penalidad_estimado;
+            $totalCargos += round(($ai->qty_quebrada + $ai->qty_faltante + $ai->qty_danada) * $unitCost, 2);
+        }
+    @endphp
+
+    <div class="card border-0 report-card mb-4 bg-light">
+        <div class="card-body p-4">
+            <div class="row align-items-center g-3">
+                <div class="col-lg-7">
+                    <h5 class="fw-bold mb-1 text-dark">
+                        <i class="ri-scales-3-line text-primary me-1"></i> Estado del Cierre de Retorno
+                    </h5>
+                    <div class="text-muted small">
+                        @if($checklist->isReturnClosed())
+                            <span class="badge bg-success me-2"><i class="ri-checkbox-circle-line me-1"></i> Retorno Cerrado</span>
+                            Cerrado el {{ $checklist->retorno_cerrado_at->format('d/m/Y H:i') }}
+                            por <strong>{{ $checklist->retornoCerradoBy->nombre ?? 'Usuario' }}</strong>
+                            | Impacto en Stock: <span class="badge bg-info text-dark">Aplicado</span>
+                        @else
+                            <span class="badge bg-warning text-dark me-2"><i class="ri-time-line me-1"></i> Pendiente de Cierre</span>
+                            Las cantidades de retorno aún pueden ser editadas en el modo tablet.
+                        @endif
+                    </div>
+                </div>
+                <div class="col-lg-5 text-lg-end">
+                    <div class="d-inline-flex flex-column align-items-lg-end">
+                        <span class="small text-muted fw-bold">TOTAL CARGOS ADICIONALES SUGERIDOS</span>
+                        <span class="h3 fw-bold text-danger mb-0">{{ $signo }} {{ number_format($totalCargos, 2) }}</span>
+                    </div>
+                </div>
+            </div>
+
+            @if($totalCargos > 0)
+            <div class="mt-3 pt-3 border-top d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div class="small text-muted">
+                    <i class="ri-information-line text-info me-1"></i>
+                    <strong>Decisión del Supervisor:</strong> Las roturas y faltantes ya generan registros de auditoría en <code>contract_adjustments</code>. Seleccione el destino financiero:
+                </div>
+                <div class="d-flex gap-2">
+                    @if($checklist->contract)
+                        <a href="{{ route('admin.edit_contract', $checklist->contract->id) }}" class="btn btn-sm btn-primary rounded-pill px-3">
+                            <i class="ri-wallet-3-line me-1"></i> Imputar a Cuota 2 (Contrato)
+                        </a>
+                    @endif
+                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="Swal.fire('Nota de Débito', 'Solicitud notificada al área de administración para emisión de Nota de Débito (08).', 'info')">
+                        <i class="ri-file-paper-2-line me-1"></i> Solicitar Nota de Débito (08)
+                    </button>
+                </div>
+            </div>
+            @endif
+        </div>
+    </div>
+
     <!-- Incidents Breakdown Table if any -->
-    @if($checklist->items->where('tiene_incidencia', 1)->count() > 0)
+    @if($affectedItems->count() > 0)
     <div class="card border-0 report-card mb-4 border-start border-danger border-4">
-        <div class="card-header bg-danger bg-opacity-10 py-3">
+        <div class="card-header bg-danger bg-opacity-10 py-3 d-flex justify-content-between align-items-center">
             <h5 class="fw-bold text-danger mb-0">
-                <i class="ri-error-warning-line me-1"></i> Detalle de Ítems Afectados (Roturas / Faltantes / Daños)
+                <i class="ri-error-warning-line me-1"></i> Detalle de Roturas / Faltantes / Daños
             </h5>
+            <span class="badge bg-danger fs-6">{{ $affectedItems->count() }} ítems afectados</span>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-bordered mb-0 align-middle">
                     <thead class="table-light small">
                         <tr>
-                            <th width="5%" class="text-center">#</th>
-                            <th>Ítem / Cristalería</th>
-                            <th width="15%" class="text-center">Tipo de Daño</th>
-                            <th width="12%" class="text-center">Cantidad Dañada</th>
-                            <th>Observaciones / Detalle</th>
+                            <th width="4%" class="text-center">#</th>
+                            <th>Ítem / Descripción</th>
+                            <th width="14%" class="text-center">Desglose Faltante</th>
+                            <th width="14%" class="text-center">Costo Reposición</th>
+                            <th width="14%" class="text-end">Subtotal Cargo</th>
+                            <th>Observaciones</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($checklist->items->where('tiene_incidencia', 1) as $index => $item)
+                        @foreach($affectedItems as $index => $item)
+                        @php
+                            $prod = $item->product;
+                            $costUnit = $prod ? $prod->effective_replacement_cost : (float) $item->costo_penalidad_estimado;
+                            $affectedQty = (float) ($item->qty_quebrada + $item->qty_faltante + $item->qty_danada);
+                            $subtotalCargo = round($affectedQty * $costUnit, 2);
+                        @endphp
                         <tr>
                             <td class="text-center fw-bold">{{ $loop->iteration }}</td>
                             <td>
                                 <strong>{{ $item->descripcion }}</strong>
                                 <div class="text-muted small">{{ $item->categoria }}</div>
                             </td>
-                            <td class="text-center">
-                                <span class="badge bg-danger">{{ $item->tipo_incidencia }}</span>
+                            <td class="text-center small">
+                                @if($item->qty_quebrada > 0) <span class="badge bg-danger">Roto: {{ $item->qty_quebrada }}</span> @endif
+                                @if($item->qty_faltante > 0) <span class="badge bg-warning text-dark">Falta: {{ $item->qty_faltante }}</span> @endif
+                                @if($item->qty_danada > 0) <span class="badge bg-secondary">Daño: {{ $item->qty_danada }}</span> @endif
                             </td>
-                            <td class="text-center fw-bold text-danger fs-6">
-                                {{ rtrim(rtrim(number_format($item->cantidad_afectada, 2), '0'), '.') }} {{ $item->unidad_medida }}
+                            <td class="text-center">
+                                {{ $signo }} {{ number_format($costUnit, 2) }}
+                            </td>
+                            <td class="text-end fw-bold text-danger">
+                                {{ $signo }} {{ number_format($subtotalCargo, 2) }}
                             </td>
                             <td>
-                                <em>{{ $item->observaciones ?? 'Sin detalle' }}</em>
+                                <em>{{ $item->observaciones ?? 'Sin detalle adicional' }}</em>
                             </td>
                         </tr>
                         @endforeach
@@ -204,11 +278,11 @@
     </div>
     @endif
 
-    <!-- Full Items Inventory Table -->
+    <!-- Full Items Inventory Table with 6 Return Categories -->
     <div class="card border-0 report-card mb-4">
         <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
             <h5 class="fw-bold text-dark mb-0">
-                <i class="ri-inbox-line me-1 text-primary"></i> Inventario Completo de Insumos y Cristalería
+                <i class="ri-inbox-line me-1 text-primary"></i> Inventario Completo y Retorno Detallado
             </h5>
             <span class="badge bg-secondary">{{ $checklist->items->count() }} ítems</span>
         </div>
@@ -219,60 +293,51 @@
                         <tr>
                             <th width="4%" class="text-center">#</th>
                             <th>Descripción del Ítem</th>
-                            <th width="12%" class="text-center">Cantidad</th>
-                            <th width="18%" class="text-center">Salida (Montaje)</th>
-                            <th width="18%" class="text-center">Retorno (Desmontaje)</th>
-                            <th width="16%" class="text-center">Resultado</th>
+                            <th width="10%" class="text-center">Enviado</th>
+                            <th width="9%" class="text-center text-success">OK</th>
+                            <th width="9%" class="text-center text-warning">Dañado</th>
+                            <th width="9%" class="text-center text-danger">Roto</th>
+                            <th width="9%" class="text-center text-danger">Faltante</th>
+                            <th width="9%" class="text-center text-info">Consumido</th>
+                            <th width="14%" class="text-center">Resultado</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($checklist->items as $index => $item)
+                        @php
+                            $sentQty = (float) ($item->qty_enviada > 0 ? $item->qty_enviada : ($item->cantidad_llevada > 0 ? $item->cantidad_llevada : $item->cantidad_planeada));
+                        @endphp
                         <tr>
                             <td class="text-center text-muted">{{ $loop->iteration }}</td>
                             <td>
                                 <strong class="text-dark">{{ $item->descripcion }}</strong>
                                 <div class="text-muted small">{{ $item->categoria }}</div>
                             </td>
-                            <td class="text-center fw-bold">
-                                {{ rtrim(rtrim(number_format($item->cantidad, 2), '0'), '.') }} {{ $item->unidad_medida }}
+                            <td class="text-center fw-bold bg-light">
+                                {{ rtrim(rtrim(number_format($sentQty, 2), '0'), '.') }}
+                            </td>
+                            <td class="text-center text-success fw-bold">
+                                {{ rtrim(rtrim(number_format($item->qty_ok, 2), '0'), '.') }}
+                            </td>
+                            <td class="text-center text-warning">
+                                {{ $item->qty_danada > 0 ? rtrim(rtrim(number_format($item->qty_danada, 2), '0'), '.') : '-' }}
+                            </td>
+                            <td class="text-center text-danger fw-bold">
+                                {{ $item->qty_quebrada > 0 ? rtrim(rtrim(number_format($item->qty_quebrada, 2), '0'), '.') : '-' }}
+                            </td>
+                            <td class="text-center text-danger fw-bold">
+                                {{ $item->qty_faltante > 0 ? rtrim(rtrim(number_format($item->qty_faltante, 2), '0'), '.') : '-' }}
+                            </td>
+                            <td class="text-center text-info">
+                                {{ $item->qty_consumida > 0 ? rtrim(rtrim(number_format($item->qty_consumida, 2), '0'), '.') : '-' }}
                             </td>
                             <td class="text-center">
-                                @if($item->llevado)
-                                    <span class="badge bg-success-subtle text-success border border-success px-2 py-1">
-                                        <i class="ri-check-line me-1"></i> LLEVADO
-                                    </span>
-                                    <div class="text-muted mt-1" style="font-size: 0.72rem;">
-                                        {{ $item->fecha_llevado ? \Carbon\Carbon::parse($item->fecha_llevado)->format('d/m H:i') : '' }}
-                                        ({{ $item->userLlevado->nombre ?? 'Usuario' }})
-                                    </div>
+                                @if($item->tiene_incidencia || ($item->qty_quebrada + $item->qty_faltante + $item->qty_danada) > 0)
+                                    <span class="badge bg-danger">Incidencias</span>
+                                @elseif($item->isReturnBalanced())
+                                    <span class="badge bg-success">Conforme</span>
                                 @else
-                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning px-2 py-1">
-                                        NO REGISTRADO
-                                    </span>
-                                @endif
-                            </td>
-                            <td class="text-center">
-                                @if($item->devuelto)
-                                    <span class="badge bg-primary-subtle text-primary border border-primary px-2 py-1">
-                                        <i class="ri-check-line me-1"></i> DEVUELTO
-                                    </span>
-                                    <div class="text-muted mt-1" style="font-size: 0.72rem;">
-                                        {{ $item->fecha_devuelto ? \Carbon\Carbon::parse($item->fecha_devuelto)->format('d/m H:i') : '' }}
-                                        ({{ $item->userDevuelto->nombre ?? 'Usuario' }})
-                                    </div>
-                                @else
-                                    <span class="badge bg-danger-subtle text-danger border border-danger px-2 py-1">
-                                        NO DEVUELTO
-                                    </span>
-                                @endif
-                            </td>
-                            <td class="text-center">
-                                @if($item->tiene_incidencia)
-                                    <span class="badge bg-danger">INCIDENCIA: {{ $item->tipo_incidencia }}</span>
-                                @elseif($item->llevado && $item->devuelto)
-                                    <span class="badge bg-success">CONFORME</span>
-                                @else
-                                    <span class="badge bg-secondary">INCOMPLETO</span>
+                                    <span class="badge bg-warning text-dark">Descuadre</span>
                                 @endif
                             </td>
                         </tr>

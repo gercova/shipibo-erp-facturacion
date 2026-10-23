@@ -4,10 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Business;
 use App\Models\Contract;
-use App\Models\ContractItem;
 use App\Models\EventChecklist;
 use App\Models\EventChecklistItem;
 use App\Models\Product;
+use App\Services\Events\EventChecklistReturnService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -61,21 +61,23 @@ class EventChecklistController extends Controller
             })
             ->addColumn('progreso_salida', function ($row) {
                 $pct = $row->progressLlevado();
+
                 return '<div class="d-flex align-items-center gap-2">
                             <div class="progress flex-grow-1" style="height: 6px;">
-                                <div class="progress-bar bg-success" role="progressbar" style="width: ' . $pct . '%;" aria-valuenow="' . $pct . '" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="progress-bar bg-success" role="progressbar" style="width: '.$pct.'%;" aria-valuenow="'.$pct.'" aria-valuemin="0" aria-valuemax="100"></div>
                             </div>
-                            <span class="small fw-bold text-success">' . $row->items_llevados . '/' . $row->total_items . ' (' . $pct . '%)</span>
+                            <span class="small fw-bold text-success">'.$row->items_llevados.'/'.$row->total_items.' ('.$pct.'%)</span>
                         </div>';
             })
             ->addColumn('progreso_retorno', function ($row) {
                 $pct = $row->progressDevuelto();
                 $color = $row->items_con_incidencia > 0 ? 'bg-danger' : 'bg-info';
+
                 return '<div class="d-flex align-items-center gap-2">
                             <div class="progress flex-grow-1" style="height: 6px;">
-                                <div class="progress-bar ' . $color . '" role="progressbar" style="width: ' . $pct . '%;" aria-valuenow="' . $pct . '" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="progress-bar '.$color.'" role="progressbar" style="width: '.$pct.'%;" aria-valuenow="'.$pct.'" aria-valuemin="0" aria-valuemax="100"></div>
                             </div>
-                            <span class="small fw-bold text-dark">' . $row->items_devueltos . '/' . $row->total_items . ' (' . $pct . '%)</span>
+                            <span class="small fw-bold text-dark">'.$row->items_devueltos.'/'.$row->total_items.' ('.$pct.'%)</span>
                         </div>';
             })
             ->addColumn('estado_badge', function ($row) {
@@ -83,14 +85,15 @@ class EventChecklistController extends Controller
             })
             ->addColumn('acciones', function ($row) {
                 $id = $row->id;
+
                 return '<div class="d-flex gap-1 justify-content-center">
-                            <a href="' . route('admin.event_checklists.tablet', $id) . '" class="btn btn-sm btn-primary py-1 px-2" title="Abrir en Modo Tablet">
+                            <a href="'.route('admin.event_checklists.tablet', $id).'" class="btn btn-sm btn-primary py-1 px-2" title="Abrir en Modo Tablet">
                                 <i class="ri-tablet-line me-1"></i> Modo Tablet
                             </a>
-                            <a href="' . route('admin.event_checklists.report', $id) . '" class="btn btn-sm btn-outline-secondary py-1 px-2" title="Reporte de Cierre">
+                            <a href="'.route('admin.event_checklists.report', $id).'" class="btn btn-sm btn-outline-secondary py-1 px-2" title="Reporte de Cierre">
                                 <i class="ri-file-chart-line"></i>
                             </a>
-                            <a href="' . route('admin.event_checklists.pdf', $id) . '" target="_blank" class="btn btn-sm btn-outline-info py-1 px-2" title="Descargar PDF">
+                            <a href="'.route('admin.event_checklists.pdf', $id).'" target="_blank" class="btn btn-sm btn-outline-info py-1 px-2" title="Descargar PDF">
                                 <i class="ri-download-line"></i>
                             </a>
                         </div>';
@@ -107,14 +110,14 @@ class EventChecklistController extends Controller
         $existing = EventChecklist::where('contract_id', $contract->id)->latest('id')->first();
         if ($existing) {
             return redirect()->route('admin.event_checklists.tablet', $existing->id)
-                ->with('info', 'Checklist abierto para el contrato ' . $contract->contract_number);
+                ->with('info', 'Checklist abierto para el contrato '.$contract->contract_number);
         }
 
         try {
             DB::beginTransaction();
 
             $codigo = $this->generateNextCode();
-            $titulo = 'Checklist - ' . $contract->title . ' (' . ($contract->client?->nombres ?: 'Cliente') . ')';
+            $titulo = 'Checklist - '.$contract->title.' ('.($contract->client?->nombres ?: 'Cliente').')';
 
             $checklist = EventChecklist::create([
                 'contract_id' => $contract->id,
@@ -154,6 +157,12 @@ class EventChecklistController extends Controller
                     'descripcion' => $item->descripcion,
                     'categoria' => $categoria,
                     'cantidad_planeada' => $item->cantidad,
+                    'qty_enviada' => $item->cantidad,
+                    'qty_ok' => $item->cantidad,
+                    'qty_danada' => 0.00,
+                    'qty_quebrada' => 0.00,
+                    'qty_faltante' => 0.00,
+                    'qty_consumida' => 0.00,
                     'cantidad_llevada' => 0.00,
                     'llevado' => false,
                     'cantidad_devuelta' => 0.00,
@@ -171,7 +180,8 @@ class EventChecklistController extends Controller
                 ->with('success', 'Checklist generado exitosamente a partir de los ítems del contrato.');
         } catch (\Throwable $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Error al generar el checklist: ' . $e->getMessage());
+
+            return redirect()->back()->with('error', 'Error al generar el checklist: '.$e->getMessage());
         }
     }
 
@@ -181,7 +191,7 @@ class EventChecklistController extends Controller
             'contract.client',
             'items.userLlevado',
             'items.userDevuelto',
-            'user'
+            'user',
         ])->findOrFail($id);
 
         $business = Business::first();
@@ -213,7 +223,7 @@ class EventChecklistController extends Controller
                 $qty = $request->has('cantidad') ? floatval($request->input('cantidad')) : ($request->has('value') ? ($request->input('value') == 1 ? $item->cantidad_planeada : 0) : null);
                 if ($request->has('value') && $request->input('value') == 0 && $item->llevado) {
                     $item->toggleLlevado($userId);
-                } elseif ($request->has('value') && $request->input('value') == 1 && !$item->llevado) {
+                } elseif ($request->has('value') && $request->input('value') == 1 && ! $item->llevado) {
                     $item->toggleLlevado($userId, $qty);
                 } else {
                     $item->toggleLlevado($userId, $qty);
@@ -222,7 +232,7 @@ class EventChecklistController extends Controller
                 $qty = $request->has('cantidad') ? floatval($request->input('cantidad')) : null;
                 if ($request->has('value') && $request->input('value') == 0 && $item->devuelto) {
                     $item->toggleDevuelto($userId);
-                } elseif ($request->has('value') && $request->input('value') == 1 && !$item->devuelto) {
+                } elseif ($request->has('value') && $request->input('value') == 1 && ! $item->devuelto) {
                     $item->toggleDevuelto($userId, $qty);
                 } else {
                     $item->toggleDevuelto($userId, $qty);
@@ -283,9 +293,10 @@ class EventChecklistController extends Controller
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();
+
             return response()->json([
                 'status' => false,
-                'msg' => 'Error al actualizar el ítem: ' . $e->getMessage()
+                'msg' => 'Error al actualizar el ítem: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -306,7 +317,7 @@ class EventChecklistController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'status' => false,
-                'msg' => $validator->errors()->first()
+                'msg' => $validator->errors()->first(),
             ], 422);
         }
 
@@ -320,6 +331,12 @@ class EventChecklistController extends Controller
                 'descripcion' => trim($request->input('descripcion')),
                 'categoria' => trim($request->input('categoria') ?: 'Insumos / Herramientas Extra'),
                 'cantidad_planeada' => floatval($request->input('cantidad')),
+                'qty_enviada' => floatval($request->input('cantidad')),
+                'qty_ok' => floatval($request->input('cantidad')),
+                'qty_danada' => 0.00,
+                'qty_quebrada' => 0.00,
+                'qty_faltante' => 0.00,
+                'qty_consumida' => 0.00,
                 'cantidad_llevada' => 0.00,
                 'llevado' => false,
                 'cantidad_devuelta' => 0.00,
@@ -333,12 +350,12 @@ class EventChecklistController extends Controller
             return response()->json([
                 'status' => true,
                 'msg' => 'Ítem adicional agregado al checklist.',
-                'item' => $item
+                'item' => $item,
             ]);
         } catch (\Throwable $e) {
             return response()->json([
                 'status' => false,
-                'msg' => 'Error al agregar ítem: ' . $e->getMessage()
+                'msg' => 'Error al agregar ítem: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -355,7 +372,7 @@ class EventChecklistController extends Controller
 
             if ($mode === 'all_llevado') {
                 foreach ($checklist->items as $item) {
-                    if (!$item->llevado) {
+                    if (! $item->llevado) {
                         $item->llevado = true;
                         $item->cantidad_llevada = $item->cantidad_planeada;
                         $item->idusuario_llevado = $userId;
@@ -365,7 +382,7 @@ class EventChecklistController extends Controller
                 }
             } elseif ($mode === 'all_devuelto') {
                 foreach ($checklist->items as $item) {
-                    if (!$item->devuelto && !$item->tiene_incidencia) {
+                    if (! $item->devuelto && ! $item->tiene_incidencia) {
                         $item->devuelto = true;
                         $item->cantidad_devuelta = $item->cantidad_llevada > 0 ? $item->cantidad_llevada : $item->cantidad_planeada;
                         $item->idusuario_devuelto = $userId;
@@ -385,9 +402,10 @@ class EventChecklistController extends Controller
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();
+
             return response()->json([
                 'status' => false,
-                'msg' => 'Error al procesar acción masiva: ' . $e->getMessage()
+                'msg' => 'Error al procesar acción masiva: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -398,13 +416,12 @@ class EventChecklistController extends Controller
             'contract.client',
             'items.userLlevado',
             'items.userDevuelto',
-            'user'
+            'user',
         ])->findOrFail($id);
 
         $contract = $checklist->contract;
         $incidents = $checklist->items->where('tiene_incidencia', true);
         $missing = $checklist->items->where('llevado', true)->where('devuelto', false)->where('tiene_incidencia', false);
-
         $guarantee20 = $contract ? round($contract->total * 0.20, 2) : 0.00;
 
         return view('admin.event_checklists.report', [
@@ -426,13 +443,12 @@ class EventChecklistController extends Controller
             'contract.client',
             'items.userLlevado',
             'items.userDevuelto',
-            'user'
+            'user',
         ])->findOrFail($id);
 
         $contract = $checklist->contract;
         $business = Business::first();
         $guarantee20 = $contract ? round($contract->total * 0.20, 2) : 0.00;
-
         $data = [
             'checklist' => $checklist,
             'contract' => $contract,
@@ -448,7 +464,7 @@ class EventChecklistController extends Controller
 
         $pdf = Pdf::loadView('admin.event_checklists.pdf', $data)->setPaper('A4', 'portrait');
 
-        return $pdf->stream('Checklist_' . $checklist->codigo . '.pdf');
+        return $pdf->stream('Checklist_'.$checklist->codigo.'.pdf');
     }
 
     public function destroy(Request $request)
@@ -456,23 +472,190 @@ class EventChecklistController extends Controller
         $id = $request->input('id');
         $checklist = EventChecklist::find($id);
 
-        if (!$checklist) {
+        if (! $checklist) {
             return response()->json([
                 'status' => false,
-                'msg' => 'El checklist no existe o ya fue eliminado.'
+                'msg' => 'El checklist no existe o ya fue eliminado.',
             ], 404);
         }
 
         try {
             $checklist->delete();
+
             return response()->json([
                 'status' => true,
-                'msg' => 'Checklist eliminado correctamente.'
+                'msg' => 'Checklist eliminado correctamente.',
             ]);
         } catch (\Throwable $e) {
             return response()->json([
                 'status' => false,
-                'msg' => 'Error al eliminar checklist: ' . $e->getMessage()
+                'msg' => 'Error al eliminar checklist: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function closeReturn(Request $request, $id, EventChecklistReturnService $service)
+    {
+        $checklist = EventChecklist::with('items.product')->findOrFail($id);
+
+        if ($checklist->isReturnClosed()) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'status' => false,
+                    'msg' => 'El retorno ya fue cerrado previamente el '.($checklist->retorno_cerrado_at?->format('d/m/Y H:i') ?? ''),
+                ], 422);
+            }
+
+            return redirect()->route('admin.event_checklists.report', $checklist->id);
+        }
+
+        try {
+            $itemsData = $request->input('items', []);
+            $applyStock = $request->boolean('apply_stock', true);
+
+            $result = $service->closeReturn($checklist, $itemsData, Auth::user(), $applyStock);
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'status' => true,
+                    'msg' => 'Retorno cerrado exitosamente y stock actualizado.',
+                    'data' => $result,
+                ]);
+            }
+
+            return redirect()->route('admin.event_checklists.report', $checklist->id)
+                ->with('success', 'Retorno cerrado exitosamente y stock actualizado.');
+        } catch (\InvalidArgumentException $iae) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'status' => false,
+                    'msg' => $iae->getMessage(),
+                ], 422);
+            }
+
+            return redirect()->back()->withErrors(['error' => $iae->getMessage()]);
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'status' => false,
+                    'msg' => collect($ve->errors())->flatten()->first() ?: 'Error de validación en cantidades de retorno.',
+                    'errors' => $ve->errors(),
+                ], 422);
+            }
+
+            return redirect()->back()->withErrors($ve->errors());
+        } catch (\Throwable $e) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'status' => false,
+                    'msg' => 'Error al cerrar el retorno: '.$e->getMessage(),
+                ], 500);
+            }
+
+            return redirect()->back()->withErrors(['error' => 'Error al cerrar el retorno: '.$e->getMessage()]);
+        }
+    }
+
+    public function reopenReturn(Request $request, $id, EventChecklistReturnService $service)
+    {
+        $user = Auth::user();
+        if (! $user || ! $user->hasRole(['SUPERADMIN', 'ADMIN'])) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'No tiene permisos suficientes para reabrir un retorno cerrado.',
+            ], 403);
+        }
+
+        $reason = $request->input('reason') ?: $request->input('motivo_reapertura');
+        if (empty($reason) || strlen(trim($reason)) < 5) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Debe indicar el motivo de la reapertura (mínimo 5 caracteres).',
+            ], 422);
+        }
+
+        $checklist = EventChecklist::findOrFail($id);
+
+        if (! $checklist->isReturnClosed()) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'El retorno no se encuentra cerrado.',
+            ], 422);
+        }
+
+        try {
+            $service->reopenReturn($checklist, $user, trim($reason));
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'status' => true,
+                    'msg' => 'Retorno reabierto exitosamente. Se ha registrado la traza de auditoría.',
+                ]);
+            }
+
+            return redirect()->back()->with('success', 'Retorno reabierto exitosamente.');
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Error al reabrir el retorno: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function saveReturnItems(Request $request, $id)
+    {
+        $checklist = EventChecklist::findOrFail($id);
+
+        if ($checklist->isReturnClosed()) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'No se pueden modificar ítems de un retorno cerrado.',
+            ], 422);
+        }
+
+        $itemsData = $request->input('items', []);
+
+        DB::beginTransaction();
+        try {
+            foreach ($itemsData as $itemId => $data) {
+                $item = EventChecklistItem::where('checklist_id', $checklist->id)->find($itemId);
+                if ($item) {
+                    if (isset($data['qty_enviada'])) {
+                        $item->qty_enviada = (float) $data['qty_enviada'];
+                    }
+                    if (isset($data['qty_ok'])) {
+                        $item->qty_ok = (float) $data['qty_ok'];
+                    }
+                    if (isset($data['qty_danada'])) {
+                        $item->qty_danada = (float) $data['qty_danada'];
+                    }
+                    if (isset($data['qty_quebrada'])) {
+                        $item->qty_quebrada = (float) $data['qty_quebrada'];
+                    }
+                    if (isset($data['qty_faltante'])) {
+                        $item->qty_faltante = (float) $data['qty_faltante'];
+                    }
+                    if (isset($data['qty_consumida'])) {
+                        $item->qty_consumida = (float) $data['qty_consumida'];
+                    }
+                    if (isset($data['observaciones'])) {
+                        $item->observaciones = $data['observaciones'];
+                    }
+                    $item->save();
+                }
+            }
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'msg' => 'Cantidades de retorno guardadas temporalmente.',
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'status' => false,
+                'msg' => 'Error al guardar ítems: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -490,6 +673,6 @@ class EventChecklistController extends Controller
             $correlativo = 1;
         }
 
-        return sprintf("CHK-%s-%04d", $year, $correlativo);
+        return sprintf('CHK-%s-%04d', $year, $correlativo);
     }
 }
