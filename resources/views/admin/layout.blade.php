@@ -298,6 +298,7 @@
                             request()->is('contracts*') ||
                             request()->is('event-checklists*') ||
                             request()->is('cocktail-menu*') ||
+                            request()->is('packages*') ||
                             request()->is('pos') ||
                             request()->is('pos/*') ||
                             $isBillingScreen ||
@@ -320,6 +321,10 @@
                                             href="{{ route('admin.event_checklists') }}">Checklists de Eventos</a>
                                         <a class="nav-link {{ request()->is('cocktail-menu*') ? 'active' : '' }}"
                                             href="{{ route('admin.cocktail_menu.index') }}">Carta de Cócteles</a>
+                                    @endcan
+                                    @can('admin.packages')
+                                        <a class="nav-link {{ request()->is('packages*') ? 'active' : '' }}"
+                                            href="{{ route('admin.packages.index') }}">Paquetes de Eventos</a>
                                     @endcan
                                     @can('admin.pos')
                                         <a class="nav-link {{ request()->is('pos') || request()->is('pos/*') ? 'active' : '' }}"
@@ -364,7 +369,6 @@
                                             href="{{ route('admin.create_buy') }}">
                                             Registrar compra
                                         </a>
-
                                         <a class="nav-link {{ request()->is('buys') ? 'active' : '' }}"
                                             href="{{ route('admin.buys') }}">
                                             Lista de compras

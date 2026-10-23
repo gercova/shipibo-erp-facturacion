@@ -24,6 +24,7 @@ class RoleSeeder extends Seeder
                 'admin.clients' => 'Gestionar clientes',
                 'admin.quotes' => 'Gestionar cotizaciones',
                 'admin.contracts' => 'Gestionar contratos',
+                'admin.packages' => 'Gestionar paquetes y cartas de eventos',
                 'admin.pos' => 'Usar punto de venta',
                 'admin.sale_notes' => 'Gestionar notas de venta',
                 'admin.billings' => 'Gestionar comprobantes',
