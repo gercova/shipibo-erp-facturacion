@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="{{ asset('css/pro-ui.css') }}">
     <link rel="stylesheet" href="{{ asset('css/toastr.min.css') }}">
     <link rel="stylesheet" href="{{ asset('css/select2.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/select2-bootstrap-5-theme.min.css') }}">
     <link rel="stylesheet" href="{{ asset('css/dataTables.bootstrap5.min.css') }}">
     <link rel="stylesheet" href="{{ asset('css/buttons.bootstrap5.min.css') }}">
     <link rel="stylesheet" href="{{ asset('css/remixicon.css') }}">

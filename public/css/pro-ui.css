@@ -211,3 +211,101 @@ main .form-select:focus {
 .pro-auth__link:hover {
   text-decoration: underline;
 }
+
+/* Select2 Bootstrap 5 Integration & Modern Refinements */
+.select2-container--bootstrap-5 {
+  width: 100% !important;
+}
+
+.select2-container--bootstrap-5 .select2-selection {
+  height: 38px !important;
+  min-height: 38px !important;
+  border: 1px solid #c5ccd6 !important;
+  border-radius: 0.65rem !important;
+  background-color: #ffffff !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 2.25rem 0 0.85rem !important;
+  font-size: 0.875rem !important;
+  color: #1f2937 !important;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+}
+
+.select2-container--bootstrap-5.select2-container--focus .select2-selection,
+.select2-container--bootstrap-5.select2-container--open .select2-selection {
+  border-color: #0061f2 !important;
+  box-shadow: 0 0 0 0.25rem rgba(0, 97, 242, 0.16) !important;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+  padding: 0 !important;
+  line-height: normal !important;
+  color: #1f2937 !important;
+  font-weight: 500 !important;
+  font-size: 0.875rem !important;
+  width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__placeholder {
+  color: #6b7280 !important;
+  font-weight: 400 !important;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%234b5563' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.75rem center !important;
+  background-size: 14px 10px !important;
+}
+
+.select2-container--bootstrap-5.select2-container--open .select2-selection--single {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%230061f2' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 11 6-6 6-6'/%3e%3c/svg%3e") !important;
+}
+
+.select2-container--bootstrap-5 .select2-dropdown {
+  border: 1px solid #c5ccd6 !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 12px 28px rgba(18, 38, 63, 0.12) !important;
+  background-color: #ffffff !important;
+  overflow: hidden !important;
+  z-index: 1060 !important;
+}
+
+.select2-container--bootstrap-5 .select2-dropdown .select2-search {
+  padding: 0.5rem 0.65rem !important;
+}
+
+.select2-container--bootstrap-5 .select2-dropdown .select2-search .select2-search__field {
+  border: 1px solid #c5ccd6 !important;
+  border-radius: 0.5rem !important;
+  padding: 0.35rem 0.65rem !important;
+  font-size: 0.85rem !important;
+  background-color: #f8fafc !important;
+}
+
+.select2-container--bootstrap-5 .select2-dropdown .select2-search .select2-search__field:focus {
+  border-color: #0061f2 !important;
+  box-shadow: 0 0 0 0.2rem rgba(0, 97, 242, 0.15) !important;
+  background-color: #ffffff !important;
+}
+
+.select2-container--bootstrap-5 .select2-dropdown .select2-results__options .select2-results__option {
+  padding: 0.5rem 0.75rem !important;
+  font-size: 0.85rem !important;
+  color: #1f2937 !important;
+}
+
+.select2-container--bootstrap-5 .select2-dropdown .select2-results__options .select2-results__option--highlighted {
+  background-color: #f1f5f9 !important;
+  color: #0061f2 !important;
+}
+
+.select2-container--bootstrap-5 .select2-dropdown .select2-results__options .select2-results__option--selected {
+  background-color: #e0edff !important;
+  color: #0061f2 !important;
+  font-weight: 600 !important;
+}
+

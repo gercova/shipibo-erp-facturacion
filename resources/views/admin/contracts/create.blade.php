@@ -42,6 +42,32 @@
         .totals-card .text-muted {
             color: #94a3b8 !important;
         }
+
+        .contract-box {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        .contract-box:hover {
+            border-color: #cbd5e1;
+        }
+
+        .btn-add-contract-product {
+            height: 38px !important;
+            min-height: 38px !important;
+            font-size: 0.875rem !important;
+            font-weight: 600 !important;
+            border-radius: 0.65rem !important;
+            box-shadow: 0 4px 12px rgba(0, 97, 242, 0.2) !important;
+            white-space: nowrap !important;
+        }
+
+        .btn-add-contract-product:hover {
+            box-shadow: 0 6px 16px rgba(0, 97, 242, 0.3) !important;
+            transform: translateY(-1px);
+        }
     </style>
 @endsection
 
@@ -92,42 +118,48 @@
 
                     <!-- Client Selection -->
                     <div class="col-md-6">
-                        <div class="p-3 bg-light rounded-3 border">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label class="form-label small fw-bold text-success mb-0">
-                                    <i class="ri-user-3-line"></i> Cliente Contratante <span class="text-danger">*</span>
-                                </label>
-                                <button type="button" class="btn btn-xs btn-outline-success" data-bs-toggle="modal" data-bs-target="#modalQuickCreateClient">
-                                    <i class="ri-add-line"></i> Nuevo Cliente
-                                </button>
+                        <div class="p-3 contract-box h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="form-label small fw-bold text-success mb-0 d-flex align-items-center gap-1">
+                                        <i class="ri-user-3-line"></i> Cliente Contratante <span class="text-danger">*</span>
+                                    </label>
+                                    <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2 py-1 d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#modalQuickCreateClient">
+                                        <i class="ri-add-line"></i> Nuevo Cliente
+                                    </button>
+                                </div>
+                                <select name="idcliente" id="idcliente" class="form-select form-select-sm select2" required>
+                                    <option value="">-- Seleccionar Cliente --</option>
+                                    @foreach ($clients as $c)
+                                        <option value="{{ $c->id }}">
+                                            {{ $c->nombres }} ({{ $c->tipoDocumento?->descripcion ?? 'Doc' }}: {{ $c->nro_documento }})
+                                        </option>
+                                    @endforeach
+                                </select>
                             </div>
-                            <select name="idcliente" id="idcliente" class="form-select form-select-sm select2" required>
-                                <option value="">-- Seleccionar Cliente --</option>
-                                @foreach ($clients as $c)
-                                    <option value="{{ $c->id }}">
-                                        {{ $c->nombres }} ({{ $c->tipoDocumento?->descripcion ?? 'Doc' }}: {{ $c->nro_documento }})
-                                    </option>
-                                @endforeach
-                            </select>
-                            <small class="text-muted d-block mt-1">Seleccione el cliente que contrata el servicio o registre uno nuevo.</small>
+                            <small class="text-muted d-block mt-2">
+                                <i class="ri-information-line me-1"></i> Seleccione el cliente que contrata el servicio o registre uno nuevo.
+                            </small>
                         </div>
                     </div>
 
                     <!-- Provider Details -->
                     <div class="col-md-6">
-                        <div class="p-3 bg-light rounded-3 border">
-                            <label class="form-label small fw-bold text-primary mb-2">
-                                <i class="ri-store-2-line"></i> Prestador del Servicio (Empresa / Proveedor)
-                            </label>
-                            <div class="row g-2">
-                                <div class="col-md-7">
-                                    <input type="text" name="provider_name" class="form-control form-control-sm" placeholder="Razón Social / Nombre" value="{{ $business?->razon_social ?: ($business?->nombre_comercial ?: '') }}" />
-                                </div>
-                                <div class="col-md-5">
-                                    <input type="text" name="provider_document" class="form-control form-control-sm" placeholder="RUC / DNI" value="{{ $business?->ruc ?: '' }}" />
-                                </div>
-                                <div class="col-12">
-                                    <input type="text" name="provider_representative" class="form-control form-control-sm" placeholder="Representante Legal / Gerente" value="{{ $business?->representante ?: '' }}" />
+                        <div class="p-3 contract-box h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <label class="form-label small fw-bold text-primary mb-2 d-flex align-items-center gap-1">
+                                    <i class="ri-store-2-line"></i> Prestador del Servicio (Empresa / Proveedor)
+                                </label>
+                                <div class="row g-2">
+                                    <div class="col-md-7">
+                                        <input type="text" name="provider_name" class="form-control form-control-sm" placeholder="Razón Social / Nombre" value="{{ $business?->razon_social ?: ($business?->nombre_comercial ?: '') }}" />
+                                    </div>
+                                    <div class="col-md-5">
+                                        <input type="text" name="provider_document" class="form-control form-control-sm" placeholder="RUC / DNI" value="{{ $business?->ruc ?: '' }}" />
+                                    </div>
+                                    <div class="col-12">
+                                        <input type="text" name="provider_representative" class="form-control form-control-sm" placeholder="Representante Legal / Gerente" value="{{ $business?->representante ?: '' }}" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -176,11 +208,11 @@
                 </div>
 
                 <!-- Product/Service Select2 Search Bar -->
-                <div class="p-3 bg-light rounded-3 border mb-3">
-                    <label class="form-label small fw-bold text-primary mb-1">
-                        <i class="ri-search-line me-1"></i> Buscar y Agregar Producto o Servicio del Catálogo
+                <div class="p-3 contract-box mb-3">
+                    <label class="form-label small fw-bold text-primary mb-2 d-flex align-items-center gap-1">
+                        <i class="ri-search-line"></i> Buscar y Agregar Producto o Servicio del Catálogo
                     </label>
-                    <div class="row g-2 align-items-center">
+                    <div class="row g-2 align-items-stretch">
                         <div class="col-md-9 col-sm-12">
                             <select id="select-product-search" class="form-select form-select-sm select2">
                                 <option value="">-- Escriba para buscar por nombre o descripción de producto/servicio... --</option>
@@ -196,13 +228,13 @@
                             </select>
                         </div>
                         <div class="col-md-3 col-sm-12">
-                            <button type="button" class="btn btn-primary btn-sm w-100" id="btn-add-selected-product">
-                                <i class="ri-add-circle-line me-1"></i> Agregar al Contrato
+                            <button type="button" class="btn btn-primary w-100 h-100 btn-add-contract-product d-flex align-items-center justify-content-center gap-1" id="btn-add-selected-product">
+                                <i class="ri-add-circle-line"></i> Agregar al Contrato
                             </button>
                         </div>
                     </div>
-                    <div class="form-text small text-muted mt-1">
-                        <i class="ri-information-line"></i> Seleccione un producto o servicio para insertarlo en la lista. Puede editar la descripción, cantidad y precio de cada fila.
+                    <div class="form-text small text-muted mt-2">
+                        <i class="ri-information-line me-1"></i> Seleccione un producto o servicio para insertarlo en la lista. Puede editar la descripción, cantidad y precio de cada fila.
                     </div>
                 </div>
 
