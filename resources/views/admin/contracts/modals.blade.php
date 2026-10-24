@@ -493,3 +493,168 @@
     </div>
 </div>
 
+<!-- Modal Conciliación de Inventario de Evento -->
+<div class="modal fade" id="modalInventoryReconciliation" tabindex="-1" aria-labelledby="modalInventoryReconciliationLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <form id="form-inventory-reconciliation" class="modal-content border-0 shadow-lg">
+            @csrf
+            <input type="hidden" id="reconcile-contract-id" name="contract_id" />
+            <div class="modal-header bg-dark text-white py-3">
+                <div class="d-flex align-items-center flex-wrap gap-2">
+                    <h5 class="modal-title fw-bold mb-0 d-flex align-items-center" id="modalInventoryReconciliationLabel">
+                        <i class="ri-survey-line me-2 text-warning fs-4"></i> Conciliación de Inventario Post-Evento
+                    </h5>
+                    <span id="reconcile-contract-number" class="badge bg-warning text-dark fs-7 px-2 py-1 fw-bold"></span>
+                    <span id="reconcile-checklist-badge" class="badge bg-secondary fs-7 px-2 py-1"></span>
+                    <span id="reconcile-status-badge" class="badge bg-info-subtle text-info border border-info-subtle fs-7 px-2 py-1"></span>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3 p-md-4 bg-light">
+                    <!-- Context Summary Card -->
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body p-3 bg-white rounded-3">
+                            <div class="row g-2 align-items-center">
+                                <div class="col-md-4">
+                                    <small class="text-muted d-block"><i class="ri-user-3-line me-1 text-primary"></i> Cliente Contratante:</small>
+                                    <strong id="reconcile-client-name" class="text-dark fs-6">-</strong>
+                                    <div class="text-muted small" id="reconcile-client-doc"></div>
+                                </div>
+                                <div class="col-md-5">
+                                    <small class="text-muted d-block"><i class="ri-calendar-event-line me-1 text-success"></i> Evento y Lugar:</small>
+                                    <strong id="reconcile-event-info" class="text-dark fs-6">-</strong>
+                                    <div class="text-muted small" id="reconcile-event-location"></div>
+                                </div>
+                                <div class="col-md-3 text-md-end">
+                                    <small class="text-muted d-block">Checklist Asociado:</small>
+                                    <strong id="reconcile-checklist-code" class="text-primary">-</strong>
+                                    <div id="reconcile-closed-info" class="small text-danger fw-medium" style="display: none;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Instructions Alert -->
+                    <div class="alert alert-primary border-0 shadow-sm d-flex align-items-start gap-2 mb-3 py-2 px-3">
+                        <i class="ri-information-fill fs-5 text-primary mt-1"></i>
+                        <div class="small">
+                            <strong>Control de Retorno y Penalidades:</strong> Verifique la cantidad de menaje, cristalería, vajilla, barras y equipos retornados.
+                            Si existen ítems <strong>rotos, dañados o faltantes</strong>, ingrese la cantidad correspondiente y confirme la penalidad unitaria.
+                            El sistema calculará automáticamente el monto compensatorio y lo cargará a la cuenta del contrato.
+                        </div>
+                    </div>
+
+                    <!-- Toolbar: Search and Fast Bulk Buttons -->
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-success fw-bold px-3 py-1 rounded-pill" id="btn-reconcile-all-ok">
+                                <i class="ri-checkbox-circle-line me-1"></i> Todo Conforme (OK)
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary fw-bold px-3 py-1 rounded-pill" id="btn-reconcile-clear-incidents">
+                                <i class="ri-refresh-line me-1"></i> Limpiar Incidencias
+                            </button>
+                        </div>
+                        <div class="input-group input-group-sm" style="max-width: 280px;">
+                            <span class="input-group-text bg-white"><i class="ri-search-line"></i></span>
+                            <input type="text" id="reconcile-search-filter" class="form-control" placeholder="Filtrar por ítem o categoría..." />
+                        </div>
+                    </div>
+
+                    <!-- Interactive Items Table -->
+                    <div class="table-responsive border rounded-3 bg-white shadow-sm mb-3" style="max-height: 280px; overflow-y: auto;">
+                        <table class="table table-sm table-hover align-middle mb-0" id="table-reconciliation-items">
+                            <thead class="table-dark small sticky-top">
+                                <tr>
+                                    <th width="4%" class="text-center">#</th>
+                                    <th width="32%">Ítem / Menaje / Equipo</th>
+                                    <th width="9%" class="text-center" title="Cantidad llevada al evento">Llevado</th>
+                                    <th width="10%" class="text-center text-success" title="Retornado en buen estado">Devuelto OK</th>
+                                    <th width="9%" class="text-center text-danger" title="Roto o quebrado durante el evento">Roto</th>
+                                    <th width="9%" class="text-center text-warning" title="No retornado / perdido">Faltante</th>
+                                    <th width="9%" class="text-center text-secondary" title="Deteriorado o dañado">Dañado</th>
+                                    <th width="9%" class="text-end" title="Costo unitario de penalidad o reposición">Penalidad Unit.</th>
+                                    <th width="9%" class="text-end text-danger fw-bold" title="Total penalidad calculada">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reconcile-items-tbody">
+                                <!-- Populated dynamically by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Financial Summary & Penalty Imputation Card -->
+                    <div class="card border-0 shadow-sm mb-2 bg-white">
+                        <div class="card-body p-3">
+                            <div class="row g-3 align-items-center">
+                                <div class="col-6 col-md-3 text-center border-end">
+                                    <span class="text-muted small d-block">Total Llevados</span>
+                                    <strong class="fs-5 text-dark" id="reconcile-kpi-sent">0</strong>
+                                </div>
+                                <div class="col-6 col-md-3 text-center border-end">
+                                    <span class="text-muted small d-block">Retornados OK</span>
+                                    <strong class="fs-5 text-success" id="reconcile-kpi-ok">0</strong>
+                                </div>
+                                <div class="col-6 col-md-3 text-center border-end">
+                                    <span class="text-muted small d-block">Incidencias (Roto/Falta)</span>
+                                    <strong class="fs-5 text-danger" id="reconcile-kpi-incidents">0</strong>
+                                </div>
+                                <div class="col-6 col-md-3 text-center bg-danger-subtle rounded-3 py-2">
+                                    <span class="text-danger small fw-bold d-block">TOTAL PENALIDADES:</span>
+                                    <strong class="fs-4 text-danger fw-bolder" id="reconcile-kpi-total-penalty">S/ 0.00</strong>
+                                </div>
+                            </div>
+
+                            <hr class="my-3">
+
+                            <!-- Operational options -->
+                            <div class="row g-2 align-items-center">
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="reconcile-apply-stock" name="apply_stock" value="1" checked>
+                                        <label class="form-check-label small fw-bold text-dark" for="reconcile-apply-stock">
+                                            <i class="ri-archive-line me-1 text-primary"></i> Descontar stock y registrar bajas en almacén (Kardex)
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch mt-1">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="reconcile-apply-penalty" name="apply_penalty" value="1" checked>
+                                        <label class="form-check-label small fw-bold text-danger" for="reconcile-apply-penalty">
+                                            <i class="ri-scales-3-line me-1"></i> Aplicar penalidad como cargo al saldo del contrato
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold mb-1" for="reconcile-installment-id">
+                                        Imputar penalidad a la cuota:
+                                    </label>
+                                    <select class="form-select form-select-sm" id="reconcile-installment-id" name="installment_id">
+                                        <!-- Populated dynamically with pending installments -->
+                                    </select>
+                                    <span class="form-text text-muted small" style="font-size: 0.72rem;">
+                                        El monto se sumará al saldo pendiente de la cuota seleccionada.
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-white border-top d-flex justify-content-between align-items-center p-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="#" id="reconcile-btn-tablet" target="_blank" class="btn btn-outline-primary btn-sm">
+                            <i class="ri-tablet-line me-1"></i> Modo Tablet
+                        </a>
+                        <a href="#" id="reconcile-btn-report" target="_blank" class="btn btn-outline-secondary btn-sm">
+                            <i class="ri-file-chart-line me-1"></i> Reporte Imprimible
+                        </a>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+                        <button type="submit" class="btn btn-warning btn-sm fw-bold px-3" id="btn-submit-reconciliation">
+                            <i class="ri-check-double-line me-1"></i> Guardar Conciliación y Aplicar Penalidades
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+

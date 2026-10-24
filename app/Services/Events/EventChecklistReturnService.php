@@ -103,7 +103,9 @@ class EventChecklistReturnService
                 $observaciones = $input['observaciones'] ?? $item->observaciones;
 
                 $product = $item->product;
-                $replacementCost = $product ? $product->effective_replacement_cost : (float) $item->costo_penalidad_estimado;
+                $replacementCost = isset($input['unit_penalty']) && (float) $input['unit_penalty'] >= 0
+                    ? (float) $input['unit_penalty']
+                    : ($product ? $product->effective_replacement_cost : (float) $item->costo_penalidad_estimado);
 
                 $itemIncidentsCost = round(($qtyQuebrada + $qtyFaltante + $qtyDanada) * $replacementCost, 2);
                 $hasIncident = ($qtyQuebrada > 0 || $qtyFaltante > 0 || $qtyDanada > 0);
@@ -144,12 +146,26 @@ class EventChecklistReturnService
                 // 3. Generate Contract Adjustments (B3) if contract exists and item has broken/missing/damaged
                 if ($checklist->contract_id && $hasIncident) {
                     $contract = $checklist->contract;
+                    $targetInstallment = null;
+                    if (! empty($input['installment_id'])) {
+                        $targetInstallment = \App\Models\ContractInstallment::where('id', $input['installment_id'])
+                            ->where('contract_id', $contract->id)
+                            ->where('estado', \App\Models\ContractInstallment::STATUS_PENDING)
+                            ->first();
+                    }
+                    if (! $targetInstallment) {
+                        $targetInstallment = \App\Models\ContractInstallment::where('contract_id', $contract->id)
+                            ->where('estado', \App\Models\ContractInstallment::STATUS_PENDING)
+                            ->orderBy('numero_cuota', 'desc')
+                            ->first();
+                    }
 
                     // Broken items adjustment
                     if ($qtyQuebrada > 0) {
                         $chargeAmount = round($qtyQuebrada * $replacementCost, 2);
                         $adj = ContractAdjustment::create([
                             'contract_id' => $contract->id,
+                            'installment_id' => $targetInstallment?->id,
                             'type' => ContractAdjustment::TYPE_BREAKAGE,
                             'description' => "Rotura [{$checklist->codigo}]: {$item->descripcion} ({$qtyQuebrada} unid.)",
                             'amount' => $chargeAmount,
@@ -166,6 +182,7 @@ class EventChecklistReturnService
                         $chargeAmount = round($qtyFaltante * $replacementCost, 2);
                         $adj = ContractAdjustment::create([
                             'contract_id' => $contract->id,
+                            'installment_id' => $targetInstallment?->id,
                             'type' => ContractAdjustment::TYPE_MISSING,
                             'description' => "Faltante / Extravío [{$checklist->codigo}]: {$item->descripcion} ({$qtyFaltante} unid.)",
                             'amount' => $chargeAmount,
@@ -182,6 +199,7 @@ class EventChecklistReturnService
                         $chargeAmount = round($qtyDanada * $replacementCost, 2);
                         $adj = ContractAdjustment::create([
                             'contract_id' => $contract->id,
+                            'installment_id' => $targetInstallment?->id,
                             'type' => ContractAdjustment::TYPE_BREAKAGE,
                             'description' => "Daño / Deterioro [{$checklist->codigo}]: {$item->descripcion} ({$qtyDanada} unid.)",
                             'amount' => $chargeAmount,
@@ -252,6 +270,43 @@ class EventChecklistReturnService
                         ]);
 
                         $stockMovementsCount++;
+                    }
+                }
+            }
+
+            // 4b. Update contract pending installment and total if adjustments were generated
+            if ($checklist->contract_id && $totalAdditionalCharges > 0) {
+                $contract = $checklist->contract;
+                $firstItemInput = reset($itemsData);
+                $specifiedInstId = is_array($firstItemInput) ? ($firstItemInput['installment_id'] ?? null) : null;
+
+                $targetInst = null;
+                if (! empty($specifiedInstId)) {
+                    $targetInst = \App\Models\ContractInstallment::where('id', $specifiedInstId)
+                        ->where('contract_id', $contract->id)
+                        ->where('estado', \App\Models\ContractInstallment::STATUS_PENDING)
+                        ->first();
+                }
+                if (! $targetInst) {
+                    $targetInst = \App\Models\ContractInstallment::where('contract_id', $contract->id)
+                        ->where('estado', \App\Models\ContractInstallment::STATUS_PENDING)
+                        ->orderBy('numero_cuota', 'desc')
+                        ->first();
+                }
+
+                if ($targetInst) {
+                    $targetInst->monto = round($targetInst->monto + $totalAdditionalCharges, 2);
+                    $targetInst->save();
+
+                    $contract->total = round($contract->total + $totalAdditionalCharges, 2);
+                    $contract->subtotal = round($contract->total / 1.18, 2);
+                    $contract->igv = round($contract->total - $contract->subtotal, 2);
+                    $contract->save();
+
+                    $allInstallments = \App\Models\ContractInstallment::where('contract_id', $contract->id)->get();
+                    foreach ($allInstallments as $inst) {
+                        $inst->porcentaje = $contract->total > 0 ? round(($inst->monto / $contract->total) * 100, 2) : 0;
+                        $inst->save();
                     }
                 }
             }

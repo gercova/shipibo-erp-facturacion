@@ -552,5 +552,267 @@
                 }
             });
         });
+
+        // ==========================================
+        // Inventory Reconciliation Workflow
+        // ==========================================
+        let reconcileSigno = 'S/';
+
+        function recalculateReconciliationTotals() {
+            let totalSent = 0;
+            let totalOk = 0;
+            let totalIncidents = 0;
+            let totalPenalties = 0;
+
+            $('.reconcile-item-row').each(function() {
+                let sent = parseFloat($(this).find('.item-qty-enviada').val()) || 0;
+                let ok = parseFloat($(this).find('.item-qty-ok').val()) || 0;
+                let quebrada = parseFloat($(this).find('.item-qty-quebrada').val()) || 0;
+                let faltante = parseFloat($(this).find('.item-qty-faltante').val()) || 0;
+                let danada = parseFloat($(this).find('.item-qty-danada').val()) || 0;
+                let unitPenalty = parseFloat($(this).find('.item-unit-penalty').val()) || 0;
+
+                let rowIncidents = quebrada + faltante + danada;
+                let rowPenalty = rowIncidents * unitPenalty;
+
+                totalSent += sent;
+                totalOk += ok;
+                totalIncidents += rowIncidents;
+                totalPenalties += rowPenalty;
+
+                let penaltyCell = $(this).find('.item-subtotal-penalty');
+                penaltyCell.text(reconcileSigno + ' ' + rowPenalty.toFixed(2));
+                if (rowPenalty > 0) {
+                    penaltyCell.removeClass('text-muted').addClass('text-danger fs-6');
+                } else {
+                    penaltyCell.removeClass('text-danger fs-6').addClass('text-muted');
+                }
+            });
+
+            $('#reconcile-kpi-sent').text(totalSent.toFixed(2));
+            $('#reconcile-kpi-ok').text(totalOk.toFixed(2));
+            $('#reconcile-kpi-incidents').text(totalIncidents.toFixed(2));
+            $('#reconcile-kpi-total-penalty').text(reconcileSigno + ' ' + totalPenalties.toFixed(2));
+        }
+
+        // Open Inventory Reconciliation Modal
+        $(document).on('click', '.btn-reconcile-inventory', function(e) {
+            e.preventDefault();
+            let contractId = $(this).data('id');
+
+            Swal.fire({
+                title: 'Cargando Inventario',
+                text: 'Obteniendo ítems llevados al evento...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            $.ajax({
+                url: "{{ url('contracts') }}/" + contractId + "/reconciliation",
+                type: "GET",
+                dataType: "json",
+                success: function(r) {
+                    Swal.close();
+                    if (!r.status) {
+                        toastr.error(r.msg || 'No se pudo cargar la información de reconciliación.');
+                        return;
+                    }
+
+                    reconcileSigno = r.signo || 'S/';
+                    let c = r.contract || {};
+                    let cl = r.client || {};
+                    let chk = r.checklist || {};
+                    let items = r.items || [];
+
+                    $('#reconcile-contract-id').val(c.id);
+                    $('#reconcile-contract-number').text(c.contract_number);
+                    $('#reconcile-checklist-badge').text(chk.codigo);
+
+                    if (chk.is_closed) {
+                        $('#reconcile-status-badge').html('<i class="ri-lock-2-line me-1"></i> Retorno Cerrado').removeClass('bg-info-subtle text-info border-info-subtle').addClass('bg-success text-white');
+                        $('#reconcile-closed-info').show().html('<i class="ri-checkbox-circle-fill me-1"></i> Cerrado el ' + chk.retorno_cerrado_at);
+                        $('#btn-submit-reconciliation').html('<i class="ri-restart-line me-1"></i> Actualizar Conciliación');
+                    } else {
+                        $('#reconcile-status-badge').html('<i class="ri-time-line me-1"></i> Pendiente de Cierre').removeClass('bg-success text-white').addClass('bg-info-subtle text-info border-info-subtle');
+                        $('#reconcile-closed-info').hide();
+                        $('#btn-submit-reconciliation').html('<i class="ri-check-double-line me-1"></i> Guardar Conciliación y Aplicar Penalidades');
+                    }
+
+                    $('#reconcile-client-name').text(cl.nombres);
+                    $('#reconcile-client-doc').text(cl.documento ? 'Doc: ' + cl.documento : '');
+                    $('#reconcile-event-info').text(c.fecha_evento + (c.hora_evento ? ' ' + c.hora_evento : ''));
+                    $('#reconcile-event-location').text(c.lugar_evento);
+                    $('#reconcile-checklist-code').text(chk.codigo);
+
+                    $('#reconcile-btn-tablet').attr('href', "{{ url('event-checklists') }}/" + chk.id + "/tablet");
+                    $('#reconcile-btn-report').attr('href', "{{ url('event-checklists') }}/" + chk.id + "/report");
+
+                    // Render table rows
+                    let tbodyHtml = '';
+                    if (items.length === 0) {
+                        tbodyHtml = '<tr><td colspan="9" class="text-center py-4 text-muted">No hay ítems registrados en el evento para este contrato.</td></tr>';
+                    } else {
+                        items.forEach((item, idx) => {
+                            let penaltyClass = item.total_penalty > 0 ? 'text-danger fs-6' : 'text-muted';
+                            tbodyHtml += `
+                            <tr class="reconcile-item-row" data-item-id="${item.id}">
+                                <td class="text-center fw-bold text-muted">${idx + 1}</td>
+                                <td>
+                                    <strong class="text-dark d-block item-name">${item.descripcion}</strong>
+                                    <div class="d-flex align-items-center gap-1 mt-1">
+                                        <span class="badge bg-secondary-subtle text-dark border py-0 px-2" style="font-size: 0.72rem;">${item.categoria}</span>
+                                        <span class="badge bg-light text-muted border py-0 px-2" style="font-size: 0.72rem;">${item.unidad}</span>
+                                        ${item.is_rentable ? '<span class="badge bg-info-subtle text-info border py-0 px-2" style="font-size: 0.72rem;"><i class="ri-tools-line me-1"></i>Alquiler</span>' : ''}
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-dark fs-7 px-2 py-1">${parseFloat(item.qty_enviada).toFixed(2)}</span>
+                                    <input type="hidden" name="items[${item.id}][qty_enviada]" class="item-qty-enviada" value="${item.qty_enviada}">
+                                </td>
+                                <td>
+                                    <input type="number" step="0.01" min="0" max="${item.qty_enviada}" class="form-control form-control-sm text-center fw-bold text-success border-success item-qty-ok" name="items[${item.id}][qty_ok]" value="${parseFloat(item.qty_ok).toFixed(2)}">
+                                </td>
+                                <td>
+                                    <input type="number" step="0.01" min="0" max="${item.qty_enviada}" class="form-control form-control-sm text-center fw-bold text-danger border-danger item-qty-quebrada" name="items[${item.id}][qty_quebrada]" value="${parseFloat(item.qty_quebrada).toFixed(2)}" placeholder="0.00">
+                                </td>
+                                <td>
+                                    <input type="number" step="0.01" min="0" max="${item.qty_enviada}" class="form-control form-control-sm text-center fw-bold text-warning-emphasis border-warning item-qty-faltante" name="items[${item.id}][qty_faltante]" value="${parseFloat(item.qty_faltante).toFixed(2)}" placeholder="0.00">
+                                </td>
+                                <td>
+                                    <input type="number" step="0.01" min="0" max="${item.qty_enviada}" class="form-control form-control-sm text-center fw-bold text-secondary border-secondary item-qty-danada" name="items[${item.id}][qty_danada]" value="${parseFloat(item.qty_danada).toFixed(2)}" placeholder="0.00">
+                                </td>
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text py-0 px-1 text-muted" style="font-size: 0.72rem;">${reconcileSigno}</span>
+                                        <input type="number" step="0.01" min="0" class="form-control form-control-sm text-end fw-bold item-unit-penalty" name="items[${item.id}][unit_penalty]" value="${parseFloat(item.unit_penalty).toFixed(2)}">
+                                    </div>
+                                </td>
+                                <td class="text-end">
+                                    <strong class="item-subtotal-penalty ${penaltyClass}">${reconcileSigno} ${parseFloat(item.total_penalty).toFixed(2)}</strong>
+                                </td>
+                            </tr>`;
+                        });
+                    }
+                    $('#reconcile-items-tbody').html(tbodyHtml);
+
+                    // Pending installments dropdown
+                    let instOpts = '';
+                    let installments = r.pending_installments || [];
+                    if (installments.length > 0) {
+                        installments.forEach((inst, index) => {
+                            let selected = (index === installments.length - 1) ? 'selected' : '';
+                            instOpts += `<option value="${inst.id}" ${selected}>Cuota #${inst.numero_cuota} - ${inst.descripcion} (Saldo: ${reconcileSigno} ${parseFloat(inst.monto).toFixed(2)})</option>`;
+                        });
+                        $('#reconcile-installment-id').html(instOpts).closest('div').show();
+                    } else {
+                        $('#reconcile-installment-id').html('<option value="">Sin cuotas pendientes (Se creará ajuste contable directo)</option>');
+                    }
+
+                    recalculateReconciliationTotals();
+                    $('#reconcile-search-filter').val('');
+                    $('#modalInventoryReconciliation').modal('show');
+                },
+                error: function() {
+                    Swal.close();
+                    toastr.error('Error al conectar con el servidor.');
+                }
+            });
+        });
+
+        // Realtime calculation on inputs
+        $(document).on('input change', '.item-qty-quebrada, .item-qty-faltante, .item-qty-danada, .item-unit-penalty', function() {
+            let row = $(this).closest('tr');
+            let sent = parseFloat(row.find('.item-qty-enviada').val()) || 0;
+            let quebrada = parseFloat(row.find('.item-qty-quebrada').val()) || 0;
+            let faltante = parseFloat(row.find('.item-qty-faltante').val()) || 0;
+            let danada = parseFloat(row.find('.item-qty-danada').val()) || 0;
+
+            // Auto-balance OK quantity
+            let incidents = quebrada + faltante + danada;
+            let newOk = Math.max(0, sent - incidents);
+            row.find('.item-qty-ok').val(newOk.toFixed(2));
+
+            recalculateReconciliationTotals();
+        });
+
+        $(document).on('input change', '.item-qty-ok', function() {
+            recalculateReconciliationTotals();
+        });
+
+        // Quick Bulk: Todo Conforme (OK)
+        $('#btn-reconcile-all-ok').on('click', function() {
+            $('.reconcile-item-row').each(function() {
+                let sent = parseFloat($(this).find('.item-qty-enviada').val()) || 0;
+                $(this).find('.item-qty-ok').val(sent.toFixed(2));
+                $(this).find('.item-qty-quebrada').val('0.00');
+                $(this).find('.item-qty-faltante').val('0.00');
+                $(this).find('.item-qty-danada').val('0.00');
+            });
+            recalculateReconciliationTotals();
+            toastr.info('Todos los ítems asignados como conformes (OK).');
+        });
+
+        // Quick Bulk: Limpiar Incidencias
+        $('#btn-reconcile-clear-incidents').on('click', function() {
+            $('.reconcile-item-row').each(function() {
+                let sent = parseFloat($(this).find('.item-qty-enviada').val()) || 0;
+                $(this).find('.item-qty-quebrada').val('0.00');
+                $(this).find('.item-qty-faltante').val('0.00');
+                $(this).find('.item-qty-danada').val('0.00');
+                $(this).find('.item-qty-ok').val(sent.toFixed(2));
+            });
+            recalculateReconciliationTotals();
+            toastr.info('Incidencias y penalidades restablecidas a cero.');
+        });
+
+        // Live Search Filter for Items
+        $('#reconcile-search-filter').on('keyup', function() {
+            let term = $(this).val().toLowerCase().trim();
+            $('.reconcile-item-row').each(function() {
+                let text = $(this).text().toLowerCase();
+                if (text.indexOf(term) > -1) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        });
+
+        // Submit Inventory Reconciliation
+        $('#form-inventory-reconciliation').on('submit', function(e) {
+            e.preventDefault();
+            let contractId = $('#reconcile-contract-id').val();
+            let btn = $('#btn-submit-reconciliation');
+
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Procesando...');
+
+            $.ajax({
+                url: "{{ url('contracts') }}/" + contractId + "/reconciliation",
+                type: "POST",
+                data: $(this).serialize(),
+                dataType: "json",
+                success: function(response) {
+                    btn.prop('disabled', false).html('<i class="ri-check-double-line me-1"></i> Guardar Conciliación y Aplicar Penalidades');
+                    if (response.status) {
+                        $('#modalInventoryReconciliation').modal('hide');
+                        Swal.fire({
+                            title: '¡Conciliación Procesada!',
+                            html: `<strong>${response.msg}</strong>`,
+                            icon: 'success'
+                        });
+                        table.ajax.reload(null, false);
+                    } else {
+                        toastr.error(response.msg || 'No se pudo procesar la conciliación.');
+                    }
+                },
+                error: function(xhr) {
+                    btn.prop('disabled', false).html('<i class="ri-check-double-line me-1"></i> Guardar Conciliación y Aplicar Penalidades');
+                    let msg = xhr.responseJSON?.msg || 'Error al procesar la conciliación de inventario.';
+                    Swal.fire('Error', msg, 'error');
+                }
+            });
+        });
     });
 </script>

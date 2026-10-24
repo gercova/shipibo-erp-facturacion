@@ -255,6 +255,8 @@ Route::controller(ContractController::class)->prefix('contracts')->middleware(['
     Route::post('/{id}/issue-debit-note', 'issue_debit_note')->name('admin.contracts.issue_debit_note');
     Route::post('/{id}/formalize', 'formalize')->name('admin.contracts.formalize');
     Route::post('/{id}/adjustments', 'store_adjustment')->name('admin.contracts.store_adjustment');
+    Route::get('/{id}/reconciliation', 'reconciliationData')->name('admin.contracts.reconciliation');
+    Route::post('/{id}/reconciliation', 'processReconciliation')->name('admin.contracts.process_reconciliation');
 });
 
 Route::controller(ContractReportController::class)->prefix('contracts/reports')->middleware(['auth', 'can:admin.reports.contracts'])->group(function () {

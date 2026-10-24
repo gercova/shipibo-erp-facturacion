@@ -11,11 +11,14 @@ use App\Models\ContractClause;
 use App\Models\ContractInstallment;
 use App\Models\ContractItem;
 use App\Models\DetailPayment;
+use App\Models\EventChecklist;
+use App\Models\EventChecklistItem;
 use App\Models\IdentityDocumentType;
 use App\Models\PayMode;
 use App\Models\Product;
 use App\Services\Contracts\ContractAdjustmentService;
 use App\Services\Ebilling\ContractEbillingService;
+use App\Services\Events\EventChecklistReturnService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
@@ -128,6 +131,9 @@ class ContractController extends Controller
                             <div class="dropdown-menu" aria-labelledby="dropdownContracts'.$id.'">
                                 <a class="dropdown-item btn-detail-contract" data-id="'.$id.'" href="javascript:void(0);">
                                     <i class="ri-eye-line me-2"></i> Ver detalle
+                                </a>
+                                <a class="dropdown-item btn-reconcile-inventory text-warning-emphasis fw-medium" data-id="'.$id.'" href="javascript:void(0);">
+                                    <i class="ri-survey-line me-2 text-warning"></i> Conciliación de Inventario
                                 </a>
                                 <a class="dropdown-item btn-print-contract" data-id="'.$id.'" href="javascript:void(0);">
                                     <i class="ri-printer-line me-2"></i> Imprimir A4
@@ -1181,6 +1187,284 @@ class ContractController extends Controller
                 'status' => false,
                 'msg' => 'Error al emitir Nota de Débito: '.$e->getMessage(),
                 'type' => 'error',
+            ], 500);
+        }
+    }
+
+    /**
+     * Get inventory reconciliation data for a contract (items taken to event, return counts, penalties).
+     */
+    public function reconciliationData($id): JsonResponse
+    {
+        $contract = Contract::with(['client', 'items.product.category', 'items.product.unit', 'installments', 'adjustments'])->find($id);
+        if (! $contract) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'El contrato no existe o no se pudo cargar.',
+            ], 404);
+        }
+
+        // Find or auto-generate EventChecklist
+        $checklist = EventChecklist::with(['items.product.category', 'items.product.unit'])->where('contract_id', $contract->id)->latest('id')->first();
+        if (! $checklist) {
+            $codigo = 'CHK-'.date('Y').'-'.str_pad($contract->id, 4, '0', STR_PAD_LEFT);
+            $checklist = EventChecklist::create([
+                'contract_id' => $contract->id,
+                'codigo' => $codigo,
+                'code' => $codigo,
+                'titulo' => 'Checklist - '.$contract->title,
+                'fecha_evento' => $contract->fecha_evento,
+                'hora_evento' => $contract->hora_evento,
+                'lugar_evento' => $contract->lugar_evento,
+                'responsable_montaje' => Auth::user()?->nombres ?: (Auth::user()?->name ?: 'Encargado de Evento'),
+                'estado' => EventChecklist::STATUS_PLANNED,
+                'total_items' => 0,
+                'items_llevados' => 0,
+                'items_devueltos' => 0,
+                'items_con_incidencia' => 0,
+                'idusuario' => Auth::id() ?: 1,
+                'idalmacen' => $contract->idalmacen ?: $this->currentWarehouseId(),
+            ]);
+
+            $order = 1;
+            foreach ($contract->items as $item) {
+                $product = $item->product;
+                if ($product && (int) $product->opcion === 2) {
+                    continue; // Skip pure labor/service
+                }
+
+                $categoria = $product?->rentable
+                    ? 'Herramientas de Barra / Alquiler'
+                    : ($product?->category?->descripcion ?: 'Insumos y Menaje de Barra');
+
+                $unitCost = $product ? $product->effective_replacement_cost : 0.00;
+
+                EventChecklistItem::create([
+                    'checklist_id' => $checklist->id,
+                    'contract_item_id' => $item->id,
+                    'idproducto' => $item->idproducto,
+                    'producto_id' => $item->idproducto,
+                    'descripcion' => $item->descripcion,
+                    'categoria' => $categoria,
+                    'cantidad_planeada' => $item->cantidad,
+                    'qty_enviada' => $item->cantidad,
+                    'qty_ok' => $item->cantidad,
+                    'qty_danada' => 0.00,
+                    'qty_quebrada' => 0.00,
+                    'qty_faltante' => 0.00,
+                    'qty_consumida' => 0.00,
+                    'cantidad_llevada' => $item->cantidad,
+                    'llevado' => true,
+                    'cantidad_devuelta' => $item->cantidad,
+                    'devuelto' => false,
+                    'tiene_incidencia' => false,
+                    'costo_penalidad_estimado' => 0.00,
+                    'orden' => $order++,
+                ]);
+            }
+
+            $checklist->recalculateCounters();
+            $checklist->load(['items.product.category', 'items.product.unit']);
+        }
+
+        // Format items
+        $itemsData = [];
+        $totalEstimatedPenalty = 0.00;
+
+        foreach ($checklist->items as $item) {
+            $product = $item->product;
+            $unitPenalty = $product ? $product->effective_replacement_cost : (float) ($item->costo_penalidad_estimado > 0 ? $item->costo_penalidad_estimado : 0.00);
+
+            $qtyEnviada = (float) ($item->qty_enviada > 0 ? $item->qty_enviada : ($item->cantidad_llevada > 0 ? $item->cantidad_llevada : $item->cantidad_planeada));
+            $qtyOk = (float) $item->qty_ok;
+            $qtyQuebrada = (float) $item->qty_quebrada;
+            $qtyFaltante = (float) $item->qty_faltante;
+            $qtyDanada = (float) $item->qty_danada;
+            $qtyConsumida = (float) $item->qty_consumida;
+
+            $itemPenalty = round(($qtyQuebrada + $qtyFaltante + $qtyDanada) * $unitPenalty, 2);
+            $totalEstimatedPenalty += $itemPenalty;
+
+            $itemsData[] = [
+                'id' => $item->id,
+                'descripcion' => $item->descripcion,
+                'categoria' => $item->categoria ?: 'Menaje / Cristalería',
+                'unidad' => $product?->unit?->descripcion ?: 'UND',
+                'is_rentable' => (bool) ($product?->rentable),
+                'qty_enviada' => $qtyEnviada,
+                'qty_ok' => $qtyOk,
+                'qty_quebrada' => $qtyQuebrada,
+                'qty_faltante' => $qtyFaltante,
+                'qty_danada' => $qtyDanada,
+                'qty_consumida' => $qtyConsumida,
+                'unit_penalty' => $unitPenalty,
+                'total_penalty' => $itemPenalty,
+                'observaciones' => $item->observaciones,
+            ];
+        }
+
+        // Pending installments for penalty imputation
+        $pendingInstallments = $contract->installments
+            ->where('estado', ContractInstallment::STATUS_PENDING)
+            ->map(function ($inst) {
+                return [
+                    'id' => $inst->id,
+                    'numero_cuota' => $inst->numero_cuota,
+                    'descripcion' => $inst->descripcion,
+                    'monto' => (float) $inst->monto,
+                    'fecha_vencimiento' => $inst->fecha_vencimiento ? Carbon::parse($inst->fecha_vencimiento)->format('d/m/Y') : null,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'status' => true,
+            'contract' => [
+                'id' => $contract->id,
+                'contract_number' => $contract->contract_number,
+                'title' => $contract->title,
+                'fecha_evento' => $contract->fecha_evento ? Carbon::parse($contract->fecha_evento)->format('d/m/Y') : '-',
+                'hora_evento' => $contract->hora_evento ?: '',
+                'lugar_evento' => $contract->lugar_evento ?: 'No especificado',
+                'total' => (float) $contract->total,
+                'estado' => $contract->estado,
+                'status_label' => $contract->status_badge,
+            ],
+            'client' => [
+                'nombres' => $contract->client?->nombres ?: 'Cliente no especificado',
+                'documento' => $contract->client?->nro_documento ?: '',
+                'telefono' => $contract->client?->telefono ?: '',
+            ],
+            'checklist' => [
+                'id' => $checklist->id,
+                'codigo' => $checklist->codigo,
+                'estado' => $checklist->estado,
+                'is_closed' => $checklist->isReturnClosed(),
+                'retorno_cerrado_at' => $checklist->retorno_cerrado_at ? $checklist->retorno_cerrado_at->format('d/m/Y H:i') : null,
+                'stock_applied' => $checklist->isStockApplied(),
+            ],
+            'items' => $itemsData,
+            'pending_installments' => $pendingInstallments,
+            'total_estimated_penalty' => round($totalEstimatedPenalty, 2),
+            'signo' => $this->signo_pais(),
+        ]);
+    }
+
+    /**
+     * Process inventory reconciliation and apply penalties for broken/missing items.
+     */
+    public function processReconciliation(
+        Request $request,
+        $id,
+        EventChecklistReturnService $returnService,
+        ContractAdjustmentService $adjustmentService
+    ): JsonResponse {
+        $contract = Contract::with(['installments', 'items'])->find($id);
+        if (! $contract) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'El contrato especificado no existe.',
+            ], 404);
+        }
+
+        $checklist = EventChecklist::with('items.product')->where('contract_id', $contract->id)->latest('id')->first();
+        if (! $checklist) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'No se encontró un checklist asociado a este contrato.',
+            ], 422);
+        }
+
+        $itemsInput = $request->input('items', []);
+        if (empty($itemsInput)) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Debe enviar los datos de los ítems a conciliar.',
+            ], 422);
+        }
+
+        $applyStock = $request->boolean('apply_stock', true);
+        $targetInstallmentId = $request->input('installment_id');
+
+        try {
+            DB::beginTransaction();
+
+            $totalPenalties = 0.00;
+            $itemsDataForService = [];
+
+            // Pre-process items
+            foreach ($itemsInput as $itemId => $row) {
+                $qtyEnviada = floatval($row['qty_enviada'] ?? 0);
+                $qtyOk = max(0, floatval($row['qty_ok'] ?? 0));
+                $qtyQuebrada = max(0, floatval($row['qty_quebrada'] ?? 0));
+                $qtyFaltante = max(0, floatval($row['qty_faltante'] ?? 0));
+                $qtyDanada = max(0, floatval($row['qty_danada'] ?? 0));
+                $qtyConsumida = max(0, floatval($row['qty_consumida'] ?? 0));
+                $unitPenalty = max(0, floatval($row['unit_penalty'] ?? 0));
+                $observaciones = trim($row['observaciones'] ?? '');
+
+                // Ensure sum equals qtyEnviada
+                $sum = round($qtyOk + $qtyQuebrada + $qtyFaltante + $qtyDanada + $qtyConsumida, 4);
+                if (abs($sum - $qtyEnviada) > 0.0001) {
+                    $qtyOk = max(0, round($qtyEnviada - ($qtyQuebrada + $qtyFaltante + $qtyDanada + $qtyConsumida), 4));
+                }
+
+                $itemPenalty = round(($qtyQuebrada + $qtyFaltante + $qtyDanada) * $unitPenalty, 2);
+                $totalPenalties += $itemPenalty;
+
+                $itemsDataForService[$itemId] = [
+                    'qty_enviada' => $qtyEnviada,
+                    'qty_ok' => $qtyOk,
+                    'qty_quebrada' => $qtyQuebrada,
+                    'qty_faltante' => $qtyFaltante,
+                    'qty_danada' => $qtyDanada,
+                    'qty_consumida' => $qtyConsumida,
+                    'unit_penalty' => $unitPenalty,
+                    'observaciones' => $observaciones,
+                    'installment_id' => $targetInstallmentId,
+                ];
+            }
+
+            // If checklist return was already closed, reopen it if authorized
+            if ($checklist->isReturnClosed()) {
+                if (Auth::user()?->hasRole(['SUPERADMIN', 'ADMIN'])) {
+                    $returnService->reopenReturn($checklist, Auth::user(), 'Actualización por nueva conciliación de inventario');
+                } else {
+                    return response()->json([
+                        'status' => false,
+                        'msg' => 'La conciliación ya fue cerrada previamente el '.$checklist->retorno_cerrado_at?->format('d/m/Y H:i').'. Solo un administrador puede modificarla.',
+                    ], 422);
+                }
+            }
+
+            // Close return via service (updates items, creates inventory movements, creates ContractAdjustments and updates installments)
+            $returnService->closeReturn($checklist, $itemsDataForService, Auth::user(), $applyStock);
+
+            // Re-generate contract PDF with updated adjustments
+            $this->generatePdfFile($contract->id);
+
+            DB::commit();
+
+            $signo = $this->signo_pais();
+            $msg = 'Conciliación de inventario procesada exitosamente.';
+            if ($totalPenalties > 0) {
+                $msg .= " Se registraron y aplicaron penalidades por {$signo} ".number_format($totalPenalties, 2).' por roturas o pérdidas de objetos.';
+            } else {
+                $msg .= ' Todos los ítems fueron devueltos en perfecto estado sin penalidades.';
+            }
+
+            return response()->json([
+                'status' => true,
+                'msg' => $msg,
+                'penalties' => $totalPenalties,
+                'checklist_id' => $checklist->id,
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'status' => false,
+                'msg' => 'Error al procesar la conciliación: '.$e->getMessage(),
             ], 500);
         }
     }
