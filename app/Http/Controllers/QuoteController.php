@@ -17,6 +17,7 @@ use App\Models\Warehouse;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
@@ -38,7 +39,7 @@ class QuoteController extends Controller
         ]);
     }
 
-    public function get()
+    public function get(): JsonResponse
     {
         $quotes = $this->quotesByCurrentWarehouse()
             ->select('quotes.*', 'clients.nro_documento as dni_ruc', 'clients.nombres as cliente', \DB::raw("CONCAT(quotes.serie, '-', quotes.correlativo) as documento"))
@@ -112,7 +113,7 @@ class QuoteController extends Controller
             ->toJson();
     }
 
-    public function create()
+    public function create(): View
     {
         $data['clients'] = Client::get();
         $data['type_documents_p'] = TypeDocument::where('estado', 1)->limit(2)->get();
@@ -126,7 +127,7 @@ class QuoteController extends Controller
         return view('admin.quotes.create', $data);
     }
 
-    public function get_product(Request $request)
+    public function get_product(Request $request): JsonResponse
     {
         if (! $request->ajax()) {
             return response()->json([
@@ -163,7 +164,7 @@ class QuoteController extends Controller
         ]);
     }
 
-    public function get_product_idwarehouse(Request $request)
+    public function get_product_idwarehouse(Request $request): JsonResponse
     {
         if (! $request->ajax()) {
             return response()->json([
@@ -198,7 +199,7 @@ class QuoteController extends Controller
         ]);
     }
 
-    public function load_clients(Request $request)
+    public function load_clients(Request $request): JsonResponse
     {
         if (! $request->ajax()) {
             return response()->json([
@@ -213,7 +214,7 @@ class QuoteController extends Controller
         return response()->json(['status' => true, 'clients' => $clients]);
     }
 
-    public function load_cart(Request $request)
+    public function load_cart(Request $request): JsonResponse
     {
         if (! $request->ajax()) {
             return response()->json([
@@ -272,16 +273,14 @@ class QuoteController extends Controller
         ]);
     }
 
-    public function add_product(Request $request)
+    public function add_product(Request $request): JsonResponse
     {
         if (! $request->ajax()) {
-            echo json_encode([
+            return response()->json([
                 'status' => false,
                 'msg' => 'Intente de nuevo',
                 'type' => 'warning',
             ]);
-
-            return;
         }
 
         $id = (int) $request->input('id');
@@ -307,7 +306,7 @@ class QuoteController extends Controller
         ]);
     }
 
-    public function delete_product(Request $request)
+    public function delete_product(Request $request): JsonResponse
     {
         if (! $request->ajax()) {
             return response()->json([
@@ -335,7 +334,7 @@ class QuoteController extends Controller
         ]);
     }
 
-    public function store_product(Request $request)
+    public function store_product(Request $request): JsonResponse
     {
         if (! $request->ajax()) {
             return response()->json([
@@ -365,7 +364,7 @@ class QuoteController extends Controller
         ]);
     }
 
-    public function save(Request $request)
+    public function save(Request $request): JsonResponse
     {
         if (! $request->ajax()) {
             return response()->json([
@@ -525,7 +524,7 @@ class QuoteController extends Controller
         return view('admin.quotes.edit', $data);
     }
 
-    public function detail(Request $request)
+    public function detail(Request $request): JsonResponse
     {
         if (! $request->ajax()) {
             return response()->json([
@@ -614,7 +613,7 @@ class QuoteController extends Controller
         return redirect()->route('admin.pos.create');
     }
 
-    public function get_product_update(Request $request)
+    public function get_product_update(Request $request): JsonResponse
     {
         if (! $request->ajax()) {
             return response()->update([
@@ -814,15 +813,14 @@ class QuoteController extends Controller
     public function create_cart()
     {
         if (! session()->get('quote') || empty(session()->get('quote')['products'])) {
-            $quote =
-                [
-                    'quote' => [
-                        'products' => [],
-                        'igv' => 0,
-                        'subtotal' => 0,
-                        'total' => 0,
-                    ],
-                ];
+            $quote = [
+                'quote' => [
+                    'products' => [],
+                    'igv' => 0,
+                    'subtotal' => 0,
+                    'total' => 0,
+                ],
+            ];
 
             session($quote);
 
@@ -861,16 +859,14 @@ class QuoteController extends Controller
         }
 
         $total = $subtotal + $igv;
-
-        $quote =
-            [
-                'quote' => [
-                    'products' => session('quote')['products'],
-                    'igv' => $igv,
-                    'subtotal' => $subtotal,
-                    'total' => $total,
-                ],
-            ];
+        $quote = [
+            'quote' => [
+                'products' => session('quote')['products'],
+                'igv' => $igv,
+                'subtotal' => $subtotal,
+                'total' => $total,
+            ],
+        ];
 
         session($quote);
 
@@ -921,8 +917,7 @@ class QuoteController extends Controller
             }
         }
 
-        $new_product =
-        [
+        $new_product = [
             'id' => $product->id,
             'descripcion' => $product->descripcion,
             'idunidad' => $product->idunidad,

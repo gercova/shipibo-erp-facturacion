@@ -5,553 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Cotiza tu Barra Móvil | Shipibo Coctelería - Tarapoto</title>
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-
-    <style>
-        :root {
-            --brand-gold: #c59b27;
-            --brand-gold-dark: #a37c17;
-            --brand-dark: #0f1c14;
-            --brand-forest: #1b382b;
-            --bg-page: #f8faf8;
-            --border-soft: #e2e8e3;
-
-            /* Package Color Palettes matching flyers */
-            --c-esencial: #275c34;
-            --c-tropical: #189e82;
-            --c-premium: #273e6b;
-            --c-gold: #be8632;
-            --c-signature: #9e2d5c;
-            --c-luxury: #14728f;
-            --c-experience: #234928;
-            --c-barman: #be8632;
-        }
-
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--bg-page);
-            color: #242e28;
-            -webkit-font-smoothing: antialiased;
-            overflow-x: hidden;
-        }
-
-        .font-serif {
-            font-family: 'Playfair Display', Georgia, serif;
-        }
-
-        .font-cinzel {
-            font-family: 'Cinzel', serif;
-        }
-
-        .font-montserrat {
-            font-family: 'Montserrat', sans-serif;
-        }
-
-        /* ── HERO HEADER ── */
-        .hero-section {
-            background: radial-gradient(circle at 85% 15%, #2a5840 0%, #152c20 60%, #0d1a13 100%);
-            color: #ffffff;
-            padding: 3.5rem 1rem 4.5rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero-section::before {
-            content: '';
-            position: absolute;
-            top: -60px;
-            right: -60px;
-            width: 320px;
-            height: 320px;
-            background: radial-gradient(circle, rgba(197, 155, 39, 0.15) 0%, transparent 70%);
-            pointer-events: none;
-        }
-
-        .hero-section::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 28px;
-            background: var(--bg-page);
-            border-top-left-radius: 32px;
-            border-top-right-radius: 32px;
-        }
-
-        .hero-badge {
-            background: rgba(255, 255, 255, 0.12);
-            border: 1px solid rgba(255, 255, 255, 0.22);
-            backdrop-filter: blur(8px);
-            color: #f7eed4;
-            font-size: 0.85rem;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            padding: 0.4rem 1.1rem;
-            border-radius: 50px;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        /* ── NAVIGATION PILLS ── */
-        .nav-pills-custom {
-            display: flex;
-            gap: 0.5rem;
-            overflow-x: auto;
-            padding: 0.5rem;
-            background: #ffffff;
-            border: 1px solid var(--border-soft);
-            border-radius: 50px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-            white-space: nowrap;
-            margin-bottom: 2rem;
-        }
-
-        .nav-pills-custom .nav-link {
-            border-radius: 50px;
-            color: #55665b;
-            font-weight: 600;
-            font-size: 0.85rem;
-            padding: 0.5rem 1.2rem;
-            transition: all 0.2s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-
-        .nav-pills-custom .nav-link:hover,
-        .nav-pills-custom .nav-link.active {
-            background: #1b382b;
-            color: #ffffff;
-            box-shadow: 0 4px 10px rgba(27, 56, 43, 0.25);
-        }
-
-        /* ── FLYER PACKAGE CARDS ── */
-        .flyer-card {
-            background: #ffffff;
-            border: 2px solid #e1e8e2;
-            border-radius: 18px;
-            overflow: hidden;
-            transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-            position: relative;
-            cursor: pointer;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            height: 100%;
-        }
-
-        .flyer-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.09);
-        }
-
-        .flyer-card.selected {
-            border-width: 2.5px;
-            box-shadow: 0 18px 36px rgba(0, 0, 0, 0.12) !important;
-        }
-
-        /* Individual Package Theme Accents */
-        .pkg-theme-01.selected { border-color: var(--c-esencial); box-shadow: 0 14px 30px rgba(39, 92, 52, 0.18) !important; }
-        .pkg-theme-02.selected { border-color: var(--c-tropical); box-shadow: 0 14px 30px rgba(24, 158, 130, 0.18) !important; }
-        .pkg-theme-03.selected { border-color: var(--c-premium); box-shadow: 0 14px 30px rgba(39, 62, 107, 0.18) !important; }
-        .pkg-theme-04.selected { border-color: var(--c-gold); box-shadow: 0 14px 30px rgba(190, 134, 50, 0.22) !important; }
-        .pkg-theme-05.selected { border-color: var(--c-signature); box-shadow: 0 14px 30px rgba(158, 45, 92, 0.2) !important; }
-        .pkg-theme-06.selected { border-color: var(--c-luxury); box-shadow: 0 14px 30px rgba(20, 114, 143, 0.2) !important; }
-        .pkg-theme-07.selected { border-color: var(--c-experience); box-shadow: 0 14px 30px rgba(35, 73, 40, 0.2) !important; }
-
-        .flyer-card-header {
-            padding: 1.4rem 1.4rem 0.6rem;
-        }
-
-        .badge-box {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            width: 76px;
-            flex-shrink: 0;
-        }
-
-        .badge-number {
-            font-size: 1.85rem;
-            font-weight: 800;
-            line-height: 1;
-            letter-spacing: -0.5px;
-            font-family: 'Montserrat', sans-serif;
-        }
-
-        .badge-pill-glasses {
-            color: #ffffff;
-            font-size: 0.72rem;
-            font-weight: 700;
-            padding: 3px 8px;
-            border-radius: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-            margin-top: 4px;
-            white-space: nowrap;
-            text-align: center;
-            width: 100%;
-        }
-
-        .package-title-group {
-            margin-left: 0.9rem;
-        }
-
-        .package-label-sub {
-            font-size: 0.9rem;
-            font-weight: 600;
-            line-height: 1.2;
-            letter-spacing: 0.5px;
-            margin-bottom: 2px;
-        }
-
-        .package-title-main {
-            font-size: 1.65rem;
-            font-weight: 800;
-            letter-spacing: 1px;
-            line-height: 1.05;
-            font-family: 'Cinzel', serif;
-            text-transform: uppercase;
-        }
-
-        .package-tagline {
-            font-size: 0.88rem;
-            color: #4b5850;
-            line-height: 1.4;
-            padding: 0 1.4rem;
-            margin-bottom: 1rem;
-            min-height: 2.5rem;
-        }
-
-        .flyer-card-body {
-            padding: 0 1.4rem 1.2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            position: relative;
-        }
-
-        .includes-title {
-            font-size: 0.85rem;
-            font-weight: 800;
-            letter-spacing: 1.2px;
-            text-transform: uppercase;
-            margin-bottom: 0.75rem;
-        }
-
-        .includes-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .includes-list li {
-            font-size: 0.86rem;
-            color: #2e3a33;
-            margin-bottom: 0.45rem;
-            display: flex;
-            align-items: center;
-            gap: 0.65rem;
-            font-weight: 500;
-        }
-
-        .includes-list li i {
-            font-size: 1.05rem;
-            flex-shrink: 0;
-        }
-
-        .cocktail-cutout-container {
-            width: 130px;
-            height: 175px;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            flex-shrink: 0;
-            position: relative;
-            margin-left: 0.5rem;
-        }
-
-        .cocktail-cutout-img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-            filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.12));
-            transition: transform 0.3s ease;
-        }
-
-        .flyer-card:hover .cocktail-cutout-img {
-            transform: scale(1.05);
-        }
-
-        /* ── CARD FOOTER BARS (Anatomy from Flyer) ── */
-        .flyer-card-footer {
-            display: flex;
-            align-items: stretch;
-            width: 100%;
-            border-top: 1px solid #edf2ee;
-        }
-
-        .footer-left-guests {
-            flex: 1.2;
-            padding: 0.85rem 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.7rem;
-            font-size: 0.85rem;
-            color: #3b4d42;
-            line-height: 1.2;
-        }
-
-        .footer-left-guests i {
-            font-size: 1.4rem;
-        }
-
-        .footer-right-cost {
-            flex: 1;
-            padding: 0.85rem 1.1rem;
-            color: #ffffff;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            text-align: right;
-        }
-
-        .cost-label-sub {
-            font-size: 0.72rem;
-            text-transform: uppercase;
-            font-weight: 600;
-            letter-spacing: 0.8px;
-            opacity: 0.92;
-            line-height: 1;
-            margin-bottom: 2px;
-        }
-
-        .cost-amount-main {
-            font-size: 1.35rem;
-            font-weight: 800;
-            line-height: 1;
-            font-family: 'Montserrat', sans-serif;
-            letter-spacing: -0.5px;
-        }
-
-        .card-select-btn {
-            border: none;
-            background: #ffffff;
-            color: #3b4d42;
-            font-weight: 700;
-            font-size: 0.86rem;
-            padding: 0.7rem 1rem;
-            width: 100%;
-            border-top: 1px solid #e2e8e3;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-
-        .flyer-card.selected .card-select-btn {
-            background: #1b382b;
-            color: #ffffff;
-        }
-
-        /* ── SERVICIO DE BARMAN (Screenshot 3) ── */
-        .barman-service-card {
-            background: #ffffff;
-            border: 2.5px solid #d4a34b;
-            border-radius: 20px;
-            padding: 1.5rem 1.8rem;
-            box-shadow: 0 8px 24px rgba(212, 163, 75, 0.12);
-            transition: all 0.25s ease;
-            cursor: pointer;
-            position: relative;
-        }
-
-        .barman-service-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 14px 32px rgba(212, 163, 75, 0.2);
-        }
-
-        .barman-service-card.selected {
-            background: #fffdf9;
-            border-color: #b87e28;
-            box-shadow: 0 0 0 3px rgba(184, 126, 40, 0.25), 0 14px 32px rgba(212, 163, 75, 0.25) !important;
-        }
-
-        .barman-col-sep {
-            border-right: 1.5px solid #f0dcb2;
-        }
-
-        /* ── NUESTRA CARTA (Screenshot 4) ── */
-        .carta-section-card {
-            background: #ffffff;
-            border: 1px solid var(--border-soft);
-            border-radius: 20px;
-            padding: 2.2rem 1.8rem;
-            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.04);
-            position: relative;
-        }
-
-        .spirit-title {
-            font-family: 'Cinzel', serif;
-            font-size: 1.35rem;
-            font-weight: 800;
-            letter-spacing: 1px;
-            margin-bottom: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .spirit-ron { color: #c97d26; }
-        .spirit-pisco { color: #d18a28; }
-        .spirit-vodka { color: #caa23b; }
-        .spirit-gin { color: #a88134; }
-        .spirit-tequila { color: #bc792a; }
-
-        .cocktail-chip {
-            background: #fdfefe;
-            border: 1.5px solid #e2e8e3;
-            border-radius: 10px;
-            padding: 0.45rem 0.75rem;
-            font-size: 0.84rem;
-            font-weight: 600;
-            color: #3b4d42;
-            cursor: pointer;
-            transition: all 0.18s ease;
-            user-select: none;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.5rem;
-            margin-bottom: 0.4rem;
-        }
-
-        .cocktail-chip:hover {
-            border-color: #c59b27;
-            background: #fffcf5;
-            color: #1b382b;
-        }
-
-        .cocktail-chip.active {
-            background: #1b382b;
-            color: #ffffff;
-            border-color: #1b382b;
-            box-shadow: 0 4px 10px rgba(27, 56, 43, 0.2);
-        }
-
-        .cocktail-chip .chip-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #d4a34b;
-        }
-
-        .cocktail-chip.active .chip-dot {
-            background: #ffffff;
-        }
-
-        /* ── IMPORTANTE & 50% ADVANCE BANNER ── */
-        .info-card-box {
-            background: #ffffff;
-            border: 1.5px solid #e1e8e2;
-            border-radius: 16px;
-            padding: 1.5rem;
-        }
-
-        .advance-banner {
-            background: #fffdf7;
-            border: 2px solid #d4a34b;
-            border-radius: 16px;
-            padding: 1.25rem 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 1.2rem;
-            box-shadow: 0 4px 16px rgba(212, 163, 75, 0.1);
-        }
-
-        /* ── STICKY ORDER PANEL ── */
-        .sticky-order-box {
-            position: sticky;
-            top: 24px;
-            z-index: 100;
-        }
-
-        .order-summary-card {
-            background: #ffffff;
-            border: 1px solid var(--border-soft);
-            border-radius: 20px;
-            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.08);
-            overflow: hidden;
-        }
-
-        .order-card-header {
-            background: linear-gradient(135deg, #121f17 0%, #1b382b 100%);
-            color: #ffffff;
-            padding: 1.25rem 1.4rem;
-        }
-
-        .btn-request-quote {
-            background: linear-gradient(135deg, #d4a34b 0%, #b87e28 100%);
-            color: #ffffff;
-            border: none;
-            font-weight: 700;
-            font-size: 1rem;
-            padding: 0.95rem 1.5rem;
-            border-radius: 12px;
-            width: 100%;
-            box-shadow: 0 8px 20px rgba(184, 126, 40, 0.3);
-            transition: all 0.25s ease;
-        }
-
-        .btn-request-quote:hover {
-            background: linear-gradient(135deg, #b87e28 0%, #9e691d 100%);
-            color: #ffffff;
-            transform: translateY(-2px);
-            box-shadow: 0 12px 24px rgba(184, 126, 40, 0.4);
-        }
-
-        /* Mobile bottom floating bar */
-        .mobile-bottom-bar {
-            display: none;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #ffffff;
-            border-top: 1.5px solid #d4a34b;
-            padding: 0.8rem 1.2rem;
-            box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
-            z-index: 1050;
-        }
-
-        @media (max-width: 991px) {
-            .mobile-bottom-bar {
-                display: block;
-            }
-            .sticky-order-box {
-                position: static;
-                margin-top: 2.5rem;
-            }
-            body {
-                padding-bottom: 80px;
-            }
-        }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="{{ asset('css/order-public.css') }}">
 </head>
 <body>
-
     {{-- Top Hero Header --}}
     <header class="hero-section text-center">
         <div class="container" style="max-width: 880px;">
@@ -562,7 +25,8 @@
             </div>
             <h1 class="display-5 font-serif fw-bold mb-3">Cotiza tu Barra Móvil</h1>
             <p class="fs-16 opacity-90 mx-auto mb-0" style="max-width: 700px; line-height: 1.6;">
-                Selecciona el paquete ideal para tu evento, elige tus cócteles favoritos y recibe una cotización con cálculo exacto en tiempo real.
+                Selecciona el paquete ideal para tu evento, elige tus cócteles favoritos y recibe una cotización con
+                cálculo exacto en tiempo real.
             </p>
         </div>
     </header>
@@ -571,10 +35,12 @@
     <div class="container mt-n4" style="position: relative; z-index: 10;">
         <div class="d-flex justify-content-center">
             <nav class="nav-pills-custom">
-                <a href="#section-packages" class="nav-link active"><i class="ri-gift-line"></i> Paquetes Todo Costo (01 - 07)</a>
+                <a href="#section-packages" class="nav-link active"><i class="ri-gift-line"></i> Paquetes Todo Costo (01
+                    - 07)</a>
                 <a href="#section-barman" class="nav-link"><i class="ri-user-star-line"></i> Servicio de Barman</a>
                 <a href="#section-carta" class="nav-link"><i class="ri-goblet-line"></i> Nuestra Carta</a>
-                <a href="#section-condiciones" class="nav-link"><i class="ri-file-text-line"></i> Políticas y Condiciones</a>
+                <a href="#section-condiciones" class="nav-link"><i class="ri-file-text-line"></i> Políticas y
+                    Condiciones</a>
             </nav>
         </div>
     </div>
@@ -585,7 +51,8 @@
             @csrf
 
             {{-- Honeypot anti-spam field --}}
-            <input type="text" name="_hp_website" id="_hp_website" style="display:none !important;" tabindex="-1" autocomplete="off">
+            <input type="text" name="_hp_website" id="_hp_website" style="display:none !important;" tabindex="-1"
+                autocomplete="off">
             <input type="hidden" name="package_id" id="selected_package_id" value="">
 
             <div class="row g-4">
@@ -596,30 +63,40 @@
                     <section id="section-packages" class="mb-5">
                         <div class="d-flex align-items-center justify-content-between mb-4">
                             <div>
-                                <span class="badge bg-success bg-opacity-10 text-success fw-bold px-3 py-1 rounded-pill mb-1">
+                                <span
+                                    class="badge bg-success bg-opacity-10 text-success fw-bold px-3 py-1 rounded-pill mb-1">
                                     <i class="ri-check-double-line me-1"></i> PAQUETES A TODO COSTO
                                 </span>
                                 <h3 class="fw-bold font-serif text-dark mb-0">Barras Móviles Completas</h3>
                             </div>
-                            <span class="text-muted small d-none d-sm-inline">Haz clic en cualquier paquete para cotizar</span>
+                            <span class="text-muted small d-none d-sm-inline">Haz clic en cualquier paquete para
+                                cotizar</span>
                         </div>
 
                         {{-- Metadata definition for the 7 flyer packages --}}
                         @php
                             $flyerMeta = [
                                 'Paquete ESENCIAL' => [
-                                    'num' => '01',
-                                    'theme' => '01',
-                                    'glasses' => '100 vasos',
-                                    'title' => 'ESENCIAL',
-                                    'tagline' => 'Ideal para reuniones íntimas y celebraciones pequeñas.',
-                                    'color' => '#275c34',
-                                    'light_bg' => '#e9edea',
-                                    'ideal' => '20 a 50 invitados',
-                                    'cost' => 'S/ 1,200',
-                                    'img' => 'img/packages/pkg-01.png',
-                                    'features' => ['1 Bartender + 1 asistente', 'Barra móvil', 'Cristalería', 'Hielo', 'Insumos', 'Utensilios de bar', '4 opciones'],
-                                    'default_guests' => 35
+                                    'num'       => '01',
+                                    'theme'     => '01',
+                                    'glasses'   => '100 vasos',
+                                    'title'     => 'ESENCIAL',
+                                    'tagline'   => 'Ideal para reuniones íntimas y celebraciones pequeñas.',
+                                    'color'     => '#275c34',
+                                    'light_bg'  => '#e9edea',
+                                    'ideal'     => '20 a 50 invitados',
+                                    'cost'      => 'S/ 1,200',
+                                    'img'       => 'img/packages/pkg-01.png',
+                                    'features'  => [
+                                        '1 Bartender + 1 asistente',
+                                        'Barra móvil',
+                                        'Cristalería',
+                                        'Hielo',
+                                        'Insumos',
+                                        'Utensilios de bar',
+                                        '4 opciones',
+                                    ],
+                                    'default_guests' => 35,
                                 ],
                                 'Paquete TROPICAL' => [
                                     'num' => '02',
@@ -632,8 +109,16 @@
                                     'ideal' => '50 a 80 invitados',
                                     'cost' => 'S/ 2,000',
                                     'img' => 'img/packages/pkg-02.png',
-                                    'features' => ['1 Bartender + 1 asistente', 'Barra móvil', 'Cristalería', 'Hielo', 'Insumos', 'Utensilios de bar', '5 opciones'],
-                                    'default_guests' => 65
+                                    'features' => [
+                                        '1 Bartender + 1 asistente',
+                                        'Barra móvil',
+                                        'Cristalería',
+                                        'Hielo',
+                                        'Insumos',
+                                        'Utensilios de bar',
+                                        '5 opciones',
+                                    ],
+                                    'default_guests' => 65,
                                 ],
                                 'Paquete PREMIUM' => [
                                     'num' => '03',
@@ -646,8 +131,16 @@
                                     'ideal' => '50 a 120 invitados',
                                     'cost' => 'S/ 2,900',
                                     'img' => 'img/packages/pkg-03.png',
-                                    'features' => ['1 Bartender + 1 asistente', 'Barra móvil', 'Cristalería variada', 'Hielo Gourmet', 'Insumos', 'Utensilios de bar', '5 opciones'],
-                                    'default_guests' => 85
+                                    'features' => [
+                                        '1 Bartender + 1 asistente',
+                                        'Barra móvil',
+                                        'Cristalería variada',
+                                        'Hielo Gourmet',
+                                        'Insumos',
+                                        'Utensilios de bar',
+                                        '5 opciones',
+                                    ],
+                                    'default_guests' => 85,
                                 ],
                                 'Paquete GOLD' => [
                                     'num' => '04',
@@ -660,8 +153,16 @@
                                     'ideal' => '80 a 150 invitados',
                                     'cost' => 'S/ 3,600',
                                     'img' => 'img/packages/pkg-04.png',
-                                    'features' => ['1 Bartender + 1 asistente', 'Barra móvil', 'Cristalería variada', 'Hielo Gourmet', 'Insumos', 'Utensilios de bar', '5 opciones'],
-                                    'default_guests' => 115
+                                    'features' => [
+                                        '1 Bartender + 1 asistente',
+                                        'Barra móvil',
+                                        'Cristalería variada',
+                                        'Hielo Gourmet',
+                                        'Insumos',
+                                        'Utensilios de bar',
+                                        '5 opciones',
+                                    ],
+                                    'default_guests' => 115,
                                 ],
                                 'Paquete SIGNATURE' => [
                                     'num' => '05',
@@ -674,8 +175,16 @@
                                     'ideal' => '100 a 180 invitados',
                                     'cost' => 'S/ 4,200',
                                     'img' => 'img/packages/pkg-05.png',
-                                    'features' => ['1 Bartender + 1 asistente', 'Barra móvil', 'Cristalería variada', 'Hielo Gourmet', 'Insumos', 'Utensilios de bar', '5 - 6 opciones'],
-                                    'default_guests' => 140
+                                    'features' => [
+                                        '1 Bartender + 1 asistente',
+                                        'Barra móvil',
+                                        'Cristalería variada',
+                                        'Hielo Gourmet',
+                                        'Insumos',
+                                        'Utensilios de bar',
+                                        '5 - 6 opciones',
+                                    ],
+                                    'default_guests' => 140,
                                 ],
                                 'Paquete LUXURY' => [
                                     'num' => '06',
@@ -688,8 +197,16 @@
                                     'ideal' => '100 a 250 invitados',
                                     'cost' => 'S/ 4,800',
                                     'img' => 'img/packages/pkg-06.png',
-                                    'features' => ['1 Bartender + 1 asistente', 'Barra móvil de lujo', 'Cristalería variada', 'Hielo Gourmet', 'Insumos', 'Utensilios de bar', '5 - 6 opciones'],
-                                    'default_guests' => 180
+                                    'features' => [
+                                        '1 Bartender + 1 asistente',
+                                        'Barra móvil de lujo',
+                                        'Cristalería variada',
+                                        'Hielo Gourmet',
+                                        'Insumos',
+                                        'Utensilios de bar',
+                                        '5 - 6 opciones',
+                                    ],
+                                    'default_guests' => 180,
                                 ],
                                 'Paquete EXPERIENCE' => [
                                     'num' => '07',
@@ -702,62 +219,106 @@
                                     'ideal' => '200 invitados en adelante',
                                     'cost' => 'S/ 5,300',
                                     'img' => 'img/packages/pkg-07.png',
-                                    'features' => ['1 Bartender + 1 asistente', 'Barra móvil de lujo', 'Cristalería variada', 'Hielo Gourmet', 'Insumos', 'Utensilios de bar', '5 - 6 opciones', 'Personal adicional de apoyo'],
-                                    'default_guests' => 250
+                                    'features' => [
+                                        '1 Bartender + 1 asistente',
+                                        'Barra móvil de lujo',
+                                        'Cristalería variada',
+                                        'Hielo Gourmet',
+                                        'Insumos',
+                                        'Utensilios de bar',
+                                        '5 - 6 opciones',
+                                        'Personal adicional de apoyo',
+                                    ],
+                                    'default_guests' => 250,
                                 ],
                             ];
 
-                            // Filter the 7 open bar packages
-                            $openBarList = $packages->filter(function($p) {
-                                return str_starts_with($p->name, 'Paquete');
-                            })->values();
+                            // Filter the open bar packages (exclude barman)
+                            $openBarList = $packages
+                                ->filter(function ($p) {
+                                    return ! $p->is_barman && ! str_contains(strtolower($p->name), 'barman');
+                                })
+                                ->sortBy(function ($p) {
+                                    return (int) ($p->order_num ?: 99);
+                                })
+                                ->values();
 
-                            $barmanPkg = $packages->first(function($p) {
-                                return str_contains(strtolower($p->name), 'barman');
+                            $barmanPkg = $packages->first(function ($p) {
+                                return $p->is_barman || str_contains(strtolower($p->name), 'barman');
                             });
                         @endphp
 
                         <div class="row g-4">
                             @foreach ($openBarList as $pkg)
                                 @php
-                                    $meta = $flyerMeta[$pkg->name] ?? [
-                                        'num' => sprintf('%02d', $loop->iteration),
-                                        'theme' => sprintf('%02d', ($loop->iteration % 7) ?: 7),
-                                        'glasses' => $pkg->description ? Str::before($pkg->description, '.') : 'Vasos',
-                                        'title' => Str::replace('Paquete ', '', $pkg->name),
-                                        'tagline' => $pkg->description,
-                                        'color' => '#275c34',
-                                        'light_bg' => '#e9edea',
-                                        'ideal' => $pkg->guest_range_label,
-                                        'cost' => $signo . ' ' . number_format($pkg->base_price, 2),
-                                        'img' => $pkg->image_url,
-                                        'features' => ['1 Bartender + 1 asistente', 'Barra móvil', 'Cristalería', 'Hielo', 'Insumos', 'Utensilios de bar'],
-                                        'default_guests' => $pkg->min_guests
+                                    $num = $pkg->order_num ?: ($flyerMeta[$pkg->name]['num'] ?? sprintf('%02d', $loop->iteration));
+                                    $color = $pkg->color ?: ($flyerMeta[$pkg->name]['color'] ?? '#275c34');
+                                    $lightBg = $pkg->light_bg ?: ($flyerMeta[$pkg->name]['light_bg'] ?? '#e9edea');
+                                    $glasses = $pkg->badge_glasses ?: ($flyerMeta[$pkg->name]['glasses'] ?? 'Vasos');
+                                    $title = Str::replace('Paquete ', '', $pkg->name);
+                                    $tagline = $pkg->tagline ?: ($flyerMeta[$pkg->name]['tagline'] ?? $pkg->description);
+                                    $ideal = $pkg->ideal_capacity ?: ($flyerMeta[$pkg->name]['ideal'] ?? $pkg->guest_range_label);
+                                    $features = (!empty($pkg->features) && is_array($pkg->features))
+                                        ? $pkg->features
+                                        : ($flyerMeta[$pkg->name]['features'] ?? [
+                                            '1 Bartender + 1 asistente',
+                                            'Barra móvil',
+                                            'Cristalería',
+                                            'Hielo',
+                                            'Insumos',
+                                            'Utensilios de bar',
+                                        ]);
+                                    $defaultGuests = $pkg->default_guests ?: ($flyerMeta[$pkg->name]['default_guests'] ?? $pkg->min_guests);
+                                    $img = $pkg->image ? $pkg->image_url : ($flyerMeta[$pkg->name]['img'] ?? 'img/packages/pkg-01.png');
+
+                                    if ($pkg->price_mode === 'tiered' && $pkg->priceTiers && $pkg->priceTiers->isNotEmpty()) {
+                                        $minTierPrice = $pkg->priceTiers->min('price');
+                                        $cost = $signo . ' ' . number_format((float) $minTierPrice, 0);
+                                    } elseif ($pkg->base_price > 0) {
+                                        $cost = $signo . ' ' . number_format((float) $pkg->base_price, 0) . ($pkg->price_mode === 'per_guest' ? ' / inv.' : '');
+                                    } else {
+                                        $cost = $flyerMeta[$pkg->name]['cost'] ?? 'Consultar';
+                                    }
+
+                                    $meta = [
+                                        'num'       => $num,
+                                        'theme'     => sprintf('%02d', ((int) $num) % 7 ?: 7),
+                                        'glasses'   => $glasses,
+                                        'title'     => $title,
+                                        'tagline'   => $tagline,
+                                        'color'     => $color,
+                                        'light_bg'  => $lightBg,
+                                        'ideal'     => $ideal,
+                                        'cost'      => $cost,
+                                        'img'       => $img,
+                                        'features'  => $features,
+                                        'default_guests' => $defaultGuests,
                                     ];
-                                    $isFullWidth = ($meta['num'] === '07');
+                                    $isFullWidth = $meta['num'] === '07';
                                 @endphp
 
                                 <div class="{{ $isFullWidth ? 'col-12' : 'col-md-6' }}">
-                                    <div class="flyer-card pkg-theme-{{ $meta['theme'] }}"
-                                         data-id="{{ $pkg->id }}"
-                                         data-name="{{ $pkg->name }}"
-                                         data-glasses="{{ $meta['glasses'] }}"
-                                         data-min="{{ $pkg->min_guests }}"
-                                         data-max="{{ $pkg->max_guests ?: 999 }}"
-                                         data-default-guests="{{ $meta['default_guests'] }}"
-                                         data-color="{{ $meta['color'] }}"
-                                         data-img="{{ asset($meta['img']) }}">
-
+                                    <div class="flyer-card pkg-theme-{{ $meta['theme'] }}" data-id="{{ $pkg->id }}"
+                                        data-name="{{ $pkg->name }}" data-glasses="{{ $meta['glasses'] }}"
+                                        data-min="{{ $pkg->min_guests }}" data-max="{{ $pkg->max_guests ?: 999 }}"
+                                        data-default-guests="{{ $meta['default_guests'] }}"
+                                        data-color="{{ $meta['color'] }}" data-img="{{ asset($meta['img']) }}">
                                         {{-- Header with number badge and title --}}
                                         <div class="flyer-card-header">
                                             <div class="d-flex align-items-center">
                                                 <div class="badge-box">
-                                                    <span class="badge-number" style="color: {{ $meta['color'] }};">{{ $meta['num'] }}</span>
-                                                    <span class="badge-pill-glasses" style="background-color: {{ $meta['color'] }};">{{ $meta['glasses'] }}</span>
+                                                    <span class="badge-number"
+                                                        style="color: {{ $meta['color'] }};">{{ $meta['num'] }}</span>
+                                                    <span class="badge-pill-glasses"
+                                                        style="background-color: {{ $meta['color'] }};">{{ $meta['glasses'] }}</span>
                                                 </div>
                                                 <div class="package-title-group">
-                                                    <div class="package-label-sub" style="color: {{ $meta['color'] }}; opacity: 0.85;">Paquete</div>
-                                                    <div class="package-title-main" style="color: {{ $meta['color'] }};">{{ $meta['title'] }}</div>
+                                                    <div class="package-label-sub"
+                                                        style="color: {{ $meta['color'] }}; opacity: 0.85;">Paquete
+                                                    </div>
+                                                    <div class="package-title-main"
+                                                        style="color: {{ $meta['color'] }};">{{ $meta['title'] }}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -770,28 +331,38 @@
                                         {{-- Body with items and drink cutout --}}
                                         <div class="flyer-card-body">
                                             <div class="flex-grow-1">
-                                                <div class="includes-title" style="color: {{ $meta['color'] }};">INCLUYE:</div>
+                                                <div class="includes-title" style="color: {{ $meta['color'] }};">
+                                                    INCLUYE:</div>
                                                 <ul class="includes-list">
                                                     @foreach ($meta['features'] as $f)
                                                         <li>
-                                                            @if(str_contains(strtolower($f), 'bartender'))
-                                                                <i class="ri-user-star-line" style="color: {{ $meta['color'] }};"></i>
+                                                            @if (str_contains(strtolower($f), 'bartender'))
+                                                                <i class="ri-user-star-line"
+                                                                    style="color: {{ $meta['color'] }};"></i>
                                                             @elseif(str_contains(strtolower($f), 'barra'))
-                                                                <i class="ri-store-2-line" style="color: {{ $meta['color'] }};"></i>
+                                                                <i class="ri-store-2-line"
+                                                                    style="color: {{ $meta['color'] }};"></i>
                                                             @elseif(str_contains(strtolower($f), 'cristaler'))
-                                                                <i class="ri-goblet-line" style="color: {{ $meta['color'] }};"></i>
+                                                                <i class="ri-goblet-line"
+                                                                    style="color: {{ $meta['color'] }};"></i>
                                                             @elseif(str_contains(strtolower($f), 'hielo'))
-                                                                <i class="ri-snowflake-line" style="color: {{ $meta['color'] }};"></i>
+                                                                <i class="ri-snowflake-line"
+                                                                    style="color: {{ $meta['color'] }};"></i>
                                                             @elseif(str_contains(strtolower($f), 'insumo'))
-                                                                <i class="ri-drinks-line" style="color: {{ $meta['color'] }};"></i>
+                                                                <i class="ri-drinks-line"
+                                                                    style="color: {{ $meta['color'] }};"></i>
                                                             @elseif(str_contains(strtolower($f), 'utensilio'))
-                                                                <i class="ri-cup-line" style="color: {{ $meta['color'] }};"></i>
+                                                                <i class="ri-cup-line"
+                                                                    style="color: {{ $meta['color'] }};"></i>
                                                             @elseif(str_contains(strtolower($f), 'opcion'))
-                                                                <i class="ri-checkbox-circle-line" style="color: {{ $meta['color'] }};"></i>
+                                                                <i class="ri-checkbox-circle-line"
+                                                                    style="color: {{ $meta['color'] }};"></i>
                                                             @elseif(str_contains(strtolower($f), 'apoyo'))
-                                                                <i class="ri-team-line" style="color: {{ $meta['color'] }};"></i>
+                                                                <i class="ri-team-line"
+                                                                    style="color: {{ $meta['color'] }};"></i>
                                                             @else
-                                                                <i class="ri-check-line" style="color: {{ $meta['color'] }};"></i>
+                                                                <i class="ri-check-line"
+                                                                    style="color: {{ $meta['color'] }};"></i>
                                                             @endif
                                                             <span>{{ $f }}</span>
                                                         </li>
@@ -800,20 +371,26 @@
                                             </div>
 
                                             <div class="cocktail-cutout-container">
-                                                <img src="{{ asset($meta['img']) }}" alt="{{ $pkg->name }}" class="cocktail-cutout-img">
+                                                <img src="{{ asset($meta['img']) }}" alt="{{ $pkg->name }}"
+                                                    class="cocktail-cutout-img">
                                             </div>
                                         </div>
 
                                         {{-- Footer with ideal guests and cost badge --}}
                                         <div class="flyer-card-footer">
-                                            <div class="footer-left-guests" style="background-color: {{ $meta['light_bg'] }};">
+                                            <div class="footer-left-guests"
+                                                style="background-color: {{ $meta['light_bg'] }};">
                                                 <i class="ri-group-line" style="color: {{ $meta['color'] }};"></i>
                                                 <div>
-                                                    <div style="font-size: 0.72rem; color: #66756c; text-transform: uppercase;">Ideal para</div>
-                                                    <div class="fw-bold" style="color: #1a271f;">{{ $meta['ideal'] }}</div>
+                                                    <div
+                                                        style="font-size: 0.72rem; color: #66756c; text-transform: uppercase;">
+                                                        Ideal para</div>
+                                                    <div class="fw-bold" style="color: #1a271f;">{{ $meta['ideal'] }}
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div class="footer-right-cost" style="background-color: {{ $meta['color'] }};">
+                                            <div class="footer-right-cost"
+                                                style="background-color: {{ $meta['color'] }};">
                                                 <span class="cost-label-sub">Costo:</span>
                                                 <span class="cost-amount-main">{{ $meta['cost'] }}</span>
                                             </div>
@@ -832,27 +409,32 @@
 
                     {{-- SECTION 2: SERVICIO DE BARMAN (Screenshot 3) --}}
                     @if ($barmanPkg)
+                        @php
+                            $barmanColor = $barmanPkg->color ?: '#be8632';
+                            $barmanPrice = $barmanPkg->base_price > 0 ? $signo . ' ' . number_format($barmanPkg->base_price, 0) : 'S/ 600';
+                            $barmanMax = $barmanPkg->max_guests ?: 100;
+                            $barmanIdeal = $barmanPkg->ideal_capacity ?: "máximo {$barmanMax} personas";
+                            $barmanImg = $barmanPkg->image ? $barmanPkg->image_url : asset('img/packages/pkg-01.png');
+                        @endphp
                         <section id="section-barman" class="mb-5">
                             <div class="text-center mb-3">
-                                <h3 class="fw-bold font-serif text-dark mb-1">Servicio de barman</h3>
-                                <p class="text-muted fs-15 mb-3">Tu pones los insumos y nosotros nos encargamos de lo demás.</p>
+                                <h3 class="fw-bold font-serif text-dark mb-1">{{ $barmanPkg->name }}</h3>
+                                <p class="text-muted fs-15 mb-3">{{ $barmanPkg->tagline ?: 'Tu pones los insumos y nosotros nos encargamos de lo demás.' }}</p>
                             </div>
 
-                            <div class="barman-service-card"
-                                 data-id="{{ $barmanPkg->id }}"
-                                 data-name="{{ $barmanPkg->name }}"
-                                 data-glasses="Solo Servicio"
-                                 data-min="{{ $barmanPkg->min_guests }}"
-                                 data-max="{{ $barmanPkg->max_guests ?: 100 }}"
-                                 data-default-guests="50"
-                                 data-color="#be8632"
-                                 data-img="{{ asset('img/packages/pkg-01.png') }}">
+                            <div class="barman-service-card" data-id="{{ $barmanPkg->id }}"
+                                data-name="{{ $barmanPkg->name }}" data-glasses="{{ $barmanPkg->badge_glasses ?: 'Solo Servicio' }}"
+                                data-min="{{ $barmanPkg->min_guests }}"
+                                data-max="{{ $barmanPkg->max_guests ?: 100 }}" data-default-guests="{{ $barmanPkg->default_guests ?: 50 }}"
+                                data-color="{{ $barmanColor }}" data-img="{{ asset($barmanImg) }}">
                                 <div class="row align-items-center text-center text-md-start gy-3">
                                     <div class="col-12 col-md-3 barman-col-sep text-center">
-                                        <span class="d-inline-block p-2 rounded-circle bg-warning bg-opacity-10 text-warning mb-2">
+                                        <span
+                                            class="d-inline-block p-2 rounded-circle bg-warning bg-opacity-10 text-warning mb-2">
                                             <i class="ri-user-star-line fs-24"></i>
                                         </span>
-                                        <h6 class="fw-bold text-dark font-montserrat text-uppercase mb-0 fs-14">SERVICIO DE<br>BARMAN</h6>
+                                        <h6 class="fw-bold text-dark font-montserrat text-uppercase mb-0 fs-14">
+                                            SERVICIO DE<br>BARMAN</h6>
                                     </div>
 
                                     <div class="col-6 col-md-2 barman-col-sep text-center text-md-start ps-md-3">
@@ -864,7 +446,8 @@
                                         <div class="fw-bold text-dark fs-13 mb-1">Incluye:</div>
                                         <div class="small text-muted mb-0">Barra móvil</div>
                                         <div class="small text-muted mb-0">Herramientas de bar</div>
-                                        <div class="small text-danger fw-semibold fst-italic">_No cristalería _No insumos</div>
+                                        <div class="small text-danger fw-semibold fst-italic">_No cristalería _No
+                                            insumos</div>
                                     </div>
 
                                     <div class="col-6 col-md-2 barman-col-sep text-center">
@@ -873,15 +456,16 @@
                                     </div>
 
                                     <div class="col-6 col-md-2 text-center text-md-end pe-md-2">
-                                        <div class="fs-22 fw-bold font-montserrat text-dark mb-2">S/ 600</div>
-                                        <button type="button" class="btn btn-sm btn-outline-warning text-dark fw-bold rounded-pill px-3 py-1 barman-btn">
+                                        <div class="fs-22 fw-bold font-montserrat text-dark mb-2">{{ $barmanPrice }}</div>
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-warning text-dark fw-bold rounded-pill px-3 py-1 barman-btn">
                                             Elegir
                                         </button>
                                     </div>
                                 </div>
                             </div>
                             <div class="text-center text-muted small mt-2">
-                                *Capacidad de atención <strong>máximo 100 personas</strong>.
+                                *Capacidad de atención <strong>{{ $barmanIdeal }}</strong>.
                             </div>
                         </section>
                     @endif
@@ -890,11 +474,15 @@
                     <section id="section-carta" class="mb-5">
                         <div class="carta-section-card">
                             <div class="text-center mb-4">
-                                <h2 class="display-6 fw-bold font-montserrat text-dark mb-1 letter-spacing-1">NUESTRA CARTA</h2>
-                                <p class="text-muted fw-bold small text-uppercase letter-spacing-2 mb-2">ELIGE LOS COCTELES QUE MÁS TE GUSTEN</p>
-                                <div class="d-inline-flex align-items-center gap-2 px-3 py-1 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-pill fs-13 fw-semibold text-dark">
+                                <h2 class="display-6 fw-bold font-montserrat text-dark mb-1 letter-spacing-1">NUESTRA
+                                    CARTA</h2>
+                                <p class="text-muted fw-bold small text-uppercase letter-spacing-2 mb-2">ELIGE LOS
+                                    COCTELES QUE MÁS TE GUSTEN</p>
+                                <div
+                                    class="d-inline-flex align-items-center gap-2 px-3 py-1 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-pill fs-13 fw-semibold text-dark">
                                     <i class="ri-star-fill text-warning"></i>
-                                    <span>Cócteles seleccionados: <strong id="cocktailCounter">0</strong> de 6 recomendados</span>
+                                    <span>Cócteles seleccionados: <strong id="cocktailCounter">0</strong> de 6
+                                        recomendados</span>
                                 </div>
                             </div>
 
@@ -902,21 +490,21 @@
                                 @foreach ($cocktailCategories as $category)
                                     @php
                                         $catSlug = strtolower($category->nombre);
-                                        $catColorClass = match(true) {
+                                        $catColorClass = match (true) {
                                             str_contains($catSlug, 'ron') => 'spirit-ron',
                                             str_contains($catSlug, 'pisco') => 'spirit-pisco',
                                             str_contains($catSlug, 'vodka') => 'spirit-vodka',
                                             str_contains($catSlug, 'gin') => 'spirit-gin',
                                             str_contains($catSlug, 'tequila') => 'spirit-tequila',
-                                            default => 'spirit-ron'
+                                            default => 'spirit-ron',
                                         };
-                                        $catIcon = match(true) {
+                                        $catIcon = match (true) {
                                             str_contains($catSlug, 'ron') => 'ri-goblet-line',
                                             str_contains($catSlug, 'pisco') => 'ri-goblet-fill',
                                             str_contains($catSlug, 'vodka') => 'ri-cup-line',
                                             str_contains($catSlug, 'gin') => 'ri-drinks-line',
                                             str_contains($catSlug, 'tequila') => 'ri-contrast-drop-line',
-                                            default => 'ri-goblet-line'
+                                            default => 'ri-goblet-line',
                                         };
                                     @endphp
 
@@ -949,7 +537,8 @@
                                 </div>
                                 <div class="ps-3 border-start text-end">
                                     <div class="badge bg-warning text-dark fw-bold px-2 py-1 fs-12">SOLO +18</div>
-                                    <div class="fs-10 text-muted fw-bold text-uppercase mt-1">Solo mayores de 18 años</div>
+                                    <div class="fs-10 text-muted fw-bold text-uppercase mt-1">Solo mayores de 18 años
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -962,20 +551,25 @@
                                 <div class="info-card-box h-100">
                                     <div class="d-flex align-items-center gap-2 mb-3">
                                         <i class="ri-checkbox-circle-fill text-warning fs-20"></i>
-                                        <h6 class="fw-bold text-dark font-montserrat text-uppercase mb-0">IMPORTANTE</h6>
+                                        <h6 class="fw-bold text-dark font-montserrat text-uppercase mb-0">IMPORTANTE
+                                        </h6>
                                     </div>
                                     <ul class="list-unstyled mb-0 small text-muted">
                                         <li class="mb-2 d-flex align-items-start gap-2">
                                             <i class="ri-check-line text-success mt-1"></i>
-                                            <span>Trabajamos con insumos de calidad y ampliamente conocidos en el mercado.</span>
+                                            <span>Trabajamos con insumos de calidad y ampliamente conocidos en el
+                                                mercado.</span>
                                         </li>
                                         <li class="mb-2 d-flex align-items-start gap-2">
                                             <i class="ri-check-line text-success mt-1"></i>
-                                            <span>Los paquetes son a todo costo; comprenden de (01) Barra móvil, insumos para preparación de los cocteles, hielo en cubos, cooler para hielo, vasos, herramientas de bar y logística.</span>
+                                            <span>Los paquetes son a todo costo; comprenden de (01) Barra móvil, insumos
+                                                para preparación de los cocteles, hielo en cubos, cooler para hielo,
+                                                vasos, herramientas de bar y logística.</span>
                                         </li>
                                         <li class="d-flex align-items-start gap-2">
                                             <i class="ri-check-line text-success mt-1"></i>
-                                            <span>Todos los precios son para la zona de <strong>Tarapoto</strong>, fuera de la ciudad aplican costos por distancia, traslado y estadía.</span>
+                                            <span>Todos los precios son para la zona de <strong>Tarapoto</strong>, fuera
+                                                de la ciudad aplican costos por distancia, traslado y estadía.</span>
                                         </li>
                                     </ul>
                                 </div>
@@ -983,18 +577,19 @@
 
                             <div class="col-md-5">
                                 <div class="advance-banner h-100 flex-column justify-content-center text-center">
-                                    <div class="p-3 rounded-circle bg-warning bg-opacity-15 text-warning mb-2 mx-auto" style="width: 58px; height: 58px; display: flex; align-items: center; justify-content: center;">
+                                    <div class="p-3 rounded-circle bg-warning bg-opacity-15 text-warning mb-2 mx-auto"
+                                        style="width: 58px; height: 58px; display: flex; align-items: center; justify-content: center;">
                                         <i class="ri-shake-hands-line fs-28"></i>
                                     </div>
                                     <div class="fs-15 text-dark fw-bold mb-1">Condición de Reserva</div>
                                     <p class="fs-13 text-muted mb-0">
-                                        Todo contrato se realiza con el <strong>50% de adelanto</strong> del valor total contratado.
+                                        Todo contrato se realiza con el <strong>50% de adelanto</strong> del valor total
+                                        contratado.
                                     </p>
                                 </div>
                             </div>
                         </div>
                     </section>
-
                 </div>
 
                 {{-- Right Column: Interactive Quote Panel & Order Confirmation --}}
@@ -1004,24 +599,32 @@
                             <div class="order-card-header">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
-                                        <div class="small text-warning text-uppercase fw-bold letter-spacing-1">Cotizador Oficial</div>
+                                        <div class="small text-warning text-uppercase fw-bold letter-spacing-1">
+                                            Cotizador Oficial</div>
                                         <h5 class="fw-bold mb-0 text-white font-serif">Tu Cotización</h5>
                                     </div>
-                                    <span class="badge bg-warning text-dark px-2 py-1 fs-11 fw-bold">EN TIEMPO REAL</span>
+                                    <span class="badge bg-warning text-dark px-2 py-1 fs-11 fw-bold">EN TIEMPO
+                                        REAL</span>
                                 </div>
                             </div>
 
                             <div class="p-4">
                                 {{-- Step 1: Selected Package Info --}}
                                 <div class="d-flex align-items-center gap-3 p-3 bg-light rounded-4 mb-3 border">
-                                    <img src="{{ asset('img/packages/pkg-01.png') }}" id="selected_pkg_img" alt="Paquete" class="rounded-3 shadow-sm" style="width: 60px; height: 60px; object-fit: contain; background: #fff; padding: 4px;">
+                                    <img src="{{ asset('img/packages/pkg-01.png') }}" id="selected_pkg_img"
+                                        alt="Paquete" class="rounded-3 shadow-sm"
+                                        style="width: 60px; height: 60px; object-fit: contain; background: #fff; padding: 4px;">
                                     <div class="flex-grow-1">
                                         <div class="d-flex align-items-center justify-content-between">
-                                            <span class="badge bg-dark text-white fs-10 text-uppercase" id="selected_pkg_glasses">100 vasos</span>
-                                            <span class="fw-bold fs-16 text-dark" id="summary_package_cost">S/ 1,200</span>
+                                            <span class="badge bg-dark text-white fs-10 text-uppercase"
+                                                id="selected_pkg_glasses">100 vasos</span>
+                                            <span class="fw-bold fs-16 text-dark" id="summary_package_cost">S/
+                                                1,200</span>
                                         </div>
-                                        <h6 class="fw-bold text-dark font-cinzel mb-0 mt-1 fs-16" id="summary_package_name">Paquete ESENCIAL</h6>
-                                        <small class="text-muted" id="summary_guest_range_label">Ideal para 20 a 50 invitados</small>
+                                        <h6 class="fw-bold text-dark font-cinzel mb-0 mt-1 fs-16"
+                                            id="summary_package_name">Paquete ESENCIAL</h6>
+                                        <small class="text-muted" id="summary_guest_range_label">Ideal para 20 a 50
+                                            invitados</small>
                                     </div>
                                 </div>
 
@@ -1029,39 +632,54 @@
                                 <div class="mb-3">
                                     <div class="d-flex justify-content-between align-items-center mb-1">
                                         <span class="small fw-bold text-muted text-uppercase">Cócteles Elegidos</span>
-                                        <span class="small text-muted" id="selected_cocktails_count">0 seleccionados</span>
+                                        <span class="small text-muted" id="selected_cocktails_count">0
+                                            seleccionados</span>
                                     </div>
-                                    <div id="selected_cocktails_container" class="d-flex flex-wrap gap-1 p-2 bg-light bg-opacity-60 rounded-3 border min-h-35">
-                                        <span class="text-muted small fst-italic p-1" id="cocktails_empty_notice">Elige hasta 6 cócteles de la carta</span>
+                                    <div id="selected_cocktails_container"
+                                        class="d-flex flex-wrap gap-1 p-2 bg-light bg-opacity-60 rounded-3 border min-h-35">
+                                        <span class="text-muted small fst-italic p-1"
+                                            id="cocktails_empty_notice">Elige hasta 6 cócteles de la carta</span>
                                     </div>
                                     <div id="hidden_cocktails_inputs"></div>
                                 </div>
 
                                 {{-- Step 2: Event Parameters --}}
                                 <div class="mb-3">
-                                    <label for="guests" class="form-label small fw-bold text-muted text-uppercase mb-1">
+                                    <label for="guests"
+                                        class="form-label small fw-bold text-muted text-uppercase mb-1">
                                         Número de Invitados <span class="text-danger">*</span>
                                     </label>
                                     <div class="input-group">
-                                        <button class="btn btn-outline-secondary border-2 px-3" type="button" id="btnGuestsMinus"><i class="ri-subtract-line"></i></button>
-                                        <input type="number" id="guests" name="guests" class="form-control text-center fw-bold text-dark fs-16 border-2" value="35" min="1" required>
-                                        <button class="btn btn-outline-secondary border-2 px-3" type="button" id="btnGuestsPlus"><i class="ri-add-line"></i></button>
+                                        <button class="btn btn-outline-secondary border-2 px-3" type="button"
+                                            id="btnGuestsMinus"><i class="ri-subtract-line"></i></button>
+                                        <input type="number" id="guests" name="guests"
+                                            class="form-control text-center fw-bold text-dark fs-16 border-2"
+                                            value="35" min="1" required>
+                                        <button class="btn btn-outline-secondary border-2 px-3" type="button"
+                                            id="btnGuestsPlus"><i class="ri-add-line"></i></button>
                                     </div>
                                     <div class="d-flex justify-content-between mt-1">
-                                        <small class="text-muted" id="guest_range_hint">Rango: 20 a 50 invitados.</small>
-                                        <small class="text-primary fw-semibold cursor-pointer" id="btnResetIdealGuests" style="cursor: pointer;">Ajustar al ideal</small>
+                                        <small class="text-muted" id="guest_range_hint">Rango: 20 a 50
+                                            invitados.</small>
+                                        <small class="text-primary fw-semibold cursor-pointer"
+                                            id="btnResetIdealGuests" style="cursor: pointer;">Ajustar al ideal</small>
                                     </div>
                                 </div>
 
                                 <div class="row g-2 mb-3">
                                     <div class="col-7">
-                                        <label for="fecha_evento" class="form-label small fw-bold text-muted text-uppercase mb-1">
+                                        <label for="fecha_evento"
+                                            class="form-label small fw-bold text-muted text-uppercase mb-1">
                                             Fecha del Evento <span class="text-danger">*</span>
                                         </label>
-                                        <input type="date" id="fecha_evento" name="fecha_evento" class="form-control border-2 fw-semibold fs-14" value="{{ date('Y-m-d', strtotime('+15 days')) }}" min="{{ date('Y-m-d') }}" required>
+                                        <input type="date" id="fecha_evento" name="fecha_evento"
+                                            class="form-control border-2 fw-semibold fs-14"
+                                            value="{{ date('Y-m-d', strtotime('+15 days')) }}"
+                                            min="{{ date('Y-m-d') }}" required>
                                     </div>
                                     <div class="col-5">
-                                        <label for="event_type" class="form-label small fw-bold text-muted text-uppercase mb-1">
+                                        <label for="event_type"
+                                            class="form-label small fw-bold text-muted text-uppercase mb-1">
                                             Celebración
                                         </label>
                                         <select id="event_type" name="event_type" class="form-select border-2 fs-13">
@@ -1086,50 +704,67 @@
                                 <div id="sim_content">
                                     <div class="d-flex justify-content-between mb-2 fs-13">
                                         <span class="text-muted">Subtotal (Base Imponible)</span>
-                                        <span class="fw-semibold text-dark" id="summary_subtotal">{{ $signo }} 0.00</span>
+                                        <span class="fw-semibold text-dark" id="summary_subtotal">{{ $signo }}
+                                            0.00</span>
                                     </div>
                                     <div class="d-flex justify-content-between mb-2 fs-13">
                                         <span class="text-muted">I.G.V. (18% Ley SUNAT)</span>
-                                        <span class="fw-semibold text-dark" id="summary_igv">{{ $signo }} 0.00</span>
+                                        <span class="fw-semibold text-dark" id="summary_igv">{{ $signo }}
+                                            0.00</span>
                                     </div>
-                                    <div class="d-flex justify-content-between align-items-center pt-2 border-top border-2 mb-2">
+                                    <div
+                                        class="d-flex justify-content-between align-items-center pt-2 border-top border-2 mb-2">
                                         <span class="fs-15 fw-bold text-dark">Total Estimado</span>
-                                        <span class="fs-22 fw-bold text-success font-montserrat" id="summary_total">{{ $signo }} 0.00</span>
+                                        <span class="fs-22 fw-bold text-success font-montserrat"
+                                            id="summary_total">{{ $signo }} 0.00</span>
                                     </div>
-                                    <div class="p-2 rounded bg-warning bg-opacity-10 border border-warning border-opacity-25 d-flex justify-content-between align-items-center fs-12 mb-2">
-                                        <span class="text-dark fw-semibold"><i class="ri-hand-coin-line text-warning me-1"></i> Adelanto 50% Sugerido:</span>
-                                        <strong class="text-dark" id="summary_advance">{{ $signo }} 0.00</strong>
+                                    <div
+                                        class="p-2 rounded bg-warning bg-opacity-10 border border-warning border-opacity-25 d-flex justify-content-between align-items-center fs-12 mb-2">
+                                        <span class="text-dark fw-semibold"><i
+                                                class="ri-hand-coin-line text-warning me-1"></i> Adelanto 50%
+                                            Sugerido:</span>
+                                        <strong class="text-dark" id="summary_advance">{{ $signo }}
+                                            0.00</strong>
                                     </div>
                                 </div>
 
-                                <div id="sim_error" class="alert alert-danger py-2 small mb-3" style="display: none;"></div>
+                                <div id="sim_error" class="alert alert-danger py-2 small mb-3"
+                                    style="display: none;"></div>
 
                                 <hr class="my-3 opacity-25">
 
                                 {{-- Step 4: Contact Form (Ley N° 29733 - Minimal PII) --}}
                                 <div class="mb-3">
-                                    <label for="nombre" class="form-label small fw-bold text-muted text-uppercase mb-1">
+                                    <label for="nombre"
+                                        class="form-label small fw-bold text-muted text-uppercase mb-1">
                                         Tu Nombre o Contacto <span class="text-danger">*</span>
                                     </label>
-                                    <input type="text" id="nombre" name="nombre" class="form-control border-2 fw-semibold" placeholder="Ej: MARÍA LÓPEZ" required maxlength="100">
+                                    <input type="text" id="nombre" name="nombre"
+                                        class="form-control border-2 fw-semibold" placeholder="Ej: MARÍA LÓPEZ"
+                                        required maxlength="100">
                                 </div>
 
                                 <div class="mb-3">
-                                    <label for="telefono" class="form-label small fw-bold text-muted text-uppercase mb-1">
+                                    <label for="telefono"
+                                        class="form-label small fw-bold text-muted text-uppercase mb-1">
                                         Teléfono Celular / WhatsApp <span class="text-danger">*</span>
                                     </label>
                                     <div class="input-group">
                                         <span class="input-group-text bg-light text-muted border-2 fw-bold">+51</span>
-                                        <input type="tel" id="telefono" name="telefono" class="form-control border-2 fw-semibold" placeholder="987654321" required maxlength="15">
+                                        <input type="tel" id="telefono" name="telefono"
+                                            class="form-control border-2 fw-semibold" placeholder="987654321" required
+                                            maxlength="15">
                                     </div>
                                     <small class="text-muted fs-11">9 dígitos de celular peruano.</small>
                                 </div>
 
                                 <div class="p-2 rounded bg-light border mb-3 fs-11 text-muted">
                                     <div class="form-check">
-                                        <input class="form-check-input mt-1" type="checkbox" id="consent" name="consent" required checked>
+                                        <input class="form-check-input mt-1" type="checkbox" id="consent"
+                                            name="consent" required checked>
                                         <label class="form-check-label" for="consent">
-                                            En cumplimiento de la <strong>Ley N° 29733 de Protección de Datos Personales</strong>: {{ $consentText }}
+                                            En cumplimiento de la <strong>Ley N° 29733 de Protección de Datos
+                                                Personales</strong>: {{ $consentText }}
                                         </label>
                                     </div>
                                 </div>
@@ -1138,7 +773,8 @@
                                     <i class="ri-send-plane-fill me-2"></i> Solicitar Cotización de Evento
                                 </button>
                                 <div class="text-center text-muted fs-11 mt-2">
-                                    <i class="ri-shield-check-line text-success me-1"></i> Solicitud preliminar sin compromiso
+                                    <i class="ri-shield-check-line text-success me-1"></i> Solicitud preliminar sin
+                                    compromiso
                                 </div>
                             </div>
                         </div>
@@ -1155,7 +791,8 @@
                 <div class="small fw-bold text-dark font-cinzel mb-0" id="mobile_bar_pkg_name">Paquete ESENCIAL</div>
                 <div class="fs-15 fw-bold text-success font-montserrat" id="mobile_bar_total">S/ 1,200.00</div>
             </div>
-            <button type="button" class="btn btn-warning text-dark fw-bold rounded-pill px-3 py-2 fs-13" onclick="document.querySelector('.sticky-order-box').scrollIntoView({behavior: 'smooth'})">
+            <button type="button" class="btn btn-warning text-dark fw-bold rounded-pill px-3 py-2 fs-13"
+                onclick="document.querySelector('.sticky-order-box').scrollIntoView({behavior: 'smooth'})">
                 Completar Pedido <i class="ri-arrow-right-line ms-1"></i>
             </button>
         </div>
@@ -1265,12 +902,14 @@
                 e.preventDefault();
 
                 if (!$('#consent').is(':checked')) {
-                    Swal.fire('Atención', 'Debe autorizar el tratamiento de datos para continuar.', 'warning');
+                    Swal.fire('Atención', 'Debe autorizar el tratamiento de datos para continuar.',
+                        'warning');
                     return;
                 }
 
                 const btn = $('#btnSubmitOrder');
-                btn.prop('disabled', true).html('<i class="ri-loader-4-line ri-spin me-2"></i> Procesando solicitud...');
+                btn.prop('disabled', true).html(
+                    '<i class="ri-loader-4-line ri-spin me-2"></i> Procesando solicitud...');
 
                 const formData = $(this).serialize();
 
@@ -1290,13 +929,19 @@
                                 window.location.href = res.redirect_url;
                             });
                         } else {
-                            btn.prop('disabled', false).html('<i class="ri-send-plane-fill me-2"></i> Solicitar Cotización de Evento');
-                            Swal.fire('Atención', res.msg || 'No se pudo procesar la solicitud.', 'error');
+                            btn.prop('disabled', false).html(
+                                '<i class="ri-send-plane-fill me-2"></i> Solicitar Cotización de Evento'
+                                );
+                            Swal.fire('Atención', res.msg ||
+                                'No se pudo procesar la solicitud.', 'error');
                         }
                     },
                     error: function(xhr) {
-                        btn.prop('disabled', false).html('<i class="ri-send-plane-fill me-2"></i> Solicitar Cotización de Evento');
-                        const msg = xhr.responseJSON && xhr.responseJSON.msg ? xhr.responseJSON.msg : 'Error al registrar pedido. Intente nuevamente.';
+                        btn.prop('disabled', false).html(
+                            '<i class="ri-send-plane-fill me-2"></i> Solicitar Cotización de Evento'
+                            );
+                        const msg = xhr.responseJSON && xhr.responseJSON.msg ? xhr.responseJSON
+                            .msg : 'Error al registrar pedido. Intente nuevamente.';
                         Swal.fire('Atención', msg, 'error');
                     }
                 });
@@ -1343,7 +988,8 @@
             let hiddenInputs = '';
 
             if (selectedCocktailsList.length === 0) {
-                html = '<span class="text-muted small fst-italic p-1" id="cocktails_empty_notice">Elige hasta 6 cócteles de la carta</span>';
+                html =
+                    '<span class="text-muted small fst-italic p-1" id="cocktails_empty_notice">Elige hasta 6 cócteles de la carta</span>';
             } else {
                 selectedCocktailsList.forEach(name => {
                     html += `
@@ -1404,10 +1050,12 @@
             }).fail(function(xhr) {
                 $('#sim_loading').hide();
                 $('#sim_content').css('opacity', '1');
-                const msg = xhr.responseJSON && xhr.responseJSON.msg ? xhr.responseJSON.msg : 'Cantidad de invitados fuera de rango.';
+                const msg = xhr.responseJSON && xhr.responseJSON.msg ? xhr.responseJSON.msg :
+                    'Cantidad de invitados fuera de rango.';
                 $('#sim_error').text(msg).show();
             });
         }
     </script>
 </body>
+
 </html>

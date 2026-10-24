@@ -1,0 +1,577 @@
+:root {
+    --brand-gold: #c59b27;
+    --brand-gold-dark: #a37c17;
+    --brand-dark: #0f1c14;
+    --brand-forest: #1b382b;
+    --bg-page: #f8faf8;
+    --border-soft: #e2e8e3;
+
+    /* Package Color Palettes matching flyers */
+    --c-esencial: #275c34;
+    --c-tropical: #189e82;
+    --c-premium: #273e6b;
+    --c-gold: #be8632;
+    --c-signature: #9e2d5c;
+    --c-luxury: #14728f;
+    --c-experience: #234928;
+    --c-barman: #be8632;
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: var(--bg-page);
+    color: #242e28;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+}
+
+.font-serif {
+    font-family: 'Playfair Display', Georgia, serif;
+}
+
+.font-cinzel {
+    font-family: 'Cinzel', serif;
+}
+
+.font-montserrat {
+    font-family: 'Montserrat', sans-serif;
+}
+
+/* ── HERO HEADER ── */
+.hero-section {
+    background: radial-gradient(circle at 85% 15%, #2a5840 0%, #152c20 60%, #0d1a13 100%);
+    color: #ffffff;
+    padding: 3.5rem 1rem 4.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: -60px;
+    right: -60px;
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(197, 155, 39, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.hero-section::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 28px;
+    background: var(--bg-page);
+    border-top-left-radius: 32px;
+    border-top-right-radius: 32px;
+}
+
+.hero-badge {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    backdrop-filter: blur(8px);
+    color: #f7eed4;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 0.4rem 1.1rem;
+    border-radius: 50px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* ── NAVIGATION PILLS ── */
+.nav-pills-custom {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding: 0.5rem;
+    background: #ffffff;
+    border: 1px solid var(--border-soft);
+    border-radius: 50px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    white-space: nowrap;
+    margin-bottom: 2rem;
+}
+
+.nav-pills-custom .nav-link {
+    border-radius: 50px;
+    color: #55665b;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.5rem 1.2rem;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.nav-pills-custom .nav-link:hover,
+.nav-pills-custom .nav-link.active {
+    background: #1b382b;
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(27, 56, 43, 0.25);
+}
+
+/* ── FLYER PACKAGE CARDS ── */
+.flyer-card {
+    background: #ffffff;
+    border: 2px solid #e1e8e2;
+    border-radius: 18px;
+    overflow: hidden;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+}
+
+.flyer-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.09);
+}
+
+.flyer-card.selected {
+    border-width: 2.5px;
+    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Individual Package Theme Accents */
+.pkg-theme-01.selected {
+    border-color: var(--c-esencial);
+    box-shadow: 0 14px 30px rgba(39, 92, 52, 0.18) !important;
+}
+
+.pkg-theme-02.selected {
+    border-color: var(--c-tropical);
+    box-shadow: 0 14px 30px rgba(24, 158, 130, 0.18) !important;
+}
+
+.pkg-theme-03.selected {
+    border-color: var(--c-premium);
+    box-shadow: 0 14px 30px rgba(39, 62, 107, 0.18) !important;
+}
+
+.pkg-theme-04.selected {
+    border-color: var(--c-gold);
+    box-shadow: 0 14px 30px rgba(190, 134, 50, 0.22) !important;
+}
+
+.pkg-theme-05.selected {
+    border-color: var(--c-signature);
+    box-shadow: 0 14px 30px rgba(158, 45, 92, 0.2) !important;
+}
+
+.pkg-theme-06.selected {
+    border-color: var(--c-luxury);
+    box-shadow: 0 14px 30px rgba(20, 114, 143, 0.2) !important;
+}
+
+.pkg-theme-07.selected {
+    border-color: var(--c-experience);
+    box-shadow: 0 14px 30px rgba(35, 73, 40, 0.2) !important;
+}
+
+.flyer-card-header {
+    padding: 1.4rem 1.4rem 0.6rem;
+}
+
+.badge-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 76px;
+    flex-shrink: 0;
+}
+
+.badge-number {
+    font-size: 1.85rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.5px;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.badge-pill-glasses {
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-top: 4px;
+    white-space: nowrap;
+    text-align: center;
+    width: 100%;
+}
+
+.package-title-group {
+    margin-left: 0.9rem;
+}
+
+.package-label-sub {
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+
+.package-title-main {
+    font-size: 1.65rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    line-height: 1.05;
+    font-family: 'Cinzel', serif;
+    text-transform: uppercase;
+}
+
+.package-tagline {
+    font-size: 0.88rem;
+    color: #4b5850;
+    line-height: 1.4;
+    padding: 0 1.4rem;
+    margin-bottom: 1rem;
+    min-height: 2.5rem;
+}
+
+.flyer-card-body {
+    padding: 0 1.4rem 1.2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    position: relative;
+}
+
+.includes-title {
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+}
+
+.includes-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.includes-list li {
+    font-size: 0.86rem;
+    color: #2e3a33;
+    margin-bottom: 0.45rem;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-weight: 500;
+}
+
+.includes-list li i {
+    font-size: 1.05rem;
+    flex-shrink: 0;
+}
+
+.cocktail-cutout-container {
+    width: 130px;
+    height: 175px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+    margin-left: 0.5rem;
+}
+
+.cocktail-cutout-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.12));
+    transition: transform 0.3s ease;
+}
+
+.flyer-card:hover .cocktail-cutout-img {
+    transform: scale(1.05);
+}
+
+/* ── CARD FOOTER BARS (Anatomy from Flyer) ── */
+.flyer-card-footer {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    border-top: 1px solid #edf2ee;
+}
+
+.footer-left-guests {
+    flex: 1.2;
+    padding: 0.85rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    font-size: 0.85rem;
+    color: #3b4d42;
+    line-height: 1.2;
+}
+
+.footer-left-guests i {
+    font-size: 1.4rem;
+}
+
+.footer-right-cost {
+    flex: 1;
+    padding: 0.85rem 1.1rem;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: right;
+}
+
+.cost-label-sub {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    opacity: 0.92;
+    line-height: 1;
+    margin-bottom: 2px;
+}
+
+.cost-amount-main {
+    font-size: 1.35rem;
+    font-weight: 800;
+    line-height: 1;
+    font-family: 'Montserrat', sans-serif;
+    letter-spacing: -0.5px;
+}
+
+.card-select-btn {
+    border: none;
+    background: #ffffff;
+    color: #3b4d42;
+    font-weight: 700;
+    font-size: 0.86rem;
+    padding: 0.7rem 1rem;
+    width: 100%;
+    border-top: 1px solid #e2e8e3;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.flyer-card.selected .card-select-btn {
+    background: #1b382b;
+    color: #ffffff;
+}
+
+/* ── SERVICIO DE BARMAN (Screenshot 3) ── */
+.barman-service-card {
+    background: #ffffff;
+    border: 2.5px solid #d4a34b;
+    border-radius: 20px;
+    padding: 1.5rem 1.8rem;
+    box-shadow: 0 8px 24px rgba(212, 163, 75, 0.12);
+    transition: all 0.25s ease;
+    cursor: pointer;
+    position: relative;
+}
+
+.barman-service-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 32px rgba(212, 163, 75, 0.2);
+}
+
+.barman-service-card.selected {
+    background: #fffdf9;
+    border-color: #b87e28;
+    box-shadow: 0 0 0 3px rgba(184, 126, 40, 0.25), 0 14px 32px rgba(212, 163, 75, 0.25) !important;
+}
+
+.barman-col-sep {
+    border-right: 1.5px solid #f0dcb2;
+}
+
+/* ── NUESTRA CARTA (Screenshot 4) ── */
+.carta-section-card {
+    background: #ffffff;
+    border: 1px solid var(--border-soft);
+    border-radius: 20px;
+    padding: 2.2rem 1.8rem;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.04);
+    position: relative;
+}
+
+.spirit-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin-bottom: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.spirit-ron {
+    color: #c97d26;
+}
+
+.spirit-pisco {
+    color: #d18a28;
+}
+
+.spirit-vodka {
+    color: #caa23b;
+}
+
+.spirit-gin {
+    color: #a88134;
+}
+
+.spirit-tequila {
+    color: #bc792a;
+}
+
+.cocktail-chip {
+    background: #fdfefe;
+    border: 1.5px solid #e2e8e3;
+    border-radius: 10px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: #3b4d42;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+}
+
+.cocktail-chip:hover {
+    border-color: #c59b27;
+    background: #fffcf5;
+    color: #1b382b;
+}
+
+.cocktail-chip.active {
+    background: #1b382b;
+    color: #ffffff;
+    border-color: #1b382b;
+    box-shadow: 0 4px 10px rgba(27, 56, 43, 0.2);
+}
+
+.cocktail-chip .chip-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #d4a34b;
+}
+
+.cocktail-chip.active .chip-dot {
+    background: #ffffff;
+}
+
+/* ── IMPORTANTE & 50% ADVANCE BANNER ── */
+.info-card-box {
+    background: #ffffff;
+    border: 1.5px solid #e1e8e2;
+    border-radius: 16px;
+    padding: 1.5rem;
+}
+
+.advance-banner {
+    background: #fffdf7;
+    border: 2px solid #d4a34b;
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    box-shadow: 0 4px 16px rgba(212, 163, 75, 0.1);
+}
+
+/* ── STICKY ORDER PANEL ── */
+.sticky-order-box {
+    position: sticky;
+    top: 24px;
+    z-index: 100;
+}
+
+.order-summary-card {
+    background: #ffffff;
+    border: 1px solid var(--border-soft);
+    border-radius: 20px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+.order-card-header {
+    background: linear-gradient(135deg, #121f17 0%, #1b382b 100%);
+    color: #ffffff;
+    padding: 1.25rem 1.4rem;
+}
+
+.btn-request-quote {
+    background: linear-gradient(135deg, #d4a34b 0%, #b87e28 100%);
+    color: #ffffff;
+    border: none;
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 0.95rem 1.5rem;
+    border-radius: 12px;
+    width: 100%;
+    box-shadow: 0 8px 20px rgba(184, 126, 40, 0.3);
+    transition: all 0.25s ease;
+}
+
+.btn-request-quote:hover {
+    background: linear-gradient(135deg, #b87e28 0%, #9e691d 100%);
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(184, 126, 40, 0.4);
+}
+
+/* Mobile bottom floating bar */
+.mobile-bottom-bar {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border-top: 1.5px solid #d4a34b;
+    padding: 0.8rem 1.2rem;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
+    z-index: 1050;
+}
+
+@media (max-width: 991px) {
+    .mobile-bottom-bar {
+        display: block;
+    }
+
+    .sticky-order-box {
+        position: static;
+        margin-top: 2.5rem;
+    }
+
+    body {
+        padding-bottom: 80px;
+    }
+}

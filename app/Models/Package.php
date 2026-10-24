@@ -14,13 +14,22 @@ class Package extends Model
 
     protected $fillable = [
         'name',
+        'order_num',
+        'badge_glasses',
+        'tagline',
         'description',
         'image',
+        'color',
+        'light_bg',
         'active',
         'min_guests',
         'max_guests',
+        'ideal_capacity',
+        'default_guests',
         'price_mode',
         'base_price',
+        'features',
+        'is_barman',
     ];
 
     /**
@@ -28,9 +37,12 @@ class Package extends Model
      */
     protected $casts = [
         'active' => 'boolean',
+        'is_barman' => 'boolean',
         'min_guests' => 'integer',
         'max_guests' => 'integer',
+        'default_guests' => 'integer',
         'base_price' => 'decimal:2',
+        'features' => 'array',
     ];
 
     public function items(): HasMany

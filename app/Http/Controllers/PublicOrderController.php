@@ -111,11 +111,9 @@ class PublicOrderController extends Controller
 
         try {
             DB::beginTransaction();
-
             // 4. Server-side Calculation (ignoring any amounts sent in request)
             $calc = $this->calculator->calculate($packageId, $guests, $extras);
             $package = Package::findOrFail($packageId);
-
             // 5. Client Deduplication by normalized phone (Doc Type 0: Sin Documento)
             $docType0 = IdentityDocumentType::where('codigo', '0')->value('id');
             if (! $docType0) {
@@ -185,7 +183,6 @@ class PublicOrderController extends Controller
             }
 
             DB::commit();
-
             // 8. Safe Logging (NO PII)
             Log::info('Nuevo pedido preliminar web registrado', [
                 'contract_id' => $contract->id,

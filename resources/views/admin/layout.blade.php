@@ -186,6 +186,7 @@
                     'admin.categories',
                     'admin.warehouses',
                     'admin.transfer_orders',
+                    'admin.packages',
                 ]);
                 $canReportes = $authUser?->canany([
                     'report.sales.index',
@@ -340,10 +341,6 @@
                                         <a class="nav-link {{ request()->is('cocktail-menu*') ? 'active' : '' }}"
                                             href="{{ route('admin.cocktail_menu.index') }}">Carta de Cócteles</a>
                                     @endcan
-                                    @can('admin.packages')
-                                        <a class="nav-link {{ request()->is('packages*') ? 'active' : '' }}"
-                                            href="{{ route('admin.packages.index') }}">Paquetes de Eventos</a>
-                                    @endcan
                                     @can('admin.pos')
                                         <a class="nav-link {{ request()->is('pos') || request()->is('pos/*') ? 'active' : '' }}"
                                             href="{{ route('admin.pos') }}">Punto de venta</a>
@@ -404,7 +401,11 @@
                             request()->is('kardex') ||
                             request()->is('kardex/*') ||
                             request()->is('transferorders') ||
-                            request()->is('transferorders/*')
+                            request()->is('transferorders/*') ||
+                            request()->is('packages') ||
+                            request()->is('packages/*') ||
+                            request()->is('web-catalog') ||
+                            request()->is('web-catalog/*')
                                 ? ''
                                 : 'collapsed' }}"
                                 href="javascript:void(0);" data-bs-toggle="collapse"
@@ -421,7 +422,11 @@
                             request()->is('kardex') ||
                             request()->is('kardex/*') ||
                             request()->is('transferorders') ||
-                            request()->is('transferorders/*')
+                            request()->is('transferorders/*') ||
+                            request()->is('packages') ||
+                            request()->is('packages/*') ||
+                            request()->is('web-catalog') ||
+                            request()->is('web-catalog/*')
                                 ? 'show'
                                 : '' }}"
                                 id="collapseComponents" data-bs-parent="#accordionSidenav">
@@ -446,6 +451,12 @@
                                         <a class="nav-link {{ request()->is('kardex') || request()->is('kardex/*') ? 'active' : '' }}"
                                             href="{{ route('admin.kardex') }}">Kardex</a>
                                     @endcan
+                                    @canany(['admin.packages', 'admin.products'])
+                                        <a class="nav-link {{ request()->is('packages') || request()->is('packages/*') || request()->is('web-catalog') || request()->is('web-catalog/*') ? 'active' : '' }}"
+                                            href="{{ route('admin.packages.index') }}">
+                                            <i class="ri-global-line me-1 text-primary"></i> Cat&aacute;logo Web
+                                        </a>
+                                    @endcanany
                                 </nav>
                             </div>
                         @endif

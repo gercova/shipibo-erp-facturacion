@@ -35,7 +35,6 @@ class PackageController extends Controller
             'escalonados' => Package::where('price_mode', 'tiered')->count(),
             'por_persona' => Package::where('price_mode', 'per_guest')->count(),
         ];
-
         // Available products: Services (opcion=2) and rentable physical items
         $products = Product::where('opcion', 2)
             ->orWhere('rentable', true)
@@ -63,30 +62,62 @@ class PackageController extends Controller
     public function get(): JsonResponse
     {
         $packages = Package::with(['priceTiers', 'items'])
-            ->orderByDesc('id');
-
+            ->orderBy('id', 'asc');
         $signo = $this->signo_pais();
 
         return datatables()
             ->of($packages)
+            ->addColumn('order_num', function (Package $package) {
+                $num = $package->order_num ?: sprintf('%02d', $package->id);
+                $color = $package->color ?: '#275c34';
+                $glasses = $package->badge_glasses ?: 'Vasos';
+
+                return '<div class="text-center">
+                            <span class="badge px-2 py-1 fs-12 fw-bold" style="background-color: '.$color.'; color: #ffffff;">'.$num.'</span>
+                            <div class="small fw-semibold mt-1" style="font-size: 0.72rem; color: #555;">'.e($glasses).'</div>
+                        </div>';
+            })
             ->addColumn('imagen_thumb', function (Package $package) {
-                return '<img src="'.$package->image_url.'" alt="'.e($package->name).'" class="rounded shadow-sm" style="width: 52px; height: 52px; object-fit: cover;">';
+                return '<div class="text-center">
+                            <img src="'.$package->image_url.'" alt="'.e($package->name).'" class="rounded-3 shadow-sm border p-1 bg-white" style="width: 48px; height: 48px; object-fit: contain;">
+                        </div>';
             })
             ->editColumn('name', function (Package $package) {
+                $color = $package->color ?: '#275c34';
+                $tagline = $package->tagline ? '<div class="text-muted small text-truncate" style="max-width: 250px;" title="'.e($package->tagline).'">'.e($package->tagline).'</div>' : '';
                 $modeBadges = [
-                    'tiered' => '<span class="badge bg-info-subtle text-info border border-info-subtle"><i class="ri-stack-line me-1"></i>Escalonado (Tiers)</span>',
-                    'fixed' => '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"><i class="ri-lock-line me-1"></i>Precio Fijo</span>',
-                    'per_guest' => '<span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="ri-user-line me-1"></i>Por Persona</span>',
+                    'tiered' => '<span class="badge bg-info-subtle text-info border border-info-subtle" style="font-size: 0.7rem;"><i class="ri-stack-line me-1"></i>Escalonado</span>',
+                    'fixed' => '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style="font-size: 0.7rem;"><i class="ri-lock-line me-1"></i>Fijo</span>',
+                    'per_guest' => '<span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.7rem;"><i class="ri-user-line me-1"></i>Por Persona</span>',
                 ];
                 $badge = $modeBadges[$package->price_mode] ?? '';
+                $barmanBadge = $package->is_barman ? '<span class="badge bg-warning text-dark border border-warning-subtle ms-1" style="font-size: 0.7rem;">Servicio Barman</span>' : '';
 
                 return '<div>
-                            <div class="fw-bold text-dark fs-14">'.e($package->name).'</div>
+                            <div class="fw-bold fs-14" style="color: '.$color.';">'.e($package->name).$barmanBadge.'</div>
+                            '.$tagline.'
                             <div class="mt-1">'.$badge.'</div>
                         </div>';
             })
-            ->addColumn('guest_range', function (Package $package) {
-                return '<span class="badge bg-light text-dark border"><i class="ri-group-line me-1 text-primary"></i>'.e($package->guest_range_label).'</span>';
+            ->addColumn('capacity', function (Package $package) {
+                $ideal = $package->ideal_capacity ? '<div class="text-success small fw-semibold"><i class="ri-check-line"></i> '.e($package->ideal_capacity).'</div>' : '';
+                $default = $package->default_guests ? '<small class="text-muted d-block">Sugerido: <strong>'.$package->default_guests.'</strong> inv.</small>' : '';
+
+                return '<div>
+                            <span class="badge bg-light text-dark border"><i class="ri-group-line me-1 text-primary"></i>'.e($package->guest_range_label).'</span>
+                            '.$ideal.'
+                            '.$default.'
+                        </div>';
+            })
+            ->addColumn('colors', function (Package $package) {
+                $color = $package->color ?: '#275c34';
+                $lightBg = $package->light_bg ?: '#e9edea';
+
+                return '<div class="d-flex align-items-center gap-1">
+                            <span class="d-inline-block rounded-circle border shadow-sm" style="width: 20px; height: 20px; background-color: '.$color.';" title="Primario: '.$color.'"></span>
+                            <span class="d-inline-block rounded-circle border shadow-sm" style="width: 20px; height: 20px; background-color: '.$lightBg.';" title="Fondo: '.$lightBg.'"></span>
+                            <span class="font-monospace small text-muted ms-1" style="font-size: 0.72rem;">'.$color.'</span>
+                        </div>';
             })
             ->addColumn('pricing_summary', function (Package $package) use ($signo) {
                 if ($package->price_mode === 'tiered') {
@@ -112,10 +143,22 @@ class PackageController extends Controller
 
                 return '<span class="fw-bold text-dark">'.$signo.' '.number_format((float) $package->base_price, 2).'</span>';
             })
-            ->addColumn('items_count', function (Package $package) {
-                $count = $package->items->count();
+            ->addColumn('specifications', function (Package $package) {
+                $features = $package->features ?: [];
+                if (empty($features)) {
+                    return '<span class="text-muted small fst-italic">Sin especificar</span>';
+                }
+                $firstTwo = array_slice($features, 0, 2);
+                $html = '<div class="d-flex flex-column gap-1" style="font-size: 0.74rem;">';
+                foreach ($firstTwo as $feat) {
+                    $html .= '<span class="text-truncate text-dark" style="max-width: 220px;" title="'.e($feat).'"><i class="ri-check-line text-success me-1"></i>'.e($feat).'</span>';
+                }
+                if (count($features) > 2) {
+                    $html .= '<span class="text-muted small fw-semibold">+ '.(count($features) - 2).' ítems más</span>';
+                }
+                $html .= '</div>';
 
-                return '<span class="badge rounded-pill bg-light text-secondary border">'.$count.' ítems</span>';
+                return $html;
             })
             ->editColumn('active', function (Package $package) {
                 $checked = $package->active ? 'checked' : '';
@@ -126,6 +169,9 @@ class PackageController extends Controller
             })
             ->addColumn('acciones', function (Package $package) {
                 return '<div class="d-flex gap-1 justify-content-center">
+                            <a href="'.route('public.orders.index').'#section-packages" target="_blank" class="btn btn-sm btn-outline-success" title="Ver en Web /pedido">
+                                <i class="ri-external-link-line"></i>
+                            </a>
                             <button type="button" class="btn btn-sm btn-outline-info btn-test-calc" data-id="'.$package->id.'" data-name="'.e($package->name).'" title="Simular Cotización">
                                 <i class="ri-calculator-line"></i>
                             </button>
@@ -137,7 +183,7 @@ class PackageController extends Controller
                             </button>
                         </div>';
             })
-            ->rawColumns(['imagen_thumb', 'name', 'guest_range', 'pricing_summary', 'items_count', 'active', 'acciones'])
+            ->rawColumns(['order_num', 'imagen_thumb', 'name', 'capacity', 'colors', 'pricing_summary', 'specifications', 'active', 'acciones'])
             ->toJson();
     }
 
@@ -185,9 +231,16 @@ class PackageController extends Controller
         $id = (int) $request->input('id', 0);
         $rules = [
             'name' => 'required|string|max:150',
+            'order_num' => 'nullable|string|max:20',
+            'badge_glasses' => 'nullable|string|max:60',
+            'tagline' => 'nullable|string|max:255',
+            'color' => 'nullable|string|max:30',
+            'light_bg' => 'nullable|string|max:30',
             'price_mode' => 'required|in:fixed,per_guest,tiered',
             'min_guests' => 'required|integer|min:1',
             'max_guests' => 'nullable|integer|gte:min_guests',
+            'ideal_capacity' => 'nullable|string|max:100',
+            'default_guests' => 'nullable|integer|min:1',
             'base_price' => 'nullable|numeric|min:0',
             'description' => 'nullable|string|max:1000',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
@@ -222,12 +275,36 @@ class PackageController extends Controller
             }
 
             $package->name = mb_strtoupper(trim((string) $request->input('name')));
+            $package->order_num = $request->filled('order_num') ? trim((string) $request->input('order_num')) : null;
+            $package->badge_glasses = $request->filled('badge_glasses') ? trim((string) $request->input('badge_glasses')) : null;
+            $package->tagline = $request->filled('tagline') ? trim((string) $request->input('tagline')) : null;
+            $package->color = $request->filled('color') ? trim((string) $request->input('color')) : '#275c34';
+            $package->light_bg = $request->filled('light_bg') ? trim((string) $request->input('light_bg')) : '#e9edea';
             $package->price_mode = (string) $request->input('price_mode');
             $package->min_guests = (int) $request->input('min_guests');
             $package->max_guests = $request->filled('max_guests') ? (int) $request->input('max_guests') : null;
+            $package->ideal_capacity = $request->filled('ideal_capacity') ? trim((string) $request->input('ideal_capacity')) : null;
+            $package->default_guests = $request->filled('default_guests') ? (int) $request->input('default_guests') : null;
             $package->base_price = $request->filled('base_price') ? round((float) $request->input('base_price'), 2) : 0.00;
             $package->description = trim((string) $request->input('description'));
             $package->active = $request->boolean('active', true);
+            $package->is_barman = $request->boolean('is_barman', false);
+
+            // Handle features (can be array or json or newline separated)
+            if ($request->has('features')) {
+                $rawFeatures = $request->input('features');
+                if (is_string($rawFeatures)) {
+                    $decoded = json_decode($rawFeatures, true);
+                    $package->features = is_array($decoded) ? $decoded : array_values(array_filter(array_map('trim', explode("\n", $rawFeatures))));
+                } elseif (is_array($rawFeatures)) {
+                    $package->features = array_values(array_filter(array_map('trim', $rawFeatures)));
+                }
+            }
+
+            // Handle preset image selection if no new file is uploaded
+            if ($request->filled('image_preset') && ! $request->hasFile('image')) {
+                $package->image = trim((string) $request->input('image_preset'));
+            }
 
             // Handle image upload
             if ($request->hasFile('image')) {
@@ -236,7 +313,7 @@ class PackageController extends Controller
                     File::makeDirectory($dir, 0755, true, true);
                 }
 
-                if (! empty($package->image)) {
+                if (! empty($package->image) && ! str_starts_with($package->image, 'img/')) {
                     $old = $dir.'/'.$package->image;
                     if (File::exists($old)) {
                         File::delete($old);

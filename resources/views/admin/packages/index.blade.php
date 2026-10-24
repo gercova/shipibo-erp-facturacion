@@ -7,14 +7,18 @@
         <div>
             <div class="d-flex align-items-center gap-2">
                 <span class="badge bg-primary-subtle text-primary fs-12 px-2 py-1 rounded-pill">
-                    <i class="ri-gift-line me-1"></i> Catálogo Dinámico &bull; Eventos & Catering
+                    <i class="ri-global-line me-1"></i> Inventario &bull; Catálogo Web (/pedido)
                 </span>
             </div>
-            <h3 class="fw-bold text-dark mb-0 mt-1">Paquetes y Eventos</h3>
-            <p class="text-muted small mb-0">Gestión de paquetes de barra móvil, cristalería, cócteles y tramos de precios dinámicos por cantidad de invitados.</p>
+            <h3 class="fw-bold text-dark mb-0 mt-1">Catálogo Web (/pedido)</h3>
+            <p class="text-muted small mb-0">Gestión de paquetes de barra móvil, cristalería, especificaciones, capacidad y colores para la experiencia interactiva del cliente.</p>
         </div>
 
         <div class="d-flex flex-wrap align-items-center gap-2">
+            <a href="{{ route('public.orders.index') }}" target="_blank" class="btn btn-outline-success fw-semibold px-3 py-2 shadow-sm" title="Abrir la vista pública de pedidos">
+                <i class="ri-external-link-line me-1"></i> Ver Catálogo Público (/pedido)
+            </a>
+
             <button type="button" class="btn btn-outline-info fw-semibold px-3 py-2 shadow-sm" id="btnOpenGlobalCalcModal">
                 <i class="ri-calculator-line me-1"></i> Simulador de Precios
             </button>
@@ -51,7 +55,7 @@
                             <i class="ri-checkbox-circle-line fs-20"></i>
                         </div>
                         <div>
-                            <span class="text-muted small text-uppercase fw-semibold">Activos</span>
+                            <span class="text-muted small text-uppercase fw-semibold">Activos en Web</span>
                             <h4 class="fw-bold mb-0 text-success" id="kpi_activos">{{ $kpis['activos'] }}</h4>
                         </div>
                     </div>
@@ -94,12 +98,12 @@
 
     {{-- Main DataTable Card --}}
     <div class="card border-0 shadow-sm rounded-3">
-        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+        <div class="card-header bg-white border-bottom py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
             <h5 class="card-title fw-bold mb-0 text-dark">
-                <i class="ri-list-check me-2 text-primary"></i> Catálogo de Paquetes Configurados
+                <i class="ri-list-check me-2 text-primary"></i> Ítems del Catálogo Web (/pedido)
             </h5>
             <div class="small text-muted">
-                Precios calculados 100% en el servidor garantizando consistencia tributaria e inventario.
+                Los cambios se reflejan dinámicamente en la vista de pedidos de los clientes.
             </div>
         </div>
 
@@ -108,13 +112,15 @@
                 <table id="tablePackages" class="table table-hover align-middle w-100">
                     <thead class="table-light">
                         <tr>
-                            <th style="width: 60px;">Foto</th>
-                            <th style="min-width: 220px;">Nombre & Modalidad</th>
-                            <th style="width: 170px;">Capacidad Invitados</th>
-                            <th style="width: 190px;">Esquema de Precios</th>
-                            <th style="width: 110px;" class="text-center">Ítems</th>
-                            <th style="width: 80px;" class="text-center">Activo</th>
-                            <th style="width: 110px;" class="text-center">Acciones</th>
+                            <th style="width: 70px;" class="text-center"># Web</th>
+                            <th style="width: 60px;" class="text-center">Foto</th>
+                            <th style="min-width: 200px;">Nombre & Modalidad</th>
+                            <th style="width: 170px;">Capacidad (Personas)</th>
+                            <th style="width: 140px;">Colores Flyer</th>
+                            <th style="width: 170px;">Esquema Precios</th>
+                            <th style="min-width: 200px;">Especificaciones</th>
+                            <th style="width: 70px;" class="text-center">Activo</th>
+                            <th style="width: 140px;" class="text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -136,6 +142,7 @@
     let tablePackages = null;
     let tiersList = [];
     let itemsList = [];
+    let featuresList = [];
 
     $(document).ready(function() {
         // Init DataTable
@@ -144,19 +151,33 @@
             serverSide: true,
             ajax: "{{ route('admin.packages.get') }}",
             columns: [
-                { data: 'imagen_thumb', name: 'imagen_thumb', orderable: false, searchable: false },
+                { data: 'order_num', name: 'order_num', className: 'text-center' },
+                { data: 'imagen_thumb', name: 'imagen_thumb', orderable: false, searchable: false, className: 'text-center' },
                 { data: 'name', name: 'name' },
-                { data: 'guest_range', name: 'guest_range', orderable: false },
+                { data: 'capacity', name: 'capacity', orderable: false },
+                { data: 'colors', name: 'colors', orderable: false },
                 { data: 'pricing_summary', name: 'pricing_summary', orderable: false },
-                { data: 'items_count', name: 'items_count', orderable: false, className: 'text-center' },
+                { data: 'specifications', name: 'specifications', orderable: false },
                 { data: 'active', name: 'active', orderable: false, className: 'text-center' },
                 { data: 'acciones', name: 'acciones', orderable: false, searchable: false, className: 'text-center' }
             ],
             language: {
-                url: "{{ asset('assets/libs/datatables/spanish.json') }}",
-                emptyTable: "No se encontraron paquetes registrados en el sistema."
+                processing: "Procesando paquetes...",
+                search: "Buscar en catálogo:",
+                lengthMenu: "Mostrar _MENU_ registros",
+                info: "Mostrando _START_ a _END_ de _TOTAL_ paquetes",
+                infoEmpty: "Mostrando 0 a 0 de 0 paquetes",
+                infoFiltered: "(filtrado de _MAX_ paquetes)",
+                zeroRecords: "No se encontraron paquetes registrados.",
+                emptyTable: "No se encontraron paquetes registrados en el catálogo web.",
+                paginate: {
+                    first: "Primero",
+                    previous: "Anterior",
+                    next: "Siguiente",
+                    last: "Último"
+                }
             },
-            order: [[1, 'asc']]
+            order: [[0, 'asc']]
         });
 
         // Price mode change toggle
@@ -176,10 +197,91 @@
             }
         });
 
+        // Color Picker sync
+        $('#color_picker').on('input change', function() {
+            $('#color').val($(this).val());
+            updateLivePreview();
+        });
+        $('#color').on('input change', function() {
+            $('#color_picker').val($(this).val());
+            updateLivePreview();
+        });
+
+        $('#light_bg_picker').on('input change', function() {
+            $('#light_bg').val($(this).val());
+            updateLivePreview();
+        });
+        $('#light_bg').on('input change', function() {
+            $('#light_bg_picker').val($(this).val());
+            updateLivePreview();
+        });
+
+        // Palette Preset Buttons click
+        $('.palette-preset-btn').on('click', function() {
+            const color = $(this).data('color');
+            const bg = $(this).data('bg');
+            $('#color').val(color);
+            $('#color_picker').val(color);
+            $('#light_bg').val(bg);
+            $('#light_bg_picker').val(bg);
+            updateLivePreview();
+        });
+
+        // Cutout preset selection
+        $(document).on('click', '.preset-cutout-item', function() {
+            $('.preset-cutout-item').removeClass('border-primary bg-primary-subtle');
+            $(this).addClass('border-primary bg-primary-subtle');
+            const presetPath = $(this).data('preset');
+            $('#image_preset').val(presetPath);
+            $('#image_current_preview').attr('src', "{{ asset('') }}" + presetPath);
+        });
+
+        // Custom image upload preview
+        $('#image').on('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    $('#image_current_preview').attr('src', evt.target.result);
+                    $('.preset-cutout-item').removeClass('border-primary bg-primary-subtle');
+                    $('#image_preset').val('');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Live preview inputs binding
+        $('#name, #order_num, #badge_glasses, #tagline, #ideal_capacity').on('input keyup change', function() {
+            updateLivePreview();
+        });
+
+        // Features Tag Management
+        $('#btnAddFeature').on('click', function() {
+            addFeatureFromInput();
+        });
+        $('#new_feature_input').on('keypress', function(e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                addFeatureFromInput();
+            }
+        });
+        $('.quick-feature-preset').on('click', function() {
+            const text = $(this).data('text');
+            if (text && !featuresList.includes(text)) {
+                featuresList.push(text);
+                renderFeaturesBadges();
+            }
+        });
+        $(document).on('click', '.btn-remove-feature', function() {
+            const idx = $(this).data('idx');
+            featuresList.splice(idx, 1);
+            renderFeaturesBadges();
+        });
+
         // Open New Package Modal
         $('#btnOpenNewPackageModal').on('click', function() {
             resetPackageForm();
-            $('#modalPackageTitle').text('Nuevo Paquete de Evento');
+            $('#modalPackageTitle').text('Nuevo Paquete en Catálogo Web');
             $('#modalPackage').modal('show');
         });
 
@@ -199,7 +301,7 @@
             renderTiersTable();
         });
 
-        // Add Item Row
+        // Add Item Row (Services/Cocktails)
         $('#btnAddItemRow').on('click', function() {
             const type = $('#item_picker_type').val();
             let productId = null;
@@ -214,16 +316,16 @@
                     Swal.fire('Atención', 'Seleccione un cóctel de la carta.', 'warning');
                     return;
                 }
-                name = opt.text();
+                name = '[Cóctel] ' + opt.text().trim();
                 unitPrice = parseFloat(opt.data('precio')) || 0.00;
             } else {
                 const opt = $('#picker_product_id option:selected');
                 productId = $('#picker_product_id').val();
                 if (!productId) {
-                    Swal.fire('Atención', 'Seleccione un servicio o equipo del catálogo.', 'warning');
+                    Swal.fire('Atención', 'Seleccione un servicio o equipo del inventario.', 'warning');
                     return;
                 }
-                name = opt.text();
+                name = '[Equipo] ' + opt.text().trim();
                 unitPrice = parseFloat(opt.data('precio')) || 0.00;
             }
 
@@ -246,9 +348,10 @@
             const form = document.getElementById('formPackage');
             const formData = new FormData(form);
 
-            // Add serialized JSON for tiers and items
+            // Add serialized JSON for tiers, items and features
             formData.append('tiers', JSON.stringify(tiersList));
             formData.append('items', JSON.stringify(itemsList));
+            formData.append('features', JSON.stringify(featuresList));
 
             const btn = $(this);
             btn.prop('disabled', true).html('<i class="ri-loader-4-line ri-spin me-1"></i> Guardando...');
@@ -283,13 +386,35 @@
             loadPackageDetails(id, function(pkg) {
                 $('#package_id').val(pkg.id);
                 $('#name').val(pkg.name);
+                $('#order_num').val(pkg.order_num || '');
+                $('#badge_glasses').val(pkg.badge_glasses || '');
+                $('#tagline').val(pkg.tagline || '');
+                $('#color').val(pkg.color || '#275c34');
+                $('#color_picker').val(pkg.color || '#275c34');
+                $('#light_bg').val(pkg.light_bg || '#e9edea');
+                $('#light_bg_picker').val(pkg.light_bg || '#e9edea');
+                $('#ideal_capacity').val(pkg.ideal_capacity || '');
+                $('#default_guests').val(pkg.default_guests || '');
                 $('#price_mode').val(pkg.price_mode).trigger('change');
                 $('#min_guests').val(pkg.min_guests);
                 $('#max_guests').val(pkg.max_guests || '');
                 $('#base_price').val(pkg.base_price || 0.00);
                 $('#description').val(pkg.description || '');
-                $('#active').prop('checked', pkg.active);
+                $('#active').prop('checked', Boolean(pkg.active));
+                $('#is_barman').prop('checked', Boolean(pkg.is_barman));
+                $('#image_preset').val('');
+                $('#image').val('');
 
+                // Image preview
+                if (pkg.image_url) {
+                    $('#image_current_preview').attr('src', pkg.image_url);
+                }
+
+                // Features
+                featuresList = Array.isArray(pkg.features) ? pkg.features : [];
+                renderFeaturesBadges();
+
+                // Tiers
                 tiersList = (pkg.price_tiers || []).map(t => ({
                     from_guests: t.from_guests,
                     to_guests: t.to_guests,
@@ -298,10 +423,11 @@
                 }));
                 renderTiersTable();
 
+                // Items
                 itemsList = (pkg.items || []).map(i => ({
                     product_id: i.product_id,
                     cocktail_id: i.cocktail_id,
-                    name: i.cocktail ? ('[Cóctel] ' + i.cocktail.nombre) : (i.product ? ('[Servicio] ' + i.product.descripcion) : (i.notes || 'Ítem')),
+                    name: i.cocktail ? ('[Cóctel] ' + i.cocktail.nombre) : (i.product ? ('[Equipo] ' + i.product.descripcion) : (i.notes || 'Ítem')),
                     quantity: i.quantity,
                     is_per_guest: Boolean(i.is_per_guest),
                     is_mandatory: Boolean(i.is_mandatory),
@@ -309,6 +435,8 @@
                     notes: i.notes || ''
                 }));
                 renderItemsTable();
+
+                updateLivePreview();
 
                 $('#modalPackageTitle').text('Editar Paquete #' + pkg.id + ': ' + pkg.name);
                 $('#modalPackage').modal('show');
@@ -346,8 +474,8 @@
             const name = $(this).data('name');
 
             Swal.fire({
-                title: '¿Eliminar paquete?',
-                text: 'Esta acción eliminará permanentemente "' + name + '" y sus tramos de precio asociados.',
+                title: '¿Eliminar paquete del catálogo?',
+                text: 'Esta acción eliminará permanentemente "' + name + '" y sus tramos de precios.',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
@@ -390,18 +518,101 @@
         });
     });
 
+    function addFeatureFromInput() {
+        const val = $('#new_feature_input').val().trim();
+        if (val) {
+            if (!featuresList.includes(val)) {
+                featuresList.push(val);
+                renderFeaturesBadges();
+            }
+            $('#new_feature_input').val('').focus();
+        }
+    }
+
+    function renderFeaturesBadges() {
+        const container = $('#featuresBadgesList');
+        container.empty();
+
+        if (featuresList.length === 0) {
+            $('#featuresEmptyMessage').show();
+            $('#features_json').val('[]');
+            return;
+        }
+
+        $('#featuresEmptyMessage').hide();
+        $('#features_json').val(JSON.stringify(featuresList));
+
+        featuresList.forEach((feat, idx) => {
+            const badge = `
+                <div class="d-flex align-items-center justify-content-between bg-white border p-2 rounded-2 shadow-sm">
+                    <span class="small fw-semibold text-dark text-truncate me-2" title="${feat}">
+                        <i class="ri-check-line text-success me-1"></i> ${feat}
+                    </span>
+                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 btn-remove-feature" data-idx="${idx}" title="Quitar">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+            `;
+            container.append(badge);
+        });
+    }
+
+    function updateLivePreview() {
+        const orderNum = $('#order_num').val() || '01';
+        const title = $('#name').val() || 'NOMBRE PAQUETE';
+        const badgeGlasses = $('#badge_glasses').val() || '120 Vasos';
+        const tagline = $('#tagline').val() || 'Vasos en acrílico, cristalería, barra móvil...';
+        const ideal = $('#ideal_capacity').val() || '100 a 180 personas';
+        const color = $('#color').val() || '#275c34';
+        const lightBg = $('#light_bg').val() || '#e9edea';
+
+        $('#previewOrderNum').text(orderNum).css('background-color', color);
+        $('#previewTitle').text(title).css('color', color);
+        $('#previewBadgeGlasses').text(badgeGlasses).css('background-color', color);
+        $('#previewTagline').text(tagline);
+        $('#previewIdeal').text(ideal);
+        $('#previewIconGroup').css('color', color);
+        $('#previewCostBadge').css('background-color', color);
+        $('#previewFooterBox').css('background-color', lightBg);
+        $('#livePreviewCard').css('border-top', '5px solid ' + color);
+    }
+
     function resetPackageForm() {
         document.getElementById('formPackage').reset();
         $('#package_id').val('');
+        $('#image_preset').val('');
+        $('#order_num').val('01');
+        $('#badge_glasses').val('120 Vasos');
+        $('#color').val('#275c34');
+        $('#color_picker').val('#275c34');
+        $('#light_bg').val('#e9edea');
+        $('#light_bg_picker').val('#e9edea');
         $('#price_mode').val('tiered').trigger('change');
         $('#min_guests').val(100);
         $('#max_guests').val(180);
+        $('#default_guests').val(100);
+        $('#ideal_capacity').val('100 a 180 personas');
         $('#base_price').val(0.00);
         $('#active').prop('checked', true);
+        $('#is_barman').prop('checked', false);
+        $('#image_current_preview').attr('src', "{{ asset('img/packages/pkg-01.png') }}");
+        $('.preset-cutout-item').removeClass('border-primary bg-primary-subtle');
+
+        featuresList = [
+            '1 Bartender + 1 asistente',
+            'Barra móvil',
+            'Cristalería',
+            'Hielo Gourmet',
+            'Insumos',
+            'Utensilios de bar'
+        ];
+        renderFeaturesBadges();
+
         tiersList = [];
         itemsList = [];
         renderTiersTable();
         renderItemsTable();
+        updateLivePreview();
     }
 
     function renderTiersTable() {
@@ -473,31 +684,19 @@
         tbody.empty();
 
         if (itemsList.length === 0) {
-            tbody.append('<tr><td colspan="7" class="text-center text-muted py-3">No hay ítems agregados al paquete.</td></tr>');
+            tbody.append('<tr><td colspan="3" class="text-center text-muted py-2 small">No hay componentes vinculados.</td></tr>');
             return;
         }
 
         itemsList.forEach((item, idx) => {
             const row = `
                 <tr>
-                    <td class="fw-semibold text-dark">${item.name}</td>
-                    <td style="width: 100px;">
+                    <td class="small fw-semibold text-dark text-truncate" style="max-width: 180px;" title="${item.name}">${item.name}</td>
+                    <td style="width: 80px;">
                         <input type="number" step="0.5" class="form-control form-control-sm item-qty" data-idx="${idx}" value="${item.quantity}" min="0.1">
                     </td>
-                    <td class="text-center" style="width: 90px;">
-                        <input type="checkbox" class="form-check-input item-per-guest" data-idx="${idx}" ${item.is_per_guest ? 'checked' : ''}>
-                    </td>
-                    <td class="text-center" style="width: 90px;">
-                        <input type="checkbox" class="form-check-input item-mandatory" data-idx="${idx}" ${item.is_mandatory ? 'checked' : ''}>
-                    </td>
-                    <td style="width: 130px;">
-                        <input type="number" step="0.5" class="form-control form-control-sm item-price" data-idx="${idx}" value="${item.unit_price !== null ? item.unit_price : ''}" placeholder="Opcional">
-                    </td>
-                    <td>
-                        <input type="text" class="form-control form-control-sm item-notes" data-idx="${idx}" value="${item.notes || ''}" placeholder="Notas...">
-                    </td>
                     <td class="text-center" style="width: 50px;">
-                        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-item" data-idx="${idx}">
+                        <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 btn-remove-item" data-idx="${idx}">
                             <i class="ri-delete-bin-line"></i>
                         </button>
                     </td>
@@ -509,23 +708,6 @@
         $('.item-qty').on('change', function() {
             const idx = $(this).data('idx');
             itemsList[idx].quantity = parseFloat($(this).val()) || 1;
-        });
-        $('.item-per-guest').on('change', function() {
-            const idx = $(this).data('idx');
-            itemsList[idx].is_per_guest = $(this).is(':checked');
-        });
-        $('.item-mandatory').on('change', function() {
-            const idx = $(this).data('idx');
-            itemsList[idx].is_mandatory = $(this).is(':checked');
-        });
-        $('.item-price').on('change', function() {
-            const idx = $(this).data('idx');
-            const val = $(this).val();
-            itemsList[idx].unit_price = val !== '' ? parseFloat(val) : null;
-        });
-        $('.item-notes').on('change', function() {
-            const idx = $(this).data('idx');
-            itemsList[idx].notes = $(this).val();
         });
         $('.btn-remove-item').on('click', function() {
             const idx = $(this).data('idx');

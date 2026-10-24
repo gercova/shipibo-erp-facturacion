@@ -316,6 +316,7 @@ Route::controller(PackageController::class)->prefix('packages')->middleware(['au
     Route::post('/toggle-status', 'toggle_status')->name('admin.packages.toggle_status');
     Route::post('/calculate', 'calculate_price')->name('admin.packages.calculate');
 });
+Route::get('/web-catalog', [PackageController::class, 'index'])->name('admin.web_catalog.index')->middleware(['auth', 'can:admin.packages']);
 
 Route::controller(PosController::class)->prefix('pos')->middleware(['auth', 'can:admin.pos'])->group(function () {
     Route::get('/', 'index')->name('admin.pos');
