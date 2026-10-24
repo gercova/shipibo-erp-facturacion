@@ -51,6 +51,10 @@ class Package extends Model
     public function getImageUrlAttribute(): string
     {
         if (! empty($this->image)) {
+            if (file_exists(public_path($this->image))) {
+                return asset($this->image);
+            }
+
             $path = public_path('files/packages/'.$this->image);
             if (file_exists($path)) {
                 return asset('files/packages/'.$this->image);

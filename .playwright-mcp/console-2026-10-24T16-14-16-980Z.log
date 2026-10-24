@@ -1,0 +1,2 @@
+[      95ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:8000/files/contracts/signatures/sig_client_1789969806_6ab0c58ebb375.png:0
+[     278ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://127.0.0.1:8000/_boost/browser-logs @ http://127.0.0.1:8000/contracts/1/edit:143

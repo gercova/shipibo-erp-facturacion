@@ -1,0 +1,585 @@
+- generic [active] [ref=f2e1]:
+  - banner [ref=f2e2]:
+    - generic [ref=f2e3]:
+      - generic [ref=f2e4]: SHIPIBO COCTELERÍA • TARAPOTO, SAN MARTÍN
+      - heading "Cotiza tu Barra Móvil" [level=1] [ref=f2e6]
+      - paragraph [ref=f2e7]: Selecciona el paquete ideal para tu evento, elige tus cócteles favoritos y recibe una cotización con cálculo exacto en tiempo real.
+  - navigation [ref=f2e10]:
+    - link " Paquetes Todo Costo (01 - 07)" [ref=f2e11] [cursor=pointer]:
+      - /url: "#section-packages"
+      - generic [ref=f2e12]: 
+      - text: Paquetes Todo Costo (01 - 07)
+    - link " Servicio de Barman" [ref=f2e13] [cursor=pointer]:
+      - /url: "#section-barman"
+      - generic [ref=f2e14]: 
+      - text: Servicio de Barman
+    - link " Nuestra Carta" [ref=f2e15] [cursor=pointer]:
+      - /url: "#section-carta"
+      - generic [ref=f2e16]: 
+      - text: Nuestra Carta
+    - link " Políticas y Condiciones" [ref=f2e17] [cursor=pointer]:
+      - /url: "#section-condiciones"
+      - generic [ref=f2e18]: 
+      - text: Políticas y Condiciones
+  - main [ref=f2e19]:
+    - generic [ref=f2e21]:
+      - generic [ref=f2e22]:
+        - generic [ref=f2e23]:
+          - generic [ref=f2e24]:
+            - generic [ref=f2e25]:
+              - generic [ref=f2e26]:
+                - generic [ref=f2e27]: 
+                - text: PAQUETES A TODO COSTO
+              - heading "Barras Móviles Completas" [level=3] [ref=f2e28]
+            - generic [ref=f2e29]: Haz clic en cualquier paquete para cotizar
+          - generic [ref=f2e30]:
+            - generic [ref=f2e32] [cursor=pointer]:
+              - generic [ref=f2e34]:
+                - generic [ref=f2e35]:
+                  - generic [ref=f2e36]: "01"
+                  - generic [ref=f2e37]: 100 vasos
+                - generic [ref=f2e38]:
+                  - generic [ref=f2e39]: Paquete
+                  - generic [ref=f2e40]: ESENCIAL
+              - generic [ref=f2e41]: Ideal para reuniones íntimas y celebraciones pequeñas.
+              - generic [ref=f2e42]:
+                - generic [ref=f2e43]:
+                  - generic [ref=f2e44]: "INCLUYE:"
+                  - list [ref=f2e45]:
+                    - listitem [ref=f2e46]:
+                      - generic [ref=f2e47]: 
+                      - generic [ref=f2e48]: 1 Bartender + 1 asistente
+                    - listitem [ref=f2e49]:
+                      - generic [ref=f2e50]: 
+                      - generic [ref=f2e51]: Barra móvil
+                    - listitem [ref=f2e52]:
+                      - generic [ref=f2e53]: 
+                      - generic [ref=f2e54]: Cristalería
+                    - listitem [ref=f2e55]:
+                      - generic [ref=f2e56]: Hielo
+                    - listitem [ref=f2e57]:
+                      - generic [ref=f2e58]: Insumos
+                    - listitem [ref=f2e59]:
+                      - generic [ref=f2e60]: 
+                      - generic [ref=f2e61]: Utensilios de bar
+                    - listitem [ref=f2e62]:
+                      - generic [ref=f2e63]: 
+                      - generic [ref=f2e64]: 4 opciones
+                - img "Paquete ESENCIAL" [ref=f2e66]
+              - generic [ref=f2e67]:
+                - generic [ref=f2e68]:
+                  - generic [ref=f2e69]: 
+                  - generic [ref=f2e70]:
+                    - generic [ref=f2e71]: Ideal para
+                    - generic [ref=f2e72]: 20 a 50 invitados
+                - generic [ref=f2e73]:
+                  - generic [ref=f2e74]: "Costo:"
+                  - generic [ref=f2e75]: S/ 1,200
+              - button " Elegir este Paquete" [ref=f2e76]:
+                - generic [ref=f2e77]: 
+                - generic [ref=f2e78]: Elegir este Paquete
+            - generic [ref=f2e80] [cursor=pointer]:
+              - generic [ref=f2e82]:
+                - generic [ref=f2e83]:
+                  - generic [ref=f2e84]: "02"
+                  - generic [ref=f2e85]: 200 vasos
+                - generic [ref=f2e86]:
+                  - generic [ref=f2e87]: Paquete
+                  - generic [ref=f2e88]: TROPICAL
+              - generic [ref=f2e89]: Sabores frescos que transportan a los mejores destinos.
+              - generic [ref=f2e90]:
+                - generic [ref=f2e91]:
+                  - generic [ref=f2e92]: "INCLUYE:"
+                  - list [ref=f2e93]:
+                    - listitem [ref=f2e94]:
+                      - generic [ref=f2e95]: 
+                      - generic [ref=f2e96]: 1 Bartender + 1 asistente
+                    - listitem [ref=f2e97]:
+                      - generic [ref=f2e98]: 
+                      - generic [ref=f2e99]: Barra móvil
+                    - listitem [ref=f2e100]:
+                      - generic [ref=f2e101]: 
+                      - generic [ref=f2e102]: Cristalería
+                    - listitem [ref=f2e103]:
+                      - generic [ref=f2e104]: Hielo
+                    - listitem [ref=f2e105]:
+                      - generic [ref=f2e106]: Insumos
+                    - listitem [ref=f2e107]:
+                      - generic [ref=f2e108]: 
+                      - generic [ref=f2e109]: Utensilios de bar
+                    - listitem [ref=f2e110]:
+                      - generic [ref=f2e111]: 
+                      - generic [ref=f2e112]: 5 opciones
+                - img "Paquete TROPICAL" [ref=f2e114]
+              - generic [ref=f2e115]:
+                - generic [ref=f2e116]:
+                  - generic [ref=f2e117]: 
+                  - generic [ref=f2e118]:
+                    - generic [ref=f2e119]: Ideal para
+                    - generic [ref=f2e120]: 50 a 80 invitados
+                - generic [ref=f2e121]:
+                  - generic [ref=f2e122]: "Costo:"
+                  - generic [ref=f2e123]: S/ 2,000
+              - button " Elegir este Paquete" [ref=f2e124]:
+                - generic [ref=f2e125]: 
+                - generic [ref=f2e126]: Elegir este Paquete
+            - generic [ref=f2e128] [cursor=pointer]:
+              - generic [ref=f2e130]:
+                - generic [ref=f2e131]:
+                  - generic [ref=f2e132]: "03"
+                  - generic [ref=f2e133]: 300 vasos
+                - generic [ref=f2e134]:
+                  - generic [ref=f2e135]: Paquete
+                  - generic [ref=f2e136]: PREMIUM
+              - generic [ref=f2e137]: Una experiencia sofisticada con cocteles de alta calidad.
+              - generic [ref=f2e138]:
+                - generic [ref=f2e139]:
+                  - generic [ref=f2e140]: "INCLUYE:"
+                  - list [ref=f2e141]:
+                    - listitem [ref=f2e142]:
+                      - generic [ref=f2e143]: 
+                      - generic [ref=f2e144]: 1 Bartender + 1 asistente
+                    - listitem [ref=f2e145]:
+                      - generic [ref=f2e146]: 
+                      - generic [ref=f2e147]: Barra móvil
+                    - listitem [ref=f2e148]:
+                      - generic [ref=f2e149]: 
+                      - generic [ref=f2e150]: Cristalería variada
+                    - listitem [ref=f2e151]:
+                      - generic [ref=f2e152]: Hielo Gourmet
+                    - listitem [ref=f2e153]:
+                      - generic [ref=f2e154]: Insumos
+                    - listitem [ref=f2e155]:
+                      - generic [ref=f2e156]: 
+                      - generic [ref=f2e157]: Utensilios de bar
+                    - listitem [ref=f2e158]:
+                      - generic [ref=f2e159]: 
+                      - generic [ref=f2e160]: 5 opciones
+                - img "Paquete PREMIUM" [ref=f2e162]
+              - generic [ref=f2e163]:
+                - generic [ref=f2e164]:
+                  - generic [ref=f2e165]: 
+                  - generic [ref=f2e166]:
+                    - generic [ref=f2e167]: Ideal para
+                    - generic [ref=f2e168]: 50 a 120 invitados
+                - generic [ref=f2e169]:
+                  - generic [ref=f2e170]: "Costo:"
+                  - generic [ref=f2e171]: S/ 2,900
+              - button " Elegir este Paquete" [ref=f2e172]:
+                - generic [ref=f2e173]: 
+                - generic [ref=f2e174]: Elegir este Paquete
+            - generic [ref=f2e176] [cursor=pointer]:
+              - generic [ref=f2e178]:
+                - generic [ref=f2e179]:
+                  - generic [ref=f2e180]: "04"
+                  - generic [ref=f2e181]: 400 vasos
+                - generic [ref=f2e182]:
+                  - generic [ref=f2e183]: Paquete
+                  - generic [ref=f2e184]: GOLD
+              - generic [ref=f2e185]: Cocteles selectos para eventos que merecen algo más.
+              - generic [ref=f2e186]:
+                - generic [ref=f2e187]:
+                  - generic [ref=f2e188]: "INCLUYE:"
+                  - list [ref=f2e189]:
+                    - listitem [ref=f2e190]:
+                      - generic [ref=f2e191]: 
+                      - generic [ref=f2e192]: 1 Bartender + 1 asistente
+                    - listitem [ref=f2e193]:
+                      - generic [ref=f2e194]: 
+                      - generic [ref=f2e195]: Barra móvil
+                    - listitem [ref=f2e196]:
+                      - generic [ref=f2e197]: 
+                      - generic [ref=f2e198]: Cristalería variada
+                    - listitem [ref=f2e199]:
+                      - generic [ref=f2e200]: Hielo Gourmet
+                    - listitem [ref=f2e201]:
+                      - generic [ref=f2e202]: Insumos
+                    - listitem [ref=f2e203]:
+                      - generic [ref=f2e204]: 
+                      - generic [ref=f2e205]: Utensilios de bar
+                    - listitem [ref=f2e206]:
+                      - generic [ref=f2e207]: 
+                      - generic [ref=f2e208]: 5 opciones
+                - img "Paquete GOLD" [ref=f2e210]
+              - generic [ref=f2e211]:
+                - generic [ref=f2e212]:
+                  - generic [ref=f2e213]: 
+                  - generic [ref=f2e214]:
+                    - generic [ref=f2e215]: Ideal para
+                    - generic [ref=f2e216]: 80 a 150 invitados
+                - generic [ref=f2e217]:
+                  - generic [ref=f2e218]: "Costo:"
+                  - generic [ref=f2e219]: S/ 3,600
+              - button " Elegir este Paquete" [ref=f2e220]:
+                - generic [ref=f2e221]: 
+                - generic [ref=f2e222]: Elegir este Paquete
+            - generic [ref=f2e224] [cursor=pointer]:
+              - generic [ref=f2e226]:
+                - generic [ref=f2e227]:
+                  - generic [ref=f2e228]: "05"
+                  - generic [ref=f2e229]: 500 vasos
+                - generic [ref=f2e230]:
+                  - generic [ref=f2e231]: Paquete
+                  - generic [ref=f2e232]: SIGNATURE
+              - generic [ref=f2e233]: Cocteles que elevan tu evento a otro nivel.
+              - generic [ref=f2e234]:
+                - generic [ref=f2e235]:
+                  - generic [ref=f2e236]: "INCLUYE:"
+                  - list [ref=f2e237]:
+                    - listitem [ref=f2e238]:
+                      - generic [ref=f2e239]: 
+                      - generic [ref=f2e240]: 1 Bartender + 1 asistente
+                    - listitem [ref=f2e241]:
+                      - generic [ref=f2e242]: 
+                      - generic [ref=f2e243]: Barra móvil
+                    - listitem [ref=f2e244]:
+                      - generic [ref=f2e245]: 
+                      - generic [ref=f2e246]: Cristalería variada
+                    - listitem [ref=f2e247]:
+                      - generic [ref=f2e248]: Hielo Gourmet
+                    - listitem [ref=f2e249]:
+                      - generic [ref=f2e250]: Insumos
+                    - listitem [ref=f2e251]:
+                      - generic [ref=f2e252]: 
+                      - generic [ref=f2e253]: Utensilios de bar
+                    - listitem [ref=f2e254]:
+                      - generic [ref=f2e255]: 
+                      - generic [ref=f2e256]: 5 - 6 opciones
+                - img "Paquete SIGNATURE" [ref=f2e258]
+              - generic [ref=f2e259]:
+                - generic [ref=f2e260]:
+                  - generic [ref=f2e261]: 
+                  - generic [ref=f2e262]:
+                    - generic [ref=f2e263]: Ideal para
+                    - generic [ref=f2e264]: 100 a 180 invitados
+                - generic [ref=f2e265]:
+                  - generic [ref=f2e266]: "Costo:"
+                  - generic [ref=f2e267]: S/ 4,200
+              - button " Elegir este Paquete" [ref=f2e268]:
+                - generic [ref=f2e269]: 
+                - generic [ref=f2e270]: Elegir este Paquete
+            - generic [ref=f2e272] [cursor=pointer]:
+              - generic [ref=f2e274]:
+                - generic [ref=f2e275]:
+                  - generic [ref=f2e276]: "06"
+                  - generic [ref=f2e277]: 600 vasos
+                - generic [ref=f2e278]:
+                  - generic [ref=f2e279]: Paquete
+                  - generic [ref=f2e280]: LUXURY
+              - generic [ref=f2e281]: La máxima experiencia en coctelería para eventos inolvidables.
+              - generic [ref=f2e282]:
+                - generic [ref=f2e283]:
+                  - generic [ref=f2e284]: "INCLUYE:"
+                  - list [ref=f2e285]:
+                    - listitem [ref=f2e286]:
+                      - generic [ref=f2e287]: 
+                      - generic [ref=f2e288]: 1 Bartender + 1 asistente
+                    - listitem [ref=f2e289]:
+                      - generic [ref=f2e290]: 
+                      - generic [ref=f2e291]: Barra móvil de lujo
+                    - listitem [ref=f2e292]:
+                      - generic [ref=f2e293]: 
+                      - generic [ref=f2e294]: Cristalería variada
+                    - listitem [ref=f2e295]:
+                      - generic [ref=f2e296]: Hielo Gourmet
+                    - listitem [ref=f2e297]:
+                      - generic [ref=f2e298]: Insumos
+                    - listitem [ref=f2e299]:
+                      - generic [ref=f2e300]: 
+                      - generic [ref=f2e301]: Utensilios de bar
+                    - listitem [ref=f2e302]:
+                      - generic [ref=f2e303]: 
+                      - generic [ref=f2e304]: 5 - 6 opciones
+                - img "Paquete LUXURY" [ref=f2e306]
+              - generic [ref=f2e307]:
+                - generic [ref=f2e308]:
+                  - generic [ref=f2e309]: 
+                  - generic [ref=f2e310]:
+                    - generic [ref=f2e311]: Ideal para
+                    - generic [ref=f2e312]: 100 a 250 invitados
+                - generic [ref=f2e313]:
+                  - generic [ref=f2e314]: "Costo:"
+                  - generic [ref=f2e315]: S/ 4,800
+              - button " Elegir este Paquete" [ref=f2e316]:
+                - generic [ref=f2e317]: 
+                - generic [ref=f2e318]: Elegir este Paquete
+            - generic [ref=f2e320] [cursor=pointer]:
+              - generic [ref=f2e322]:
+                - generic [ref=f2e323]:
+                  - generic [ref=f2e324]: "07"
+                  - generic [ref=f2e325]: 700 vasos
+                - generic [ref=f2e326]:
+                  - generic [ref=f2e327]: Paquete
+                  - generic [ref=f2e328]: EXPERIENCE
+              - generic [ref=f2e329]: Más que un open bar, una experiencia completa.
+              - generic [ref=f2e330]:
+                - generic [ref=f2e331]:
+                  - generic [ref=f2e332]: "INCLUYE:"
+                  - list [ref=f2e333]:
+                    - listitem [ref=f2e334]:
+                      - generic [ref=f2e335]: 
+                      - generic [ref=f2e336]: 1 Bartender + 1 asistente
+                    - listitem [ref=f2e337]:
+                      - generic [ref=f2e338]: 
+                      - generic [ref=f2e339]: Barra móvil de lujo
+                    - listitem [ref=f2e340]:
+                      - generic [ref=f2e341]: 
+                      - generic [ref=f2e342]: Cristalería variada
+                    - listitem [ref=f2e343]:
+                      - generic [ref=f2e344]: Hielo Gourmet
+                    - listitem [ref=f2e345]:
+                      - generic [ref=f2e346]: Insumos
+                    - listitem [ref=f2e347]:
+                      - generic [ref=f2e348]: 
+                      - generic [ref=f2e349]: Utensilios de bar
+                    - listitem [ref=f2e350]:
+                      - generic [ref=f2e351]: 
+                      - generic [ref=f2e352]: 5 - 6 opciones
+                    - listitem [ref=f2e353]:
+                      - generic [ref=f2e354]: 
+                      - generic [ref=f2e355]: Personal adicional de apoyo
+                - img "Paquete EXPERIENCE" [ref=f2e357]
+              - generic [ref=f2e358]:
+                - generic [ref=f2e359]:
+                  - generic [ref=f2e360]: 
+                  - generic [ref=f2e361]:
+                    - generic [ref=f2e362]: Ideal para
+                    - generic [ref=f2e363]: 200 invitados en adelante
+                - generic [ref=f2e364]:
+                  - generic [ref=f2e365]: "Costo:"
+                  - generic [ref=f2e366]: S/ 5,300
+              - button " Elegir este Paquete" [ref=f2e367]:
+                - generic [ref=f2e368]: 
+                - generic [ref=f2e369]: Elegir este Paquete
+        - generic [ref=f2e370]:
+          - generic [ref=f2e371]:
+            - heading "Servicio de barman" [level=3] [ref=f2e372]
+            - paragraph [ref=f2e373]: Tu pones los insumos y nosotros nos encargamos de lo demás.
+          - generic [ref=f2e375] [cursor=pointer]:
+            - generic [ref=f2e376]:
+              - generic [ref=f2e377]: 
+              - heading "SERVICIO DE BARMAN" [level=6] [ref=f2e379]: SERVICIO DEBARMAN
+            - generic [ref=f2e380]:
+              - generic [ref=f2e381]: 1 Bartender
+              - text: 1 asistente de bar
+            - generic [ref=f2e382]:
+              - generic [ref=f2e383]: "Incluye:"
+              - generic [ref=f2e384]: Barra móvil
+              - generic [ref=f2e385]: Herramientas de bar
+              - generic [ref=f2e386]: _No cristalería _No insumos
+            - generic [ref=f2e387]:
+              - generic [ref=f2e388]: 5 horas
+              - text: de servicio
+            - generic [ref=f2e389]:
+              - generic [ref=f2e390]: S/ 600
+              - button "Elegir" [ref=f2e391]
+          - generic [ref=f2e392]:
+            - text: "*Capacidad de atención"
+            - strong [ref=f2e393]: máximo 100 personas
+            - text: .
+        - generic [ref=f2e395]:
+          - generic [ref=f2e396]:
+            - heading "NUESTRA CARTA" [level=2] [ref=f2e397]
+            - paragraph [ref=f2e398]: ELIGE LOS COCTELES QUE MÁS TE GUSTEN
+            - generic [ref=f2e399]:
+              - generic [ref=f2e400]: 
+              - generic [ref=f2e401]:
+                - text: "Cócteles seleccionados:"
+                - strong [ref=f2e402]: "0"
+                - text: de 6 recomendados
+          - generic [ref=f2e403]:
+            - generic [ref=f2e405]:
+              - generic [ref=f2e406]:
+                - generic [ref=f2e407]: 
+                - text: RON
+              - generic [ref=f2e408]:
+                - generic [ref=f2e409] [cursor=pointer]: Cuba Libre
+                - generic [ref=f2e412] [cursor=pointer]: Piña Colada
+                - generic [ref=f2e415] [cursor=pointer]: Daiquiri de Durazno
+                - generic [ref=f2e418] [cursor=pointer]: Daiquiri de Maracuyá
+                - generic [ref=f2e421] [cursor=pointer]: Mojito Clásico
+                - generic [ref=f2e424] [cursor=pointer]: Mojito de Maracuyá
+                - generic [ref=f2e427] [cursor=pointer]: Mojito de Fresa
+                - generic [ref=f2e430] [cursor=pointer]: Hawaian blue
+                - generic [ref=f2e433] [cursor=pointer]: Huracán
+                - generic [ref=f2e436] [cursor=pointer]: Tropical green
+                - generic [ref=f2e439] [cursor=pointer]: Tropical punch
+                - generic [ref=f2e442] [cursor=pointer]: Flor punch
+                - generic [ref=f2e445] [cursor=pointer]: Malibu Sunset
+                - generic [ref=f2e448] [cursor=pointer]: Jungle bird
+            - generic [ref=f2e452]:
+              - generic [ref=f2e453]:
+                - generic [ref=f2e454]: 
+                - text: PISCO
+              - generic [ref=f2e455]:
+                - generic [ref=f2e456] [cursor=pointer]: Tinto de verano
+                - generic [ref=f2e459] [cursor=pointer]: Chilcano Clásico
+                - generic [ref=f2e462] [cursor=pointer]: Chilcano de Maracuyá
+                - generic [ref=f2e465] [cursor=pointer]: Chilcano de Camu camu
+                - generic [ref=f2e468] [cursor=pointer]: Chilcano de Uvachado
+                - generic [ref=f2e471] [cursor=pointer]: Chilcano de Marabuena
+                - generic [ref=f2e474] [cursor=pointer]: Chilcano de Maracumango
+                - generic [ref=f2e477] [cursor=pointer]: Chilcano de fresa
+                - generic [ref=f2e480] [cursor=pointer]: Pisco punch
+                - generic [ref=f2e483] [cursor=pointer]: Primavera
+                - generic [ref=f2e486] [cursor=pointer]: Chicherito
+                - generic [ref=f2e489] [cursor=pointer]: Perú Libre
+                - generic [ref=f2e492] [cursor=pointer]: MACHU PICCHU
+            - generic [ref=f2e496]:
+              - generic [ref=f2e497]:
+                - generic [ref=f2e498]: 
+                - text: VODKA
+              - generic [ref=f2e499]:
+                - generic [ref=f2e500] [cursor=pointer]: Destornillador
+                - generic [ref=f2e503] [cursor=pointer]: Vodka Sunrise
+                - generic [ref=f2e506] [cursor=pointer]: Caipiroshka
+                - generic [ref=f2e509] [cursor=pointer]: Pantera rosa
+                - generic [ref=f2e512] [cursor=pointer]: Vodka Collins
+                - generic [ref=f2e515] [cursor=pointer]: Vivaracho
+            - generic [ref=f2e519]:
+              - generic [ref=f2e520]: GIN
+              - generic [ref=f2e521]:
+                - generic [ref=f2e522] [cursor=pointer]: Gin & tonic cidra regional
+                - generic [ref=f2e525] [cursor=pointer]: Gin & tonic frutos rojos
+                - generic [ref=f2e528] [cursor=pointer]: Gin & tonic herbal
+                - generic [ref=f2e531] [cursor=pointer]: Gin & tonic con especias
+                - generic [ref=f2e534] [cursor=pointer]: Gin & tonic de piña
+                - generic [ref=f2e537] [cursor=pointer]: Gin & tonic Selva (piña con jengibre)
+                - generic [ref=f2e540] [cursor=pointer]: Gin Basil Smash
+            - generic [ref=f2e544]:
+              - generic [ref=f2e545]:
+                - generic [ref=f2e546]: 
+                - text: TEQUILA
+              - generic [ref=f2e547]:
+                - generic [ref=f2e548] [cursor=pointer]: Margarita Clásica
+                - generic [ref=f2e551] [cursor=pointer]: Margarita de Maracuyá
+                - generic [ref=f2e554] [cursor=pointer]: Margarita de Fresa
+                - generic [ref=f2e557] [cursor=pointer]: Margarita de Mango
+                - generic [ref=f2e560] [cursor=pointer]: Margarita de Piña
+                - generic [ref=f2e563] [cursor=pointer]: Margarita de Sandia y Albahaca
+                - generic [ref=f2e566] [cursor=pointer]: Margarita Blue
+                - generic [ref=f2e569] [cursor=pointer]: Margarita Picante
+                - generic [ref=f2e572] [cursor=pointer]: Paloma
+                - generic [ref=f2e575] [cursor=pointer]: Tequila Sunrise
+                - generic [ref=f2e578] [cursor=pointer]: Tequila Sour
+          - generic [ref=f2e581]:
+            - generic [ref=f2e582]:
+              - generic [ref=f2e583]: 
+              - generic [ref=f2e584]:
+                - text: De esta carta es recomendable elegir máximo de
+                - strong [ref=f2e585]: 5 a 6 opciones
+                - text: .
+            - generic [ref=f2e586]:
+              - generic [ref=f2e587]: SOLO +18
+              - generic [ref=f2e588]: Solo mayores de 18 años
+        - generic [ref=f2e590]:
+          - generic [ref=f2e592]:
+            - generic [ref=f2e593]:
+              - generic [ref=f2e594]: 
+              - heading "IMPORTANTE" [level=6] [ref=f2e595]
+            - list [ref=f2e596]:
+              - listitem [ref=f2e597]:
+                - generic [ref=f2e598]: 
+                - generic [ref=f2e599]: Trabajamos con insumos de calidad y ampliamente conocidos en el mercado.
+              - listitem [ref=f2e600]:
+                - generic [ref=f2e601]: 
+                - generic [ref=f2e602]: Los paquetes son a todo costo; comprenden de (01) Barra móvil, insumos para preparación de los cocteles, hielo en cubos, cooler para hielo, vasos, herramientas de bar y logística.
+              - listitem [ref=f2e603]:
+                - generic [ref=f2e604]: 
+                - generic [ref=f2e605]:
+                  - text: Todos los precios son para la zona de
+                  - strong [ref=f2e606]: Tarapoto
+                  - text: ", fuera de la ciudad aplican costos por distancia, traslado y estadía."
+          - generic [ref=f2e608]:
+            - generic [ref=f2e609]: 
+            - generic [ref=f2e611]: Condición de Reserva
+            - paragraph [ref=f2e612]:
+              - text: Todo contrato se realiza con el
+              - strong [ref=f2e613]: 50% de adelanto
+              - text: del valor total contratado.
+      - generic [ref=f2e616]:
+        - generic [ref=f2e618]:
+          - generic [ref=f2e619]:
+            - generic [ref=f2e620]: Cotizador Oficial
+            - heading "Tu Cotización" [level=5] [ref=f2e621]
+          - generic [ref=f2e622]: EN TIEMPO REAL
+        - generic [ref=f2e623]:
+          - generic [ref=f2e624]:
+            - img "Paquete" [ref=f2e625]
+            - generic [ref=f2e626]:
+              - generic [ref=f2e627]:
+                - generic [ref=f2e628]: 100 vasos
+                - generic [ref=f2e629]: S/ 1,200
+              - heading "Paquete ESENCIAL" [level=6] [ref=f2e630]
+              - text: Ideal para 20 a 50 invitados
+          - generic [ref=f2e631]:
+            - generic [ref=f2e632]:
+              - generic [ref=f2e633]: Cócteles Elegidos
+              - generic [ref=f2e634]: 0 seleccionados
+            - generic [ref=f2e635]: Elige hasta 6 cócteles de la carta
+          - generic [ref=f2e637]:
+            - generic [ref=f2e638]: Número de Invitados *
+            - generic [ref=f2e639]:
+              - button "" [ref=f2e640] [cursor=pointer]
+              - spinbutton "Número de Invitados *" [ref=f2e642]: "35"
+              - button "" [ref=f2e643] [cursor=pointer]
+            - generic [ref=f2e645]:
+              - generic [ref=f2e646]: "Rango permitido: 20 a 50 personas."
+              - generic [ref=f2e647] [cursor=pointer]: Ajustar al ideal
+          - generic [ref=f2e648]:
+            - generic [ref=f2e649]:
+              - generic [ref=f2e650]: Fecha del Evento *
+              - textbox "Fecha del Evento *" [ref=f2e651]: 2026-11-08
+            - generic [ref=f2e652]:
+              - generic [ref=f2e653]: Celebración
+              - combobox "Celebración" [ref=f2e654]:
+                - option "Boda" [selected]
+                - option "Cumpleaños"
+                - option "Empresa"
+                - option "Aniversario"
+                - option "Graduación"
+                - option "Privada"
+          - separator [ref=f2e655]
+          - generic [ref=f2e656]:
+            - generic [ref=f2e657]: 
+            - generic [ref=f2e658]: Calculando montos tributarios...
+          - generic [ref=f2e659]:
+            - generic [ref=f2e660]:
+              - generic [ref=f2e661]: Subtotal (Base Imponible)
+              - generic [ref=f2e662]: S/ 0.00
+            - generic [ref=f2e663]:
+              - generic [ref=f2e664]: I.G.V. (18% Ley SUNAT)
+              - generic [ref=f2e665]: S/ 0.00
+            - generic [ref=f2e666]:
+              - generic [ref=f2e667]: Total Estimado
+              - generic [ref=f2e668]: S/ 0.00
+            - generic [ref=f2e669]:
+              - generic [ref=f2e670]:
+                - generic [ref=f2e671]: 
+                - text: "Adelanto 50% Sugerido:"
+              - strong [ref=f2e672]: S/ 0.00
+          - separator [ref=f2e673]
+          - generic [ref=f2e674]:
+            - generic [ref=f2e675]: Tu Nombre o Contacto *
+            - textbox "Tu Nombre o Contacto *" [ref=f2e676]:
+              - /placeholder: "Ej: MARÍA LÓPEZ"
+          - generic [ref=f2e677]:
+            - generic [ref=f2e678]: Teléfono Celular / WhatsApp *
+            - generic [ref=f2e679]:
+              - generic [ref=f2e680]: "+51"
+              - textbox "Teléfono Celular / WhatsApp *" [ref=f2e681]:
+                - /placeholder: "987654321"
+            - text: 9 dígitos de celular peruano.
+          - generic [ref=f2e683]:
+            - 'checkbox "En cumplimiento de la Ley N° 29733 de Protección de Datos Personales: Autorizo expresamente a MYTEMS E.I.R.L. (Shipibo Coctelería) a utilizar mi nombre y teléfono exclusivamente para contactarme y coordinar la cotización de este evento, conforme a la Ley N° 29733 de Protección de Datos Personales. Mis datos no serán transferidos a terceros." [checked] [ref=f2e684]'
+            - generic [ref=f2e685]:
+              - text: En cumplimiento de la
+              - strong [ref=f2e686]: Ley N° 29733 de Protección de Datos Personales
+              - text: ": Autorizo expresamente a MYTEMS E.I.R.L. (Shipibo Coctelería) a utilizar mi nombre y teléfono exclusivamente para contactarme y coordinar la cotización de este evento, conforme a la Ley N° 29733 de Protección de Datos Personales. Mis datos no serán transferidos a terceros."
+          - button " Solicitar Cotización de Evento" [ref=f2e687] [cursor=pointer]:
+            - generic [ref=f2e688]: 
+            - text: Solicitar Cotización de Evento
+          - generic [ref=f2e689]:
+            - generic [ref=f2e690]: 
+            - text: Solicitud preliminar sin compromiso
+  - text: 

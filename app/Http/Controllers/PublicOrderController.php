@@ -33,7 +33,7 @@ class PublicOrderController extends Controller
     {
         $packages = Package::with(['items.product', 'items.cocktail.category', 'priceTiers'])
             ->where('active', true)
-            ->orderBy('min_guests')
+            ->orderBy('base_price', 'asc')
             ->get();
 
         $cocktailCategories = CocktailMenuCategory::with(['cocktails' => function ($q) {
@@ -66,20 +66,22 @@ class PublicOrderController extends Controller
     /**
      * Recalculate price dynamically on server without saving.
      */
-    public function simulate(SimulatePublicOrderRequest $request): JsonResponse {
+    public function simulate(SimulatePublicOrderRequest $request): JsonResponse
+    {
         try {
-            $packageId  = (int) $request->input('package_id');
-            $guests     = (int) $request->input('guests');
-            $extras     = (array) $request->input('extras', []);
-            $result     = $this->calculator->calculate($packageId, $guests, $extras);
+            $packageId = (int) $request->input('package_id');
+            $guests = (int) $request->input('guests');
+            $extras = (array) $request->input('extras', []);
+            $result = $this->calculator->calculate($packageId, $guests, $extras);
+
             return response()->json([
                 'status' => true,
-                'data'   => $result,
+                'data' => $result,
             ]);
         } catch (GuestOutOfRangeException|TierOverlapException $e) {
             return response()->json([
                 'status' => false,
-                'msg'    => $e->getMessage(),
+                'msg' => $e->getMessage(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
@@ -140,6 +142,11 @@ class PublicOrderController extends Controller
             $trackingCode = Contract::generateTrackingCode();
             $business = Business::first();
 
+            $selectedCocktails = (array) $request->input('cocktails', []);
+            $cocktailNotes = ! empty($selectedCocktails)
+                ? ' Cócteles elegidos: '.implode(', ', array_map('strip_tags', $selectedCocktails)).'.'
+                : '';
+
             $contract = Contract::create([
                 'contract_number' => $preliminaryNumber,
                 'title' => 'PEDIDO WEB PRELIMINAR - '.$package->name,
@@ -154,7 +161,7 @@ class PublicOrderController extends Controller
                 'igv' => $calc['igv'],
                 'total' => $calc['total'],
                 'moneda' => 'PEN',
-                'observaciones' => "Pedido digital web. Paquete: {$package->name}. Invitados: {$guests}. Tipo evento: {$eventType}.",
+                'observaciones' => "Pedido digital web. Paquete: {$package->name}. Invitados: {$guests}. Tipo evento: {$eventType}.{$cocktailNotes}",
                 'estado' => Contract::STATUS_DRAFT,
                 'status' => Contract::STATUS_STR_PRELIMINAR,
                 'source' => Contract::SOURCE_WEB,

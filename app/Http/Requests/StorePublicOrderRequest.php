@@ -35,6 +35,8 @@ class StorePublicOrderRequest extends FormRequest
             'fecha_evento' => ['required', 'date', 'after_or_equal:today'],
             'event_type' => ['nullable', 'string', 'max:100'],
             'extras' => ['nullable', 'array'],
+            'cocktails' => ['nullable', 'array'],
+            'cocktails.*' => ['string', 'max:100'],
         ];
     }
 
