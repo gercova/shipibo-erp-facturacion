@@ -348,7 +348,7 @@
                                                 <option value="cocktail">Cóctel de Carta</option>
                                             </select>
                                         </div>
-                                        <div class="col-md-6 picker-opt" id="picker_service">
+                                        <div class="col-md-8 picker-opt" id="picker_service">
                                             <label class="form-label small fw-bold text-muted text-uppercase mb-1">Equipo / Servicio</label>
                                             <select id="picker_product_id" class="form-select form-select-sm">
                                                 <option value="">-- Seleccionar --</option>
@@ -359,7 +359,7 @@
                                                 @endforeach
                                             </select>
                                         </div>
-                                        <div class="col-md-6 picker-opt" id="picker_cocktail" style="display: none;">
+                                        <div class="col-md-8 picker-opt" id="picker_cocktail" style="display: none;">
                                             <label class="form-label small fw-bold text-muted text-uppercase mb-1">Cóctel de Carta</label>
                                             <select id="picker_cocktail_id" class="form-select form-select-sm">
                                                 <option value="">-- Seleccionar --</option>
@@ -370,7 +370,8 @@
                                                 @endforeach
                                             </select>
                                         </div>
-                                        <div class="col-md-2">
+                                        {{-- Button kept in DOM but hidden; items auto-add on dropdown change --}}
+                                        <div class="col-md-2" style="display:none;">
                                             <button type="button" class="btn btn-sm btn-primary w-100 fw-bold" id="btnAddItemRow">
                                                 <i class="ri-add-line"></i>
                                             </button>
