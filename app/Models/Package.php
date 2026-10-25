@@ -32,9 +32,6 @@ class Package extends Model
         'is_barman',
     ];
 
-    /**
-     * @var array<string, string>
-     */
     protected $casts = [
         'active' => 'boolean',
         'is_barman' => 'boolean',

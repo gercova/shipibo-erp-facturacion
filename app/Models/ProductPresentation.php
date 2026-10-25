@@ -4,12 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProductPresentation extends Model
 {
     use HasFactory;
 
-    protected $table      = 'product_presentations';
+    protected $table = 'product_presentations';
+
     protected $primaryKey = 'id';
 
     protected $fillable = [
@@ -23,18 +25,18 @@ class ProductPresentation extends Model
     ];
 
     protected $casts = [
-        'estado'            => 'boolean',
+        'estado' => 'boolean',
         'factor_conversion' => 'float',
-        'precio_compra'     => 'float',
-        'precio_venta'      => 'float',
+        'precio_compra' => 'float',
+        'precio_venta' => 'float',
     ];
 
-    public function product()
+    public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class, 'idproducto');
     }
 
-    public function unit()
+    public function unit(): BelongsTo
     {
         return $this->belongsTo(Unit::class, 'idunidad');
     }

@@ -65,7 +65,6 @@
     <script src="{{ asset('js/vfs_fonts.js') }}"></script>
     <script src="{{ asset('js/buttons.html5.min.js') }}"></script>
     <script src="{{ asset('js/buttons.print.min.js') }}"></script>
-
     @yield('styles')
 </head>
 
@@ -74,8 +73,9 @@
     <nav class="topnav navbar navbar-expand shadow justify-content-between justify-content-sm-start navbar-light bg-white"
         id="sidenavAccordion">
         <!-- Sidenav Toggle Button-->
-        <button class="btn btn-icon btn-transparent-dark order-1 order-lg-0 me-2 ms-lg-2 me-lg-0" id="sidebarToggle"><i
-                data-feather="menu"></i></button>
+        <button class="btn btn-icon btn-transparent-dark order-1 order-lg-0 me-2 ms-lg-2 me-lg-0" id="sidebarToggle">
+            <i data-feather="menu"></i>
+        </button>
         <!-- Navbar Brand-->
         <!-- * * Tip * * You can use text or an image for your navbar brand.-->
         <!-- * * * * * * When using an image, we recommend the SVG format.-->
@@ -85,23 +85,15 @@
                 style="width: 28px; height: 28px; background: rgba(0,97,242,.10); color: var(--bs-primary); border: 1px solid rgba(0,97,242,.15);">
                 <i class="fas fa-box-open" style="font-size: .9rem;"></i>
             </span>
-            <span>EasyStock</span>
+            <span>{{ $business->nombre_comercial }}</span>
         </a>
-        <!-- Navbar Search Input-->
-        <!-- * * Note: * * Visible only on and above the lg breakpoint-->
-        <form class="form-inline me-auto d-none d-lg-block me-3">
-            <div class="input-group input-group-joined input-group-solid">
-                <input class="form-control pe-0" type="search" placeholder="Buscar" aria-label="Search" readonly>
-                <div class="input-group-text"><i data-feather="search"></i></div>
-            </div>
-        </form>
         <!-- Navbar Items-->
         <ul class="navbar-nav align-items-center ms-auto">
             <!-- * * Note: * * Visible only below the lg breakpoint-->
             <li class="nav-item dropdown no-caret me-3 d-lg-none">
-                <a class="btn btn-icon btn-transparent-dark dropdown-toggle" id="searchDropdown" href="#"
-                    role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i
-                        data-feather="search"></i></a>
+                <a class="btn btn-icon btn-transparent-dark dropdown-toggle" id="searchDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i data-feather="search"></i>
+                </a>
                 <!-- Dropdown - Search-->
                 <div class="dropdown-menu dropdown-menu-end p-3 shadow animated--fade-in-up"
                     aria-labelledby="searchDropdown">
@@ -130,7 +122,6 @@
                         <i class="me-2" data-feather="bell"></i>
                         Notificaciones
                     </h6>
-
                     @if ($productos_agotar > 0)
                         <a class="dropdown-item dropdown-notifications-item" href="#!">
                             <div class="dropdown-notifications-item-icon bg-danger">
@@ -146,21 +137,18 @@
                     @endif
                 </div>
             </li>
-
             <!-- User Dropdown-->
             @php
-                $authUser = Auth::user();
-                $currentWarehouse = $authUser?->activeWarehouse;
-                $availableWarehousesCount = $authUser ? $authUser->warehouses()->count() : 0;
-                $primaryRole = optional($authUser?->roles?->first())->name ?: 'USUARIO';
-                $canDashboard = $authUser?->can('admin.home');
-                $canArching = $authUser?->can('admin.arching_cashes');
-                $isBillingReportScreen = request()->routeIs('report.billings.*');
-                $isCreditNoteListScreen =
-                    request()->routeIs('admin.billing_credit_notes') || request()->routeIs('billings.credit_notes.get');
-                $isDebitNoteListScreen =
-                    request()->routeIs('admin.billing_debit_notes') || request()->routeIs('billings.debit_notes.get');
-                $isShipmentGuideScreen = request()->is('shipment-guides') || request()->is('shipment-guides/*');
+                $authUser                   = Auth::user();
+                $currentWarehouse           = $authUser?->activeWarehouse;
+                $availableWarehousesCount   = $authUser ? $authUser->warehouses()->count() : 0;
+                $primaryRole                = optional($authUser?->roles?->first())->name ?: 'USUARIO';
+                $canDashboard               = $authUser?->can('admin.home');
+                $canArching                 = $authUser?->can('admin.arching_cashes');
+                $isBillingReportScreen      = request()->routeIs('report.billings.*');
+                $isCreditNoteListScreen     = request()->routeIs('admin.billing_credit_notes') || request()->routeIs('billings.credit_notes.get');
+                $isDebitNoteListScreen      = request()->routeIs('admin.billing_debit_notes') || request()->routeIs('billings.debit_notes.get');
+                $isShipmentGuideScreen      = request()->is('shipment-guides') || request()->is('shipment-guides/*');
                 $isBillingScreen =
                     (request()->is('billings') ||
                         (request()->is('billings/*') &&
@@ -180,8 +168,8 @@
                     'admin.billings',
                     'admin.shipment_guides',
                 ]);
-                $canCompras = $authUser?->canany(['admin.providers', 'admin.buys']);
-                $canInventario = $authUser?->canany([
+                $canCompras     = $authUser?->canany(['admin.providers', 'admin.buys']);
+                $canInventario  = $authUser?->canany([
                     'admin.products',
                     'admin.categories',
                     'admin.warehouses',
@@ -274,7 +262,7 @@
                             <a class="nav-link {{ request()->is('clients*') || request()->is('providers*') ? 'active' : '' }}"
                                 href="{{ route('admin.clients') }}">
                                 <div class="nav-link-icon"><i data-feather="users"></i></div>
-                                Entidad
+                                Clientes y Proveedores
                             </a>
                         @endcan
 
@@ -316,12 +304,10 @@
                                 id="collapseFlows" data-bs-parent="#accordionSidenav">
                                 <nav class="sidenav-menu-nested nav">
                                     @can('admin.quotes')
-                                        <a class="nav-link {{ request()->is('quotes') || request()->is('quotes/*') ? 'active' : '' }}"
-                                            href="{{ route('admin.quotes') }}">Cotizaciones</a>
+                                        <a class="nav-link {{ request()->is('quotes') || request()->is('quotes/*') ? 'active' : '' }}" href="{{ route('admin.quotes') }}">Cotizaciones</a>
                                     @endcan
                                     @can('admin.contracts')
-                                        <a class="nav-link {{ request()->is('contracts') || (request()->is('contracts/*') && !request()->is('contracts/preliminary-orders*')) ? 'active' : '' }}"
-                                            href="{{ route('admin.contracts') }}">Contratos Formales</a>
+                                        <a class="nav-link {{ request()->is('contracts') || (request()->is('contracts/*') && !request()->is('contracts/preliminary-orders*')) ? 'active' : '' }}" href="{{ route('admin.contracts') }}">Contratos Formales</a>
                                     @endcan
                                     @can('admin.preliminary_orders')
                                         <a class="nav-link {{ request()->is('contracts/preliminary-orders*') ? 'active' : '' }} d-flex justify-content-between align-items-center"
@@ -336,10 +322,8 @@
                                         </a>
                                     @endcan
                                     @can('admin.contracts')
-                                        <a class="nav-link {{ request()->is('event-checklists*') ? 'active' : '' }}"
-                                            href="{{ route('admin.event_checklists') }}">Checklists de Eventos</a>
-                                        <a class="nav-link {{ request()->is('cocktail-menu*') ? 'active' : '' }}"
-                                            href="{{ route('admin.cocktail_menu.index') }}">Carta de Cócteles</a>
+                                        <a class="nav-link {{ request()->is('event-checklists*') ? 'active' : '' }}" href="{{ route('admin.event_checklists') }}">Checklists de Eventos</a>
+                                        <a class="nav-link {{ request()->is('cocktail-menu*') ? 'active' : '' }}" href="{{ route('admin.cocktail_menu.index') }}">Carta de Cócteles</a>
                                     @endcan
                                     @can('admin.pos')
                                         <a class="nav-link {{ request()->is('pos') || request()->is('pos/*') ? 'active' : '' }}"

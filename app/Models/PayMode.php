@@ -8,10 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 class PayMode extends Model
 {
     use HasFactory;
-    protected $primaryKey   = 'id';
-    protected $table        = 'pay_modes';
-    protected $fillable     =
-    [
-        'descripcion'
-    ];
+
+    protected $primaryKey = 'id';
+
+    protected $table = 'pay_modes';
+
+    protected $fillable = ['descripcion'];
 }

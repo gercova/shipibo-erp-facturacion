@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\PackageValidate;
 use App\Models\CocktailMenuItem;
 use App\Models\Package;
 use App\Models\PackageItem;
@@ -14,7 +15,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -59,19 +59,16 @@ class PackageController extends Controller
     /**
      * DataTables server-side feed for packages.
      */
-    public function get(): JsonResponse
-    {
-        $packages = Package::with(['priceTiers', 'items'])
-            ->orderBy('id', 'asc');
-        $signo = $this->signo_pais();
+    public function get(): JsonResponse {
+        $packages   = Package::with(['priceTiers', 'items'])->orderBy('id', 'asc');
+        $signo      = $this->signo_pais();
 
         return datatables()
             ->of($packages)
             ->addColumn('order_num', function (Package $package) {
-                $num = $package->order_num ?: sprintf('%02d', $package->id);
-                $color = $package->color ?: '#275c34';
-                $glasses = $package->badge_glasses ?: 'Vasos';
-
+                $num        = $package->order_num ?: sprintf('%02d', $package->id);
+                $color      = $package->color ?: '#275c34';
+                $glasses    = $package->badge_glasses ?: 'Vasos';
                 return '<div class="text-center">
                             <span class="badge px-2 py-1 fs-12 fw-bold" style="background-color: '.$color.'; color: #ffffff;">'.$num.'</span>
                             <div class="small fw-semibold mt-1" style="font-size: 0.72rem; color: #555;">'.e($glasses).'</div>
@@ -83,16 +80,15 @@ class PackageController extends Controller
                         </div>';
             })
             ->editColumn('name', function (Package $package) {
-                $color = $package->color ?: '#275c34';
-                $tagline = $package->tagline ? '<div class="text-muted small text-truncate" style="max-width: 250px;" title="'.e($package->tagline).'">'.e($package->tagline).'</div>' : '';
+                $color      = $package->color ?: '#275c34';
+                $tagline    = $package->tagline ? '<div class="text-muted small text-truncate" style="max-width: 250px;" title="'.e($package->tagline).'">'.e($package->tagline).'</div>' : '';
                 $modeBadges = [
-                    'tiered' => '<span class="badge bg-info-subtle text-info border border-info-subtle" style="font-size: 0.7rem;"><i class="ri-stack-line me-1"></i>Escalonado</span>',
-                    'fixed' => '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style="font-size: 0.7rem;"><i class="ri-lock-line me-1"></i>Fijo</span>',
+                    'tiered'    => '<span class="badge bg-info-subtle text-info border border-info-subtle" style="font-size: 0.7rem;"><i class="ri-stack-line me-1"></i>Escalonado</span>',
+                    'fixed'     => '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style="font-size: 0.7rem;"><i class="ri-lock-line me-1"></i>Fijo</span>',
                     'per_guest' => '<span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.7rem;"><i class="ri-user-line me-1"></i>Por Persona</span>',
                 ];
-                $badge = $modeBadges[$package->price_mode] ?? '';
-                $barmanBadge = $package->is_barman ? '<span class="badge bg-warning text-dark border border-warning-subtle ms-1" style="font-size: 0.7rem;">Servicio Barman</span>' : '';
-
+                $badge          = $modeBadges[$package->price_mode] ?? '';
+                $barmanBadge    = $package->is_barman ? '<span class="badge bg-warning text-dark border border-warning-subtle ms-1" style="font-size: 0.7rem;">Servicio Barman</span>' : '';
                 return '<div>
                             <div class="fw-bold fs-14" style="color: '.$color.';">'.e($package->name).$barmanBadge.'</div>
                             '.$tagline.'
@@ -100,9 +96,8 @@ class PackageController extends Controller
                         </div>';
             })
             ->addColumn('capacity', function (Package $package) {
-                $ideal = $package->ideal_capacity ? '<div class="text-success small fw-semibold"><i class="ri-check-line"></i> '.e($package->ideal_capacity).'</div>' : '';
-                $default = $package->default_guests ? '<small class="text-muted d-block">Sugerido: <strong>'.$package->default_guests.'</strong> inv.</small>' : '';
-
+                $ideal      = $package->ideal_capacity ? '<div class="text-success small fw-semibold"><i class="ri-check-line"></i> '.e($package->ideal_capacity).'</div>' : '';
+                $default    = $package->default_guests ? '<small class="text-muted d-block">Sugerido: <strong>'.$package->default_guests.'</strong> inv.</small>' : '';
                 return '<div>
                             <span class="badge bg-light text-dark border"><i class="ri-group-line me-1 text-primary"></i>'.e($package->guest_range_label).'</span>
                             '.$ideal.'
@@ -110,9 +105,8 @@ class PackageController extends Controller
                         </div>';
             })
             ->addColumn('colors', function (Package $package) {
-                $color = $package->color ?: '#275c34';
-                $lightBg = $package->light_bg ?: '#e9edea';
-
+                $color      = $package->color ?: '#275c34';
+                $lightBg    = $package->light_bg ?: '#e9edea';
                 return '<div class="d-flex align-items-center gap-1">
                             <span class="d-inline-block rounded-circle border shadow-sm" style="width: 20px; height: 20px; background-color: '.$color.';" title="Primario: '.$color.'"></span>
                             <span class="d-inline-block rounded-circle border shadow-sm" style="width: 20px; height: 20px; background-color: '.$lightBg.';" title="Fondo: '.$lightBg.'"></span>
@@ -125,12 +119,11 @@ class PackageController extends Controller
                     if ($tiersCount === 0) {
                         return '<span class="text-warning small"><i class="ri-alert-line me-1"></i>Sin tramos</span>';
                     }
-                    $minPrice = $package->priceTiers->min('price');
-                    $maxPrice = $package->priceTiers->max('price');
+                    $minPrice   = $package->priceTiers->min('price');
+                    $maxPrice   = $package->priceTiers->max('price');
                     $priceLabel = $minPrice == $maxPrice
                         ? "{$signo} ".number_format((float) $minPrice, 2)
                         : "{$signo} ".number_format((float) $minPrice, 2).' - '.number_format((float) $maxPrice, 2);
-
                     return '<div>
                                 <div class="fw-bold text-success">'.$priceLabel.'</div>
                                 <small class="text-muted">'.$tiersCount.' tramo(s) de invitados</small>
@@ -149,7 +142,7 @@ class PackageController extends Controller
                     return '<span class="text-muted small fst-italic">Sin especificar</span>';
                 }
                 $firstTwo = array_slice($features, 0, 2);
-                $html = '<div class="d-flex flex-column gap-1" style="font-size: 0.74rem;">';
+                $html     = '<div class="d-flex flex-column gap-1" style="font-size: 0.74rem;">';
                 foreach ($firstTwo as $feat) {
                     $html .= '<span class="text-truncate text-dark" style="max-width: 220px;" title="'.e($feat).'"><i class="ri-check-line text-success me-1"></i>'.e($feat).'</span>';
                 }
@@ -157,12 +150,10 @@ class PackageController extends Controller
                     $html .= '<span class="text-muted small fw-semibold">+ '.(count($features) - 2).' ítems más</span>';
                 }
                 $html .= '</div>';
-
                 return $html;
             })
             ->editColumn('active', function (Package $package) {
                 $checked = $package->active ? 'checked' : '';
-
                 return '<div class="form-check form-switch d-inline-block">
                             <input class="form-check-input btn-toggle-status" type="checkbox" data-id="'.$package->id.'" '.$checked.'>
                         </div>';
@@ -187,13 +178,9 @@ class PackageController extends Controller
             ->toJson();
     }
 
-    /**
-     * Retrieve package details with relations for editing or simulation.
-     */
-    public function detail(Request $request): JsonResponse
-    {
-        $id = (int) $request->input('id');
-        $package = Package::with([
+    public function detail(Request $request): JsonResponse {
+        $id         = (int) $request->input('id');
+        $package    = Package::with([
             'items.product',
             'items.cocktail.category',
             'priceTiers',
@@ -201,66 +188,28 @@ class PackageController extends Controller
 
         if (! $package) {
             return response()->json([
-                'status' => false,
-                'msg' => 'Paquete no encontrado.',
+                'status'    => false,
+                'msg'       => 'Paquete no encontrado.',
             ], 404);
         }
 
         return response()->json([
-            'status' => true,
+            'status'  => true,
             'package' => array_merge($package->toArray(), [
-                'image_url' => $package->image_url,
+                'image_url'         => $package->image_url,
                 'guest_range_label' => $package->guest_range_label,
             ]),
         ]);
     }
 
-    /**
-     * Store or update a package.
-     */
-    public function store(Request $request): JsonResponse
-    {
+    public function store(PackageValidate $request): JsonResponse {
         return $this->save($request);
     }
 
-    /**
-     * Save package handler (compatible with both 'save' and 'store' routes).
-     */
-    public function save(Request $request): JsonResponse
-    {
-        $id = (int) $request->input('id', 0);
-        $rules = [
-            'name' => 'required|string|max:150',
-            'order_num' => 'nullable|string|max:20',
-            'badge_glasses' => 'nullable|string|max:60',
-            'tagline' => 'nullable|string|max:255',
-            'color' => 'nullable|string|max:30',
-            'light_bg' => 'nullable|string|max:30',
-            'price_mode' => 'required|in:fixed,per_guest,tiered',
-            'min_guests' => 'required|integer|min:1',
-            'max_guests' => 'nullable|integer|gte:min_guests',
-            'ideal_capacity' => 'nullable|string|max:100',
-            'default_guests' => 'nullable|integer|min:1',
-            'base_price' => 'nullable|numeric|min:0',
-            'description' => 'nullable|string|max:1000',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
-        ];
-
-        $validator = Validator::make($request->all(), $rules, [
-            'name.required' => 'El nombre del paquete es obligatorio.',
-            'price_mode.required' => 'Debe seleccionar una modalidad de precio.',
-            'min_guests.required' => 'Debe especificar el número mínimo de invitados.',
-            'max_guests.gte' => 'El máximo de invitados debe ser mayor o igual al mínimo.',
-            'image.image' => 'El archivo debe ser una imagen válida (JPG, PNG, WEBP).',
-            'image.max' => 'La imagen no puede exceder los 4MB.',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => false,
-                'msg' => $validator->errors()->first(),
-            ], 422);
-        }
+    public function save(PackageValidate $request): JsonResponse {
+        // El FormRequest ya validó; si falla, responde 422 con el formato JSON.
+        $validated  = $request->validated();
+        $id         = (int) $request->input('id', 0);
 
         try {
             DB::beginTransaction();
@@ -269,44 +218,51 @@ class PackageController extends Controller
 
             if (! $package) {
                 return response()->json([
-                    'status' => false,
-                    'msg' => 'Paquete no encontrado.',
+                    'status'    => false,
+                    'msg'       => 'Paquete no encontrado.',
                 ], 404);
             }
 
-            $package->name = mb_strtoupper(trim((string) $request->input('name')));
-            $package->order_num = $request->filled('order_num') ? trim((string) $request->input('order_num')) : null;
-            $package->badge_glasses = $request->filled('badge_glasses') ? trim((string) $request->input('badge_glasses')) : null;
-            $package->tagline = $request->filled('tagline') ? trim((string) $request->input('tagline')) : null;
-            $package->color = $request->filled('color') ? trim((string) $request->input('color')) : '#275c34';
-            $package->light_bg = $request->filled('light_bg') ? trim((string) $request->input('light_bg')) : '#e9edea';
-            $package->price_mode = (string) $request->input('price_mode');
-            $package->min_guests = (int) $request->input('min_guests');
-            $package->max_guests = $request->filled('max_guests') ? (int) $request->input('max_guests') : null;
-            $package->ideal_capacity = $request->filled('ideal_capacity') ? trim((string) $request->input('ideal_capacity')) : null;
-            $package->default_guests = $request->filled('default_guests') ? (int) $request->input('default_guests') : null;
-            $package->base_price = $request->filled('base_price') ? round((float) $request->input('base_price'), 2) : 0.00;
-            $package->description = trim((string) $request->input('description'));
-            $package->active = $request->boolean('active', true);
-            $package->is_barman = $request->boolean('is_barman', false);
+            // ---- Campos validados (mass-assignment controlado) ----
+            $package->fill([
+                'name' => mb_strtoupper(trim($validated['name'])),
+                'order_num' => isset($validated['order_num']) ? trim($validated['order_num']) : null,
+                'badge_glasses' => isset($validated['badge_glasses']) ? trim($validated['badge_glasses']) : null,
+                'tagline' => isset($validated['tagline']) ? trim($validated['tagline']) : null,
+                'color' => $validated['color'] ?? '#275c34',
+                'light_bg' => $validated['light_bg'] ?? '#e9edea',
+                'price_mode' => $validated['price_mode'],
+                'min_guests' => (int) $validated['min_guests'],
+                'max_guests' => $validated['max_guests'] ?? null,
+                'ideal_capacity' => isset($validated['ideal_capacity']) ? trim($validated['ideal_capacity']) : null,
+                'default_guests' => $validated['default_guests'] ?? null,
+                'base_price' => isset($validated['base_price']) ? round((float) $validated['base_price'], 2) : 0.00,
+                'description' => trim((string) ($validated['description'] ?? '')),
+            ]);
 
-            // Handle features (can be array or json or newline separated)
+            // Booleanos: no forman parte de $validated si vienen como "on"/1, pero
+            // como ya agregamos la regla, están en validated. Usamos fallback por si no vienen.
+            $package->active = (bool) ($validated['active'] ?? true);
+            $package->is_barman = (bool) ($validated['is_barman'] ?? false);
+
+            // ---- Features (array | json | texto multilínea) ----
             if ($request->has('features')) {
-                $rawFeatures = $request->input('features');
-                if (is_string($rawFeatures)) {
-                    $decoded = json_decode($rawFeatures, true);
-                    $package->features = is_array($decoded) ? $decoded : array_values(array_filter(array_map('trim', explode("\n", $rawFeatures))));
-                } elseif (is_array($rawFeatures)) {
-                    $package->features = array_values(array_filter(array_map('trim', $rawFeatures)));
+                $raw = $request->input('features');
+                if (is_string($raw)) {
+                    $decoded = json_decode($raw, true);
+                    $package->features = is_array($decoded)
+                        ? $decoded
+                        : array_values(array_filter(array_map('trim', explode("\n", $raw))));
+                } elseif (is_array($raw)) {
+                    $package->features = array_values(array_filter(array_map('trim', $raw)));
                 }
             }
 
-            // Handle preset image selection if no new file is uploaded
-            if ($request->filled('image_preset') && ! $request->hasFile('image')) {
-                $package->image = trim((string) $request->input('image_preset'));
+            // ---- Imagen: preset o subida ----
+            if (! empty($validated['image_preset']) && ! $request->hasFile('image')) {
+                $package->image = trim($validated['image_preset']);
             }
 
-            // Handle image upload
             if ($request->hasFile('image')) {
                 $dir = public_path('files/packages');
                 if (! File::isDirectory($dir)) {
@@ -328,14 +284,13 @@ class PackageController extends Controller
 
             $package->save();
 
-            // Save Tiers (if price_mode === 'tiered')
+            // ---- Tiers ----
             if ($package->price_mode === 'tiered') {
                 $tiersData = $request->input('tiers', []);
                 if (is_string($tiersData)) {
                     $tiersData = json_decode($tiersData, true) ?: [];
                 }
 
-                // Delete existing tiers
                 PackagePriceTier::where('package_id', $package->id)->delete();
 
                 foreach ($tiersData as $tier) {
@@ -351,12 +306,11 @@ class PackageController extends Controller
                     ]);
                 }
 
-                // Validate tiers for overlaps
                 $loadedPackage = Package::with('priceTiers')->find($package->id);
                 $this->calculator->validateGuestRanges($loadedPackage, $package->min_guests);
             }
 
-            // Save Items
+            // ---- Items ----
             $itemsData = $request->input('items', []);
             if (is_string($itemsData)) {
                 $itemsData = json_decode($itemsData, true) ?: [];
@@ -372,7 +326,8 @@ class PackageController extends Controller
                     'quantity' => isset($item['quantity']) ? round((float) $item['quantity'], 2) : 1.00,
                     'is_per_guest' => ! empty($item['is_per_guest']),
                     'is_mandatory' => ! isset($item['is_mandatory']) || (bool) $item['is_mandatory'],
-                    'unit_price' => isset($item['unit_price']) && $item['unit_price'] !== '' ? round((float) $item['unit_price'], 2) : null,
+                    'unit_price' => isset($item['unit_price']) && $item['unit_price'] !== ''
+                        ? round((float) $item['unit_price'], 2) : null,
                     'notes' => ! empty($item['notes']) ? trim((string) $item['notes']) : null,
                 ]);
             }
@@ -381,9 +336,12 @@ class PackageController extends Controller
 
             return response()->json([
                 'status' => true,
-                'msg' => $id > 0 ? 'Paquete actualizado correctamente.' : 'Paquete registrado exitosamente.',
+                'msg' => $id > 0
+                    ? 'Paquete actualizado correctamente.'
+                    : 'Paquete registrado exitosamente.',
                 'package_id' => $package->id,
             ]);
+
         } catch (TierOverlapException $e) {
             DB::rollBack();
 
@@ -391,7 +349,7 @@ class PackageController extends Controller
                 'status' => false,
                 'msg' => 'Error de validación de tramos: '.$e->getMessage(),
             ], 422);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
 
             return response()->json([
@@ -401,9 +359,6 @@ class PackageController extends Controller
         }
     }
 
-    /**
-     * Delete a package.
-     */
     public function delete(Request $request): JsonResponse
     {
         $id = (int) $request->input('id');
@@ -431,9 +386,6 @@ class PackageController extends Controller
         ]);
     }
 
-    /**
-     * Toggle active status.
-     */
     public function toggle_status(Request $request): JsonResponse
     {
         $id = (int) $request->input('id');
@@ -456,9 +408,6 @@ class PackageController extends Controller
         ]);
     }
 
-    /**
-     * Server-side dynamic price calculation simulator endpoint.
-     */
     public function calculate_price(Request $request): JsonResponse
     {
         $packageId = (int) $request->input('package_id');

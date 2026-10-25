@@ -7,8 +7,7 @@
     <title>Cotiza tu Barra Móvil | Shipibo Coctelería - Tarapoto</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
@@ -30,7 +29,6 @@
             </p>
         </div>
     </header>
-
     {{-- Navigation quick links --}}
     <div class="container mt-n4" style="position: relative; z-index: 10;">
         <div class="d-flex justify-content-center">
@@ -44,12 +42,10 @@
             </nav>
         </div>
     </div>
-
     {{-- Main Container --}}
     <main class="container py-3 mb-5" style="max-width: 1220px;">
         <form id="orderForm" onsubmit="event.preventDefault()">
             @csrf
-
             {{-- Honeypot anti-spam field --}}
             <input type="text" name="_hp_website" id="_hp_website" style="display:none !important;" tabindex="-1"
                 autocomplete="off">
@@ -251,14 +247,14 @@
                         <div class="row g-4">
                             @foreach ($openBarList as $pkg)
                                 @php
-                                    $num = $pkg->order_num ?: ($flyerMeta[$pkg->name]['num'] ?? sprintf('%02d', $loop->iteration));
-                                    $color = $pkg->color ?: ($flyerMeta[$pkg->name]['color'] ?? '#275c34');
-                                    $lightBg = $pkg->light_bg ?: ($flyerMeta[$pkg->name]['light_bg'] ?? '#e9edea');
-                                    $glasses = $pkg->badge_glasses ?: ($flyerMeta[$pkg->name]['glasses'] ?? 'Vasos');
-                                    $title = Str::replace('Paquete ', '', $pkg->name);
-                                    $tagline = $pkg->tagline ?: ($flyerMeta[$pkg->name]['tagline'] ?? $pkg->description);
-                                    $ideal = $pkg->ideal_capacity ?: ($flyerMeta[$pkg->name]['ideal'] ?? $pkg->guest_range_label);
-                                    $features = (!empty($pkg->features) && is_array($pkg->features))
+                                    $num        = $pkg->order_num ?: ($flyerMeta[$pkg->name]['num'] ?? sprintf('%02d', $loop->iteration));
+                                    $color      = $pkg->color ?: ($flyerMeta[$pkg->name]['color'] ?? '#275c34');
+                                    $lightBg    = $pkg->light_bg ?: ($flyerMeta[$pkg->name]['light_bg'] ?? '#e9edea');
+                                    $glasses    = $pkg->badge_glasses ?: ($flyerMeta[$pkg->name]['glasses'] ?? 'Vasos');
+                                    $title      = Str::replace('Paquete ', '', $pkg->name);
+                                    $tagline    = $pkg->tagline ?: ($flyerMeta[$pkg->name]['tagline'] ?? $pkg->description);
+                                    $ideal      = $pkg->ideal_capacity ?: ($flyerMeta[$pkg->name]['ideal'] ?? $pkg->guest_range_label);
+                                    $features   = (!empty($pkg->features) && is_array($pkg->features))
                                         ? $pkg->features
                                         : ($flyerMeta[$pkg->name]['features'] ?? [
                                             '1 Bartender + 1 asistente',
@@ -327,7 +323,6 @@
                                         <div class="package-tagline">
                                             {{ $meta['tagline'] }}
                                         </div>
-
                                         {{-- Body with items and drink cutout --}}
                                         <div class="flyer-card-body">
                                             <div class="flex-grow-1">
@@ -371,11 +366,9 @@
                                             </div>
 
                                             <div class="cocktail-cutout-container">
-                                                <img src="{{ asset($meta['img']) }}" alt="{{ $pkg->name }}"
-                                                    class="cocktail-cutout-img">
+                                                <img src="{{ asset($meta['img']) }}" alt="{{ $pkg->name }}" class="cocktail-cutout-img">
                                             </div>
                                         </div>
-
                                         {{-- Footer with ideal guests and cost badge --}}
                                         <div class="flyer-card-footer">
                                             <div class="footer-left-guests"
@@ -395,7 +388,6 @@
                                                 <span class="cost-amount-main">{{ $meta['cost'] }}</span>
                                             </div>
                                         </div>
-
                                         {{-- Selection button --}}
                                         <button type="button" class="card-select-btn">
                                             <i class="ri-checkbox-circle-line fs-16 check-icon"></i>
@@ -410,18 +402,17 @@
                     {{-- SECTION 2: SERVICIO DE BARMAN (Screenshot 3) --}}
                     @if ($barmanPkg)
                         @php
-                            $barmanColor = $barmanPkg->color ?: '#be8632';
-                            $barmanPrice = $barmanPkg->base_price > 0 ? $signo . ' ' . number_format($barmanPkg->base_price, 0) : 'S/ 600';
-                            $barmanMax = $barmanPkg->max_guests ?: 100;
-                            $barmanIdeal = $barmanPkg->ideal_capacity ?: "máximo {$barmanMax} personas";
-                            $barmanImg = $barmanPkg->image ? $barmanPkg->image_url : asset('img/packages/pkg-01.png');
+                            $barmanColor    = $barmanPkg->color ?: '#be8632';
+                            $barmanPrice    = $barmanPkg->base_price > 0 ? $signo . ' ' . number_format($barmanPkg->base_price, 0) : 'S/ 600';
+                            $barmanMax      = $barmanPkg->max_guests ?: 100;
+                            $barmanIdeal    = $barmanPkg->ideal_capacity ?: "máximo {$barmanMax} personas";
+                            $barmanImg      = $barmanPkg->image ? $barmanPkg->image_url : asset('img/packages/pkg-01.png');
                         @endphp
                         <section id="section-barman" class="mb-5">
                             <div class="text-center mb-3">
                                 <h3 class="fw-bold font-serif text-dark mb-1">{{ $barmanPkg->name }}</h3>
                                 <p class="text-muted fs-15 mb-3">{{ $barmanPkg->tagline ?: 'Tu pones los insumos y nosotros nos encargamos de lo demás.' }}</p>
                             </div>
-
                             <div class="barman-service-card" data-id="{{ $barmanPkg->id }}"
                                 data-name="{{ $barmanPkg->name }}" data-glasses="{{ $barmanPkg->badge_glasses ?: 'Solo Servicio' }}"
                                 data-min="{{ $barmanPkg->min_guests }}"
@@ -436,25 +427,20 @@
                                         <h6 class="fw-bold text-dark font-montserrat text-uppercase mb-0 fs-14">
                                             SERVICIO DE<br>BARMAN</h6>
                                     </div>
-
                                     <div class="col-6 col-md-2 barman-col-sep text-center text-md-start ps-md-3">
                                         <div class="fw-bold text-dark fs-14">1 Bartender</div>
                                         <small class="text-muted">1 asistente de bar</small>
                                     </div>
-
                                     <div class="col-6 col-md-3 barman-col-sep text-center text-md-start ps-md-3">
                                         <div class="fw-bold text-dark fs-13 mb-1">Incluye:</div>
                                         <div class="small text-muted mb-0">Barra móvil</div>
                                         <div class="small text-muted mb-0">Herramientas de bar</div>
-                                        <div class="small text-danger fw-semibold fst-italic">_No cristalería _No
-                                            insumos</div>
+                                        <div class="small text-danger fw-semibold fst-italic"> No cristalería - No insumos</div>
                                     </div>
-
                                     <div class="col-6 col-md-2 barman-col-sep text-center">
                                         <div class="fw-bold text-dark fs-16 mb-0">5 horas</div>
                                         <small class="text-muted">de servicio</small>
                                     </div>
-
                                     <div class="col-6 col-md-2 text-center text-md-end pe-md-2">
                                         <div class="fs-22 fw-bold font-montserrat text-dark mb-2">{{ $barmanPrice }}</div>
                                         <button type="button"
@@ -469,7 +455,6 @@
                             </div>
                         </section>
                     @endif
-
                     {{-- SECTION 3: NUESTRA CARTA (Screenshot 4) --}}
                     <section id="section-carta" class="mb-5">
                         <div class="carta-section-card">
@@ -526,7 +511,6 @@
                                     </div>
                                 @endforeach
                             </div>
-
                             {{-- Bottom notice box from flyer --}}
                             <div class="advance-banner mt-4">
                                 <div class="d-flex align-items-center gap-2 flex-grow-1">
@@ -543,7 +527,6 @@
                             </div>
                         </div>
                     </section>
-
                     {{-- SECTION 4: CONDICIONES Y POLÍTICAS (Footers of Flyer 1 & 2) --}}
                     <section id="section-condiciones" class="mb-4">
                         <div class="row g-3">

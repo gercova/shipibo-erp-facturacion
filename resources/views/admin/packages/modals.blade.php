@@ -5,20 +5,15 @@
             @csrf
             <input type="hidden" name="id" id="package_id" value="">
             <input type="hidden" name="image_preset" id="image_preset" value="">
-
             <div class="modal-header bg-dark text-white border-bottom-0 py-3 px-4">
                 <div class="d-flex align-items-center">
-                    <div class="avatar-sm bg-warning bg-opacity-20 text-warning rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
-                        <i class="ri-global-line fs-20"></i>
-                    </div>
                     <div>
-                        <h5 class="modal-title fw-bold mb-0" id="modalPackageTitle">Configurar Paquete del Catálogo Web</h5>
+                        <h5 class="modal-title text-white fw-bold mb-0" id="modalPackageTitle">Configurar Paquete del Catálogo Web</h5>
                         <p class="text-white-50 small mb-0">Gestión de especificaciones, capacidades, esquema de precios y estilo flyer para la vista <span class="badge bg-warning text-dark">/pedido</span></p>
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
-
             <div class="modal-body p-4">
                 {{-- Nav Tabs --}}
                 <ul class="nav nav-pills nav-justified bg-light p-1 rounded-3 mb-4" id="packageTab" role="tablist">
@@ -53,7 +48,6 @@
                         </button>
                     </li>
                 </ul>
-
                 <div class="tab-content" id="packageTabContent">
                     {{-- TAB 1: INFORMACIÓN GENERAL & WEB --}}
                     <div class="tab-pane fade show active" id="tab-general" role="tabpanel">
@@ -65,7 +59,6 @@
                                 <input type="text" id="name" name="name" class="form-control border-2 text-uppercase fw-bold" placeholder="Ej: PAQUETE SIGNATURE" required>
                                 <small class="text-muted">Nombre principal visible en la tarjeta del catálogo web.</small>
                             </div>
-
                             <div class="col-md-2">
                                 <label for="order_num" class="form-label small fw-bold text-muted text-uppercase">
                                     N° Orden Web
@@ -73,7 +66,6 @@
                                 <input type="text" id="order_num" name="order_num" class="form-control text-center fw-bold" placeholder="Ej: 01, 05" maxlength="10">
                                 <small class="text-muted">Orden en el flyer.</small>
                             </div>
-
                             <div class="col-md-3">
                                 <label for="badge_glasses" class="form-label small fw-bold text-muted text-uppercase">
                                     Insignia Vasos / Copas
@@ -81,7 +73,6 @@
                                 <input type="text" id="badge_glasses" name="badge_glasses" class="form-control fw-semibold" placeholder="Ej: 180 Vasos">
                                 <small class="text-muted">Badge superior derecho.</small>
                             </div>
-
                             <div class="col-12">
                                 <label for="tagline" class="form-label small fw-bold text-muted text-uppercase">
                                     Tagline / Subtítulo Web
@@ -89,18 +80,16 @@
                                 <input type="text" id="tagline" name="tagline" class="form-control" placeholder="Ej: Vasos en acrílico, cristalería, barra móvil, cócteles clásicos y de autor">
                                 <small class="text-muted">Breve descripción destacada bajo el título del paquete.</small>
                             </div>
-
                             <div class="col-12">
                                 <label for="description" class="form-label small fw-bold text-muted text-uppercase">
                                     Descripción Completa & Términos
                                 </label>
                                 <textarea id="description" name="description" class="form-control" rows="3" placeholder="Detalle completo de logística, horarios, cristalería y condiciones de catering..."></textarea>
                             </div>
-
                             <div class="col-md-6">
                                 <div class="card border p-3 bg-light rounded-3">
                                     <div class="form-check form-switch mb-0">
-                                        <input class="form-check-input" type="checkbox" id="is_barman" name="is_barman">
+                                        <input class="form-check-input" type="checkbox" id="is_barman" name="is_barman" value="1">
                                         <label class="form-check-label fw-bold text-dark" for="is_barman">
                                             <i class="ri-user-star-line text-warning me-1"></i> Modalidad "Servicio de Barman"
                                         </label>
@@ -108,11 +97,10 @@
                                     </div>
                                 </div>
                             </div>
-
                             <div class="col-md-6">
                                 <div class="card border p-3 bg-light rounded-3">
                                     <div class="form-check form-switch mb-0">
-                                        <input class="form-check-input" type="checkbox" id="active" name="active" checked>
+                                        <input class="form-check-input" type="checkbox" id="active" name="active" value="1" checked>
                                         <label class="form-check-label fw-bold text-success" for="active">
                                             <i class="ri-checkbox-circle-line me-1"></i> Paquete Activo y Visible en /pedido
                                         </label>
@@ -122,13 +110,11 @@
                             </div>
                         </div>
                     </div>
-
                     {{-- TAB 2: CAPACIDAD (PERSONAS / INVITADOS) --}}
                     <div class="tab-pane fade" id="tab-capacity" role="tabpanel">
                         <div class="alert alert-info py-2 small mb-3">
                             <i class="ri-information-line me-1"></i> Configure los rangos de invitados para los cálculos de cotización y los textos orientativos mostrados al usuario en el catálogo web.
                         </div>
-
                         <div class="row g-3">
                             <div class="col-md-6 col-lg-3">
                                 <label for="min_guests" class="form-label small fw-bold text-muted text-uppercase">
@@ -140,7 +126,6 @@
                                 </div>
                                 <small class="text-muted">Límite inferior para contratar.</small>
                             </div>
-
                             <div class="col-md-6 col-lg-3">
                                 <label for="max_guests" class="form-label small fw-bold text-muted text-uppercase">
                                     Máximo Invitados
@@ -151,7 +136,6 @@
                                 </div>
                                 <small class="text-muted">Límite superior de capacidad.</small>
                             </div>
-
                             <div class="col-md-6 col-lg-3">
                                 <label for="default_guests" class="form-label small fw-bold text-muted text-uppercase">
                                     Invitados Sugeridos (Defecto)
@@ -162,7 +146,6 @@
                                 </div>
                                 <small class="text-muted">Valor inicial al seleccionar el paquete.</small>
                             </div>
-
                             <div class="col-md-6 col-lg-3">
                                 <label for="ideal_capacity" class="form-label small fw-bold text-muted text-uppercase">
                                     Etiqueta "Ideal Para"
@@ -175,14 +158,12 @@
                             </div>
                         </div>
                     </div>
-
                     {{-- TAB 3: COLORES & ESTILO FLYER --}}
                     <div class="tab-pane fade" id="tab-colors" role="tabpanel">
                         <div class="row g-4">
                             <div class="col-lg-7">
                                 <h6 class="fw-bold text-dark mb-2">Paleta de Colores de la Tarjeta Web</h6>
                                 <p class="text-muted small mb-3">Defina los colores corporativos con los que se representará este paquete en la vista de pedidos de los clientes.</p>
-
                                 <div class="row g-3 mb-4">
                                     <div class="col-md-6">
                                         <label for="color" class="form-label small fw-bold text-muted text-uppercase">Color Primario Flyer</label>
@@ -192,7 +173,6 @@
                                         </div>
                                         <small class="text-muted">Usado en títulos, números, insignias y botones.</small>
                                     </div>
-
                                     <div class="col-md-6">
                                         <label for="light_bg" class="form-label small fw-bold text-muted text-uppercase">Fondo Claro de Contraste</label>
                                         <div class="input-group">
@@ -202,7 +182,6 @@
                                         <small class="text-muted">Usado en el cajetín de capacidad "Ideal para".</small>
                                     </div>
                                 </div>
-
                                 <h6 class="fw-bold text-dark mb-2">Paletas Rápidas Inspiradas en Flyers</h6>
                                 <p class="text-muted small mb-2">Haga clic sobre una paleta preestablecida para aplicarla automáticamente:</p>
                                 <div class="d-flex flex-wrap gap-2 mb-3" id="quickColorPalettes">
@@ -236,7 +215,6 @@
                                     </button>
                                 </div>
                             </div>
-
                             <div class="col-lg-5">
                                 <label class="form-label small fw-bold text-muted text-uppercase mb-2">Vista Previa en Vivo (Estilo /pedido)</label>
                                 <div class="card border shadow-sm p-3 rounded-4" id="livePreviewCard" style="background: #ffffff; border-top: 5px solid #275c34 !important;">
@@ -262,7 +240,6 @@
                             </div>
                         </div>
                     </div>
-
                     {{-- TAB 4: PRECIOS & TRAMOS --}}
                     <div class="tab-pane fade" id="tab-pricing" role="tabpanel">
                         <div class="row g-3 mb-4">
@@ -276,7 +253,6 @@
                                     <option value="fixed">Precio Fijo Total</option>
                                 </select>
                             </div>
-
                             <div class="col-md-7" id="box_base_price" style="display: none;">
                                 <label for="base_price" class="form-label small fw-bold text-muted text-uppercase" id="label_base_price">
                                     Precio Base ({{ $signo }})
@@ -288,7 +264,6 @@
                                 <small class="text-muted">Aplica directamente cuando no se configuran tramos de invitados.</small>
                             </div>
                         </div>
-
                         {{-- TIER SECTION --}}
                         <div id="box_tiers_section">
                             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -300,7 +275,6 @@
                                     <i class="ri-add-line me-1"></i> Agregar Tramo
                                 </button>
                             </div>
-
                             <div class="table-responsive">
                                 <table class="table table-sm table-bordered align-middle">
                                     <thead class="table-light">
@@ -322,7 +296,6 @@
                             </div>
                         </div>
                     </div>
-
                     {{-- TAB 5: ESPECIFICACIONES & COMPONENTES --}}
                     <div class="tab-pane fade" id="tab-specs" role="tabpanel">
                         <div class="row g-4">
@@ -333,14 +306,12 @@
                                         <i class="ri-check-double-line text-success me-1"></i> Especificaciones del Flyer Web ("INCLUYE:")
                                     </h6>
                                     <p class="text-muted small mb-3">Puntos clave que aparecen listados con viñetas en la tarjeta de /pedido.</p>
-
                                     <div class="input-group mb-2">
                                         <input type="text" id="new_feature_input" class="form-control" placeholder="Escriba especificación (ej: 1 Bartender + 1 asistente)">
                                         <button type="button" class="btn btn-primary fw-bold" id="btnAddFeature">
                                             <i class="ri-add-line me-1"></i> Añadir
                                         </button>
                                     </div>
-
                                     <div class="mb-3">
                                         <small class="text-muted fw-semibold d-block mb-1">Sugerencias rápidas:</small>
                                         <div class="d-flex flex-wrap gap-1">
@@ -355,7 +326,6 @@
                                             <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 quick-feature-preset" data-text="5 horas de servicio">+ 5h de servicio</button>
                                         </div>
                                     </div>
-
                                     <div class="border rounded-3 p-2 bg-light min-vh-15" id="featuresContainer" style="min-height: 140px;">
                                         <div class="text-center text-muted small py-3" id="featuresEmptyMessage">No hay especificaciones añadidas. Use el campo superior o las sugerencias.</div>
                                         <div class="d-flex flex-column gap-2" id="featuresBadgesList"></div>
@@ -363,7 +333,6 @@
                                     <input type="hidden" name="features" id="features_json" value="[]">
                                 </div>
                             </div>
-
                             {{-- INVENTORY & COCKTAIL LINKING --}}
                             <div class="col-lg-6">
                                 <div class="card border p-3 rounded-3 h-100">
@@ -371,7 +340,6 @@
                                         <i class="ri-archive-line text-primary me-1"></i> Vinculación con Inventario & Cócteles
                                     </h6>
                                     <p class="text-muted small mb-3">Descarga automática de stock y cócteles al confirmar contratos de este paquete.</p>
-
                                     <div class="row g-2 align-items-end mb-3">
                                         <div class="col-md-4">
                                             <label class="form-label small fw-bold text-muted text-uppercase mb-1">Tipo</label>
@@ -380,7 +348,6 @@
                                                 <option value="cocktail">Cóctel de Carta</option>
                                             </select>
                                         </div>
-
                                         <div class="col-md-6 picker-opt" id="picker_service">
                                             <label class="form-label small fw-bold text-muted text-uppercase mb-1">Equipo / Servicio</label>
                                             <select id="picker_product_id" class="form-select form-select-sm">
@@ -392,7 +359,6 @@
                                                 @endforeach
                                             </select>
                                         </div>
-
                                         <div class="col-md-6 picker-opt" id="picker_cocktail" style="display: none;">
                                             <label class="form-label small fw-bold text-muted text-uppercase mb-1">Cóctel de Carta</label>
                                             <select id="picker_cocktail_id" class="form-select form-select-sm">
@@ -404,15 +370,13 @@
                                                 @endforeach
                                             </select>
                                         </div>
-
                                         <div class="col-md-2">
                                             <button type="button" class="btn btn-sm btn-primary w-100 fw-bold" id="btnAddItemRow">
                                                 <i class="ri-add-line"></i>
                                             </button>
                                         </div>
                                     </div>
-
-                                    <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                                    <div class="table-responsive">
                                         <table class="table table-sm table-bordered align-middle mb-0">
                                             <thead class="table-light">
                                                 <tr>
@@ -428,14 +392,12 @@
                             </div>
                         </div>
                     </div>
-
                     {{-- TAB 6: FOTO / CUTOUT CÓCTEL --}}
                     <div class="tab-pane fade" id="tab-image" role="tabpanel">
                         <div class="row g-4 align-items-center">
                             <div class="col-md-8">
                                 <h6 class="fw-bold text-dark mb-2">Seleccionar Ilustración Preset de Cóctel</h6>
                                 <p class="text-muted small mb-3">Elija una de las 7 ilustraciones con transparencia oficial de los flyers Shipibo:</p>
-
                                 <div class="row g-2 mb-4" id="presetCutoutsContainer">
                                     @for ($i = 1; $i <= 7; $i++)
                                         @php $padded = sprintf('%02d', $i); @endphp
@@ -447,12 +409,10 @@
                                         </div>
                                     @endfor
                                 </div>
-
                                 <h6 class="fw-bold text-dark mb-2">O Subir Archivo Propio</h6>
                                 <input type="file" id="image" name="image" class="form-control" accept="image/jpeg,image/png,image/jpg,image/webp">
                                 <small class="text-muted">Formatos JPG, PNG, WEBP con transparencia (Máx 4MB).</small>
                             </div>
-
                             <div class="col-md-4 text-center">
                                 <label class="form-label small fw-bold text-muted text-uppercase mb-2">Imagen Actual</label>
                                 <div class="border rounded-4 p-3 bg-light d-flex align-items-center justify-content-center shadow-sm" style="height: 180px;">
@@ -463,7 +423,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="modal-footer bg-light border-top-0 py-3 px-4">
                 <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Cancelar</button>
                 <button type="button" class="btn btn-primary px-4 fw-bold shadow-sm" id="btnSavePackage">
@@ -473,7 +432,6 @@
         </form>
     </div>
 </div>
-
 {{-- MODAL SIMULADOR DE CÁLCULO DE PRECIOS E IGV --}}
 <div class="modal fade" id="modalCalculatorSimulator" tabindex="-1" aria-labelledby="modalCalculatorSimulatorTitle" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -484,7 +442,6 @@
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
-
             <div class="modal-body p-4">
                 <div class="row g-3 align-items-end mb-3">
                     <div class="col-md-7">
@@ -495,26 +452,22 @@
                             @endforeach
                         </select>
                     </div>
-
                     <div class="col-md-3">
                         <label for="sim_guests" class="form-label small fw-bold text-muted text-uppercase">N° de Invitados</label>
                         <input type="number" id="sim_guests" class="form-control border-2 text-center fw-bold" value="120" min="1">
                     </div>
-
                     <div class="col-md-2">
                         <button type="button" class="btn btn-primary w-100 fw-bold" id="btnRunSimulation">
                             <i class="ri-refresh-line me-1"></i> Calcular
                         </button>
                     </div>
                 </div>
-
                 <div id="sim_results_box">
                     <div class="text-center py-4 text-muted">
                         Seleccione un paquete y la cantidad de invitados para calcular los montos.
                     </div>
                 </div>
             </div>
-
             <div class="modal-footer bg-light py-2 px-4">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
             </div>

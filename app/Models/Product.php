@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
@@ -13,24 +15,23 @@ class Product extends Model
 
     protected $primaryKey = 'id';
 
-    protected $fillable =
-        [
-            'codigo_interno',
-            'codigo_barras',
-            'codigo_sunat',
-            'descripcion',
-            'idunidad',
-            'idcategoria',
-            'igv',
-            'idcodigo_igv',
-            'precio_compra',
-            'precio_venta',
-            'opcion',
-            'rentable',
-            'es_alquilable',
-            'stock_actual',
-            'replacement_cost',
-        ];
+    protected $fillable = [
+        'codigo_interno',
+        'codigo_barras',
+        'codigo_sunat',
+        'descripcion',
+        'idunidad',
+        'idcategoria',
+        'igv',
+        'idcodigo_igv',
+        'precio_compra',
+        'precio_venta',
+        'opcion',
+        'rentable',
+        'es_alquilable',
+        'stock_actual',
+        'replacement_cost',
+    ];
 
     protected $casts = [
         'rentable' => 'boolean',
@@ -54,27 +55,27 @@ class Product extends Model
         return (float) ($this->precio_venta ?? 0.0);
     }
 
-    public function unit()
+    public function unit(): BelongsTo
     {
         return $this->belongsTo(Unit::class, 'idunidad');
     }
 
-    public function category()
+    public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'idcategoria');
     }
 
-    public function igvTypeAffection()
+    public function igvTypeAffection(): BelongsTo
     {
         return $this->belongsTo(IgvTypeAffection::class, 'idcodigo_igv');
     }
 
-    public function presentations()
+    public function presentations(): HasMany
     {
         return $this->hasMany(ProductPresentation::class, 'idproducto')->where('estado', true)->orderBy('id');
     }
 
-    public function stockProducts()
+    public function stockProducts(): HasMany
     {
         return $this->hasMany(StockProduct::class, 'idproducto');
     }

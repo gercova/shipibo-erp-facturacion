@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Provider extends Model
 {
@@ -24,7 +25,7 @@ class Provider extends Model
         'email',
     ];
 
-    public function tipoDocumento()
+    public function tipoDocumento(): BelongsTo
     {
         return $this->belongsTo(IdentityDocumentType::class, 'iddoc');
     }

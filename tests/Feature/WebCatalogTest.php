@@ -234,4 +234,106 @@ class WebCatalogTest extends TestCase
 
         $this->assertNull(Package::find($pkg->id));
     }
+
+    /**
+     * Can save a package when active and is_barman are sent as 'on' string from HTML checkboxes.
+     */
+    public function test_can_save_package_with_html_checkbox_on_value(): void
+    {
+        $payload = [
+            'name' => 'PAQUETE TEST CHECKBOX ON',
+            'price_mode' => 'fixed',
+            'min_guests' => 80,
+            'base_price' => 2500.00,
+            'active' => 'on',
+            'is_barman' => 'on',
+        ];
+
+        $response = $this->actingAs($this->adminUser)->postJson(route('admin.packages.save'), $payload);
+
+        $response->assertStatus(200);
+        $response->assertJson(['status' => true]);
+
+        $this->assertDatabaseHas('packages', [
+            'name' => 'PAQUETE TEST CHECKBOX ON',
+            'active' => true,
+            'is_barman' => true,
+        ]);
+    }
+
+    /**
+     * Required field validations return 422 with specific Spanish error messages.
+     */
+    public function test_package_validation_fails_for_required_fields(): void
+    {
+        // 1. Missing name
+        $resName = $this->actingAs($this->adminUser)->postJson(route('admin.packages.save'), [
+            'price_mode' => 'fixed',
+            'min_guests' => 50,
+        ]);
+        $resName->assertStatus(422);
+        $resName->assertJson([
+            'status' => false,
+            'msg' => 'El nombre del paquete es obligatorio.',
+        ]);
+
+        // 2. Missing price_mode
+        $resPriceMode = $this->actingAs($this->adminUser)->postJson(route('admin.packages.save'), [
+            'name' => 'PAQUETE PRUEBA',
+            'min_guests' => 50,
+        ]);
+        $resPriceMode->assertStatus(422);
+        $resPriceMode->assertJson([
+            'status' => false,
+            'msg' => 'Debe seleccionar una modalidad de precio.',
+        ]);
+
+        // 3. Invalid price_mode
+        $resInvalidMode = $this->actingAs($this->adminUser)->postJson(route('admin.packages.save'), [
+            'name' => 'PAQUETE PRUEBA',
+            'price_mode' => 'invalid_mode',
+            'min_guests' => 50,
+        ]);
+        $resInvalidMode->assertStatus(422);
+        $resInvalidMode->assertJson([
+            'status' => false,
+            'msg' => 'La modalidad de precio seleccionada no es válida.',
+        ]);
+
+        // 4. Missing min_guests
+        $resMinGuests = $this->actingAs($this->adminUser)->postJson(route('admin.packages.save'), [
+            'name' => 'PAQUETE PRUEBA',
+            'price_mode' => 'fixed',
+        ]);
+        $resMinGuests->assertStatus(422);
+        $resMinGuests->assertJson([
+            'status' => false,
+            'msg' => 'Debe especificar el número mínimo de invitados.',
+        ]);
+
+        // 5. min_guests less than 1
+        $resMinGuestsZero = $this->actingAs($this->adminUser)->postJson(route('admin.packages.save'), [
+            'name' => 'PAQUETE PRUEBA',
+            'price_mode' => 'fixed',
+            'min_guests' => 0,
+        ]);
+        $resMinGuestsZero->assertStatus(422);
+        $resMinGuestsZero->assertJson([
+            'status' => false,
+            'msg' => 'El número mínimo de invitados debe ser al menos 1.',
+        ]);
+
+        // 6. max_guests less than min_guests
+        $resMaxGuests = $this->actingAs($this->adminUser)->postJson(route('admin.packages.save'), [
+            'name' => 'PAQUETE PRUEBA',
+            'price_mode' => 'fixed',
+            'min_guests' => 100,
+            'max_guests' => 50,
+        ]);
+        $resMaxGuests->assertStatus(422);
+        $resMaxGuests->assertJson([
+            'status' => false,
+            'msg' => 'El máximo de invitados debe ser mayor o igual al mínimo.',
+        ]);
+    }
 }
